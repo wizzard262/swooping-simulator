@@ -392,13 +392,14 @@ function buildClouds() {
 // Bridge and the Opera House, and Uluru out in the red centre
 // ---------------------------------------------------------------------------
 const HILL_GREENS = ['#7cc457', '#5aa846', '#43913d', '#317a36', '#24652f'];
+const HILL_HAZE = '#a9bccb', FAR = 0.5;   // the green hills are low and greyed out, so they read as far away
 function buildHills() {
   const P = LEVEL_W * PARALLAX.hills, p = painter(P, H, true), r = rng(31);
   const WATER = 138, HARBOUR = [90, 300], OUTBACK = [400, 600], ULURU_X = 450;
   const ph = [1, 2, 3, 5, 8].map(() => r() * Math.PI * 2);
   const zone = (x, [a, b], soft) => clamp(Math.min(x - a, b - x) / soft, 0, 1);
   const top = x => {
-    let y = 124 + [10, 6, 4, 2, 1].reduce((s, amp, i) => s + amp * Math.sin(2 * Math.PI * [1, 2, 3, 5, 8][i] * x / P + ph[i]), 0);
+    let y = 133 + [5, 3, 2, 1, 0.5].reduce((s, amp, i) => s + amp * Math.sin(2 * Math.PI * [1, 2, 3, 5, 8][i] * x / P + ph[i]), 0);
     y += (WATER + 2 - y) * zone(x, HARBOUR, 30);                        // dip down to the harbour
     y += (136 - y) * zone(x, OUTBACK, 40);                              // flat red plain
     return Math.round(y);
@@ -415,8 +416,9 @@ function buildHills() {
         else if (d > 3) tone += hash(x, y) < 0.35 ? 2 : 1;                 // forest texture
         c = HILL_GREENS[Math.min(4, tone)];
       }
-      if (harbour > 0 && t >= WATER - 2 && y >= WATER) c = (y + Math.floor(x / 9)) % 6 === 0 ? '#9fd8f2' : y === WATER ? '#7cc4ea' : '#3d93d4';
-      p.px(x, y, mix(c, '#8fc3ea', 0.12));                               // a little haze for distance
+      const water = harbour > 0 && t >= WATER - 2 && y >= WATER;
+      if (water) c = (y + Math.floor(x / 9)) % 6 === 0 ? '#9fd8f2' : y === WATER ? '#7cc4ea' : '#3d93d4';
+      p.px(x, y, water || red > 0.5 ? mix(c, '#8fc3ea', 0.12) : mix(c, HILL_HAZE, FAR));
     }
   }
 
@@ -424,11 +426,11 @@ function buildHills() {
   for (let k = 0; k < 420; k++) {
     const x = Math.floor(r() * P);
     if (zone(x, OUTBACK, 30) > 0 || zone(x, HARBOUR, 20) > 0) continue;
-    const y = top(x) + 1 + Math.floor(r() ** 2 * 14), th = 3 + Math.floor(r() * 3);
+    const y = top(x) + 1 + Math.floor(r() ** 2 * 10), th = 2 + Math.floor(r() * 2);
     for (let j = 0; j < th; j++) {
       const half = Math.min(j, th - 1 - j < 1 ? 0 : 2) >> 1;
-      p.px(x - half, y - th + j, mix(HILL_GREENS[4], '#8fc3ea', 0.12), half * 2 + 1, 1);
-      p.px(x - half, y - th + j, mix(HILL_GREENS[2], '#8fc3ea', 0.12));
+      p.px(x - half, y - th + j, mix(HILL_GREENS[4], HILL_HAZE, FAR), half * 2 + 1, 1);
+      p.px(x - half, y - th + j, mix(HILL_GREENS[2], HILL_HAZE, FAR));
     }
   }
 

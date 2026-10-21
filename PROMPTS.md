@@ -90,8 +90,12 @@
 
 - I really want the sun to look exactly like the photo I gave you
 
+## 14. Distant hills
+
+- The background hills that aren't Uluru need to be smaller and greyed out a bit, to show they're in the distance
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 45 min so far | Prompts 1–13: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar |
+| 1 | 2026-10-21 | about 50 min so far | Prompts 1–14: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills |
