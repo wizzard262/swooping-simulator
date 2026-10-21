@@ -528,10 +528,12 @@ function house(p, r, x, w) {
     p.px(ax - 5, ridge - 10, '#9aa0a5', 11, 1);
     for (let k = 0; k < 6; k++) { const len = 5 - Math.floor(k * 0.6); p.px(ax - 5 + k * 2, ridge - 10 - Math.floor(len / 2), '#b3b9bd', 1, len); }
   }
+  const roofTop = top - rh;
   if (r() < 0.2) {                                    // brick chimney
     const cx = x + Math.round(w * (0.2 + r() * 0.6));
     p.px(cx, ridge - 4, bc, 4, 5); p.px(cx - 1, ridge - 5, mortar, 6, 1);
   }
+  return roofTop;
 }
 
 function letterbox(p, r, x) {
@@ -560,7 +562,7 @@ function buildSuburb() {
     const w = 60 + Math.floor(r() * 16), hx = lx + 10 + Math.floor(r() * (lotW - w - 20));
     if (r() < 0.45) hillsHoist(p, hx - lx > lotW / 2 - w / 2 ? hx - 14 : hx + w + 14);
     fence(p, r, lx, lotW);
-    house(p, r, hx, w);
+    HOUSES[i] = { x: hx, w, top: house(p, r, hx, w) };
     if (i === 2) {                                    // a flagpole in this front yard (the flag is drawn each frame)
       FLAG.x = hx + w + 7;
       p.px(FLAG.x, SUBURB_BASE - FLAG.pole, '#c9ced2', 1, FLAG.pole); p.px(FLAG.x + 1, SUBURB_BASE - FLAG.pole, '#8f959a', 1, FLAG.pole);
@@ -571,14 +573,14 @@ function buildSuburb() {
     for (let k = 0; k < 2 + Math.floor(r() * 3); k++)
       bush(p, r, hx + 6 + r() * (w - 12), SUBURB_BASE, pick(r, ['bush', 'bottlebrush', 'hedge', 'agapanthus']));
   }
-  // Power poles along the nature strip, with two sagging wires between them
-  for (let i = 0; i < lots; i++) {
-    const px = POLE_X0 + i * lotW;
-    p.px(px, POLE_TOP, '#6b5038', 2, SUBURB_BASE - POLE_TOP); p.px(px + 1, POLE_TOP, '#4f3a28', 1, SUBURB_BASE - POLE_TOP);
-    p.px(px - 5, POLE_TOP + 2, '#5a4330', 12, 1);                    // crossarm
-    p.px(px - 5, POLE_TOP + 1, '#e8e8e2'); p.px(px + 6, POLE_TOP + 1, '#e8e8e2');   // insulators
-    for (let x = 0; x < lotW; x++) for (const off of [-5, 6]) p.px(px + off + x, wireY(px + off + x, off), '#2b2b2b');
+  // One power line, strung between two houses, a little (20%) above their roofs
+  const a = HOUSES[3], b = HOUSES[4], roof = Math.min(a.top, b.top), height = SUBURB_BASE - roof;
+  Object.assign(WIRE, { x0: a.x + a.w + 3, x1: b.x - 4, top: Math.round(roof - height * 0.2) });
+  for (const px of [WIRE.x0, WIRE.x1]) {
+    p.px(px, WIRE.top, '#6b5038', 2, SUBURB_BASE - WIRE.top); p.px(px + 1, WIRE.top, '#4f3a28', 1, SUBURB_BASE - WIRE.top);
+    p.px(px - 2, WIRE.top + 1, '#5a4330', 6, 1);                    // crossarm
   }
+  for (let x = WIRE.x0 + 1; x < WIRE.x1; x++) p.px(x, wireY(x), '#2b2b2b');
   return { P, c: p.c };
 }
 
@@ -1969,10 +1971,11 @@ function drawShark(g) {
 // More of Australia: power lines with a possum, a cyclist to swoop,
 // a drop bear in the gum tree, a flock of cockatoos, summer storms, and a score.
 // ---------------------------------------------------------------------------
-const POLE_X0 = 118, POLE_TOP = 111, POLE_GAP = LEVEL_W * PARALLAX.suburb / 8;
-function wireY(x, off = -5) {                                        // the sag of a wire between two poles
-  const t = mod(x - POLE_X0 - off, POLE_GAP) / POLE_GAP;
-  return Math.round(POLE_TOP + 1 + 5 * 4 * t * (1 - t));
+const HOUSES = [];                    // the front street's houses: { x, w, top } (top: the roof)
+const WIRE = { x0: 0, x1: 0, top: 0 };   // the one power line, between two of them
+function wireY(x) {                                                  // the sag of the wire between its two poles
+  const t = clamp((x - WIRE.x0) / (WIRE.x1 - WIRE.x0), 0, 1);
+  return Math.round(WIRE.top + 1 + 3 * 4 * t * (1 - t));
 }
 const POSSUM = { in: 20, x: 0, dir: 1, left: 0 };
 const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, ties: 0, ground: 170, crank: 0 };
@@ -2009,11 +2012,11 @@ function updateMore(dt) {
   if (SCORE.comboT === 0) SCORE.combo = 1;
   for (const p of SCORE.pops) { p.life -= dt; p.y -= 10 * dt; }
   while (SCORE.pops.length && SCORE.pops[0].life <= 0) SCORE.pops.shift();
-  // Possum: now and then runs along the power line for a couple of spans
-  if (POSSUM.left > 0) { POSSUM.left -= 16 * dt; POSSUM.x = mod(POSSUM.x + POSSUM.dir * 16 * dt, suburb.P); }
+  // Possum: now and then scurries along the power line from one pole to the other
+  if (POSSUM.left > 0) { POSSUM.left -= 14 * dt; POSSUM.x += POSSUM.dir * 14 * dt; }
   else if ((POSSUM.in -= dt) <= 0) {
-    POSSUM.in = 30 + Math.random() * 30; POSSUM.dir = Math.random() < 0.5 ? -1 : 1;
-    POSSUM.x = POLE_X0 - 5 + Math.floor(Math.random() * 8) * POLE_GAP; POSSUM.left = POLE_GAP * 2;
+    POSSUM.in = 20 + Math.random() * 25; POSSUM.dir = Math.random() < 0.5 ? -1 : 1;
+    POSSUM.x = POSSUM.dir > 0 ? WIRE.x0 + 2 : WIRE.x1 - 2; POSSUM.left = WIRE.x1 - WIRE.x0 - 4;
   }
   // Cyclist: pedals along the front of the lawn; swoop him and he wobbles
   CYCLIST.wobble = Math.max(0, CYCLIST.wobble - dt);
