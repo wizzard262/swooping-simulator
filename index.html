@@ -1035,6 +1035,46 @@ function drawShelfStock(g) {
   drawSmeared(g, shelfStock, loopX(SHOP.x), SHOP.ceil, SHOP.w, SHOP.floor - SHOP.ceil);
 }
 
+// SWOOP-AND-POOP!: pop-art comic lettering in the Roy Lichtenstein style. A yellow starburst
+// with red Ben-Day dots and a thick black outline, tilted red lettering with a black outline
+// and offset shadow. It pops in, holds, then fades over its 1 second.
+function drawCombo(g) {
+  if (comboT <= 0) return;
+  const age = COMBO_TIME - comboT, pop = age < 0.12 ? 0.3 + 0.85 * age / 0.12 : age < 0.2 ? 1.15 - (age - 0.12) / 0.08 * 0.15 : 1;
+  g.save();
+  g.setTransform(K * pop, 0, 0, K * pop, W / 2 * K, 52 * K);
+  g.rotate(-0.12);
+  g.globalAlpha = Math.min(1, comboT / 0.4);
+  // starburst
+  const burst = () => {
+    g.beginPath();
+    for (let i = 0; i < 28; i++) {
+      const a = i / 28 * Math.PI * 2, r = i % 2 ? 40 : 58 + (i % 4 === 0 ? 8 : 0);
+      g.lineTo(Math.cos(a) * r * 1.55, Math.sin(a) * r * 0.62);
+    }
+    g.closePath();
+  };
+  burst(); g.fillStyle = '#ffe414'; g.fill();
+  g.save(); burst(); g.clip();                                     // Ben-Day dots
+  g.fillStyle = '#ff4a3d';
+  for (let y = -44; y <= 44; y += 4) for (let x = -96; x <= 96; x += 4) {
+    const off = (y / 4) % 2 ? 2 : 0;
+    g.beginPath(); g.arc(x + off, y, 0.95, 0, Math.PI * 2); g.fill();
+  }
+  g.restore();
+  burst(); g.lineJoin = 'round'; g.lineWidth = 2.6; g.strokeStyle = '#111'; g.stroke();
+  // lettering
+  g.font = 'italic 900 19px Impact, "Arial Black", sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  const text = 'SWOOP-AND-POOP!';
+  g.lineWidth = 5; g.strokeStyle = '#111';
+  g.fillStyle = '#111'; g.fillText(text, 2.2, 2.6);                // offset shadow
+  g.strokeText(text, 0, 0);
+  g.fillStyle = '#e8232a'; g.fillText(text, 0, 0);
+  g.lineWidth = 0.8; g.strokeStyle = '#fff4a0'; g.strokeText(text, -0.6, -0.6);   // a thin light edge on the letters
+  g.restore();
+}
+
 function drawShopFront(g) {
   drawSmeared(g, shopFront.c, loopX(SHOP.x), shopFront.top, shopFront.c.width, shopFront.c.height);
 }
@@ -1084,9 +1124,13 @@ const POOP_RECHARGE = SWOOP_RECHARGE / 2, DROP_GRAVITY = 320;
 const TARGETS = [];               // { x, y, w, h, hit(drop) } in world pixels
 const drops = [], sploshes = [], splashes = [];
 
+let comboT = 0;                   // seconds left on the SWOOP-AND-POOP! flash
+const COMBO_TIME = 1;
+
 function poop() {
   if (bird.poop < 1) return;
   bird.poop = 0;
+  if (bird.swooping) comboT = COMBO_TIME;
   drops.push({ x: bird.x - bird.face * 10, y: bird.y + 3, vx: bird.vx * 0.7, vy: Math.max(bird.vy, 0) * 0.7 + 15 });
 }
 
@@ -1198,6 +1242,7 @@ function update(dt) {
   while (trail.length && trail[0].life <= 0) trail.shift();
 
   blur += ((bird.swooping ? 1 : 0) - blur) * Math.min(1, (bird.swooping ? 6 : 3) * dt);
+  comboT = Math.max(0, comboT - dt);
 
   const target = bird.x - W * 0.42 + bird.face * W * 0.06 + clamp(bird.vx * 0.25, -60, 60);
   cam += (target - cam) * Math.min(1, 3 * dt);
@@ -1345,6 +1390,7 @@ function draw() {
   drawMagpie(fctx, pose);
   if (bird.inside) drawShopFront(fctx);                          // inside: we see him through the glass
   drawLootAndBubbles(fctx);
+  drawCombo(fctx);
 }
 
 // ---------------------------------------------------------------------------

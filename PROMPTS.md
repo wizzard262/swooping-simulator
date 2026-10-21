@@ -157,8 +157,12 @@
 
 - Make the legs flap less, and only at an angle of 15 degrees
 
+## 28. SWOOP-AND-POOP!
+
+- If he swoops and poops at the same time, flash "SWOOP-AND-POOP!" in Roy Lichtenstein pop-art lettering for 1 second, fading out
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 95 min so far | Prompts 1–27: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop |
+| 1 | 2026-10-21 | about 100 min so far | Prompts 1–28: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP! |
