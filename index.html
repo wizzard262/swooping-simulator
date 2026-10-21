@@ -8,12 +8,14 @@
   html, body { margin: 0; height: 100%; background: #0d1b2a; overflow: hidden; touch-action: none; }
   canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; object-fit: contain; }
   #game { image-rendering: crisp-edges; image-rendering: pixelated; }
-  #prompts {
-    position: fixed; top: 3px; right: 6px;
+  #prompts, #shots {
+    position: fixed; right: 6px;
     font: 10px/1 monospace; color: rgba(255, 255, 255, .75);
     text-decoration: none; text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
   }
-  #prompts:hover { color: #fff; text-decoration: underline; }
+  #prompts { top: 3px; }
+  #shots { top: 16px; }
+  #prompts:hover, #shots:hover { color: #fff; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -22,6 +24,7 @@
 <canvas id="game"></canvas>
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
+<a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
 <script>
 'use strict';
 
@@ -787,6 +790,7 @@ function buildGround() {
   p.px(sx, sy, '#1c1c1c', 35, 17); p.px(sx + 1, sy + 1, '#f2c230', 33, 15);
   glyphs('SWOOPING', sx + 2, sy + 2, 1, (x, y) => p.px(x, y, '#1c1c1c'));
   glyphs('MAGPIES', sx + 4, sy + 9, 1, (x, y) => p.px(x, y, '#1c1c1c'));
+  shopInterior(p, r);
   return { P, c: p.c };
 }
 
@@ -840,7 +844,7 @@ function foldedWing(g) {
   for (const [y0, y1] of [[-4, -1], [0, 1.5], [3, 3.5]]) { g.beginPath(); g.moveTo(-12, y0); g.lineTo(-38, y1); g.stroke(); }
 }
 
-function head(g) {
+function head(g, drunk) {
   blob(g, '#141418', () => g.ellipse(-7, 5, 11, 9, -0.5, 0, Math.PI * 2));          // neck
   blob(g, blackFill(g, 0, 0, 11), () => g.arc(0, 0, 11, 0, Math.PI * 2));
   blob(g, whiteFill(g, -9, 2, 9), () => {                                            // white nape
@@ -856,6 +860,21 @@ function head(g) {
   blob(g, '#a3301c', () => g.arc(3, -3, 2.4, 0, Math.PI * 2));                      // eye
   blob(g, '#130808', () => g.arc(3.3, -3, 1.2, 0, Math.PI * 2));
   blob(g, '#ffffff', () => g.arc(2.6, -3.8, 0.6, 0, Math.PI * 2));
+  if (drunk) {                                                                        // bright red eye with a flare
+    const pulse = 1 + 0.25 * Math.sin(time * 9);
+    blob(g, '#ff2414', () => g.arc(3, -3, 2.6, 0, Math.PI * 2));
+    blob(g, '#ffd0c0', () => g.arc(2.5, -3.6, 0.7, 0, Math.PI * 2));
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const glow = g.createRadialGradient(3, -3, 0, 3, -3, 9 * pulse);
+    glow.addColorStop(0, 'rgba(255,80,50,0.9)'); glow.addColorStop(1, 'rgba(255,30,10,0)');
+    blob(g, glow, () => g.arc(3, -3, 9 * pulse, 0, Math.PI * 2));
+    for (const [rx, ry] of [[15 * pulse, 0.7], [0.7, 10 * pulse]]) {
+      const st = g.createRadialGradient(3, -3, 0, 3, -3, Math.max(rx, ry));
+      st.addColorStop(0, 'rgba(255,200,180,0.9)'); st.addColorStop(1, 'rgba(255,60,30,0)');
+      blob(g, st, () => g.ellipse(3, -3, rx, ry, 0.3, 0, Math.PI * 2));
+    }
+    g.restore();
+  }
   g.beginPath(); g.arc(0, 0, 9.5, Math.PI * 1.05, Math.PI * 1.55);                  // sheen
   g.strokeStyle = 'rgba(130,150,200,0.35)'; g.lineWidth = 1.6; g.stroke();
 }
@@ -898,6 +917,7 @@ function drawMagpie(g, pose) {
   g.save();
   g.rotate(pose.pitch);
   afterburner(g, pose.burn || 0);
+  g.scale(1, Math.cos(pose.roll || 0));
   const spread = pose.wings !== 'folded';
   if (spread) spreadWing(g, pose.wings, true);
   const tailW = spread ? 1.35 : 1;                                         // tail: white base, black tip
@@ -911,8 +931,196 @@ function drawMagpie(g, pose) {
     g.quadraticCurveTo(6, -9, 18, -3);
   });
   if (spread) spreadWing(g, pose.wings, false); else foldedWing(g);
-  g.save(); g.translate(24, -9); g.rotate(pose.headPitch); head(g); g.restore();
+  g.save(); g.translate(24, -9); g.rotate(pose.headPitch); head(g, pose.drunk); g.restore();
   g.restore();
+}
+
+// ---------------------------------------------------------------------------
+// The bottle shop on the lawn: a BOTTLE-O in Dan Murphy's green, with the face on the sign.
+// The interior (shelves of bottles) is part of the ground layer, behind the magpie; the
+// front (sign, glass, posters) is drawn on top of him, so we see him fly through the glass.
+// ---------------------------------------------------------------------------
+const SHOP = { x: 1000, w: 150, roof: 84, ceil: 120, floor: 160 };
+const DM_GREEN = '#1f5b2c', DM_DARK = '#164622', DM_LINE = '#2a6d38', LIME = '#d4e62a';
+const shopSpan = x => mod(x - SHOP.x, LEVEL_W) < SHOP.w;
+
+// Inside: back wall, lights, shelves of bottles, a glowing fridge, a tiled floor. Drawn into the ground layer.
+function shopInterior(p, r) {
+  const { x, w, ceil, floor } = SHOP;
+  p.px(x - 6, floor, '#c9c4b8', w + 12, 6);                          // footpath in front
+  p.px(x - 6, floor + 6, '#a9a499', w + 12, 1);
+  p.px(x, ceil, '#d9d6cf', w, floor - ceil);                         // back wall
+  for (let i = 4; i < w - 4; i += 9) p.px(x + i, ceil + 1, '#fffbe8', 5, 1);   // ceiling lights
+  const glass = ['#7a1f2b', '#2f6b3a', '#b7701f', '#cfe0e6', '#3156a8', '#5a2a14', '#e2c25a'];
+  for (const sy of [131, 139, 147, 155]) {
+    p.px(x + 3, sy, '#8a8a8a', w - 34, 1);                            // shelf
+    for (let i = 4; i < w - 32; i += 2) {
+      const h = 3 + Math.floor(r() * 3);
+      p.px(x + i, sy - h, pick(r, glass), 1, h);
+      if (r() < 0.5) p.px(x + i, sy - h - 1, '#d8c070');                  // a cap
+    }
+  }
+  p.px(x + w - 28, ceil + 5, '#9fb2bd', 25, floor - ceil - 5);       // fridge
+  p.px(x + w - 27, ceil + 6, '#e9f6ff', 23, floor - ceil - 7);
+  for (const sy of [136, 145, 154]) for (let i = 0; i < 22; i += 3) p.px(x + w - 26 + i, sy - 3, r() < 0.5 ? '#1e56b5' : '#c9a227', 2, 3);
+  for (let i = 0; i < w; i += 6) p.px(x + i, floor - 1, '#b9b3a6', 5, 1);   // floor tiles
+}
+
+// The Dan Murphy's style face: a grinning man with slicked-back hair, white on green, woodcut
+// style. Drawn smoothly at 4x, then turned into white pixels.
+const FACE_W = 30, FACE_H = 40;
+function signFace(p, ox, oy) {
+  const S = 4, c = makeCanvas(FACE_W * S, FACE_H * S), g = c.getContext('2d');
+  g.scale(S * FACE_W / 26, S * FACE_H / 32); g.lineCap = g.lineJoin = 'round';   // drawn in a 26 x 32 box
+  const white = '#fff', green = '#000';
+  const line = (w, pts) => { g.lineWidth = w; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
+  g.fillStyle = white;
+  g.beginPath(); g.ellipse(13, 17, 9.5, 12.5, 0, 0, Math.PI * 2); g.fill();                 // head
+  g.beginPath(); g.ellipse(22.6, 17.5, 2.2, 3.6, 0.1, 0, Math.PI * 2); g.fill();            // ear
+  g.beginPath(); g.moveTo(8, 27); g.lineTo(18, 27); g.lineTo(19, 32); g.lineTo(7, 32); g.fill();   // neck
+  g.beginPath(); g.moveTo(1, 32); g.lineTo(9, 28); g.lineTo(12, 32); g.fill();               // collar
+  g.beginPath(); g.moveTo(25, 32); g.lineTo(17, 28); g.lineTo(14, 32); g.fill();
+  g.strokeStyle = green;
+  for (let k = 0; k < 3; k++) line(0.8, [[6 + k, 7.6 - k * 1.6], [12 + k * 2, 4.4 + k * 0.7], [20.5, 7 + k * 1.3]]);   // hair swept back
+  line(1.3, [[4.5, 10.5], [12, 8.6], [21.5, 10]]);                                            // hairline
+  line(1.4, [[5.8, 12.6], [10.6, 11.6]]); line(1.4, [[14.8, 11.6], [19.5, 12.8]]);            // brows
+  g.fillStyle = green;
+  for (const ex of [8.4, 16.9]) { g.beginPath(); g.ellipse(ex, 14.6, 1.7, 1.05, 0, 0, Math.PI * 2); g.fill(); }   // eyes
+  line(1.1, [[13.6, 13.5], [14.8, 19.2], [13.2, 20.4], [11, 20]]);                           // nose
+  line(1.1, [[9, 19.5], [7, 24]]); line(1.1, [[17.4, 19.5], [19.4, 24]]);                    // laugh lines
+  g.fillStyle = green;
+  g.beginPath(); g.moveTo(7, 22); g.quadraticCurveTo(13, 23.6, 19.2, 22); g.quadraticCurveTo(13.2, 30, 7, 22); g.fill();   // big grin
+  g.fillStyle = white;
+  g.beginPath(); g.moveTo(8.8, 23.2); g.quadraticCurveTo(13, 24.4, 17.6, 23.2); g.lineTo(16.8, 24.9); g.quadraticCurveTo(13, 25.9, 9.6, 24.9); g.fill();   // teeth
+  line(1, [[11, 29], [15, 29]]);                                                              // chin
+  line(0.9, [[22.2, 16], [21.8, 18.6]]);                                                      // inside the ear
+  line(1, [[9, 28.4], [13, 31.5], [17, 28.4]]);                                               // shirt opening
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  for (let y = 0; y < FACE_H; y++) for (let x = 0; x < FACE_W; x++) {
+    let lit = 0;
+    for (let j = 1; j < S; j += 2) for (let i = 1; i < S; i += 2) {
+      const o = ((y * S + j) * c.width + x * S + i) * 4;
+      if (d[o + 3] > 128 && d[o] > 128) lit++;
+    }
+    if (lit >= 2) p.px(ox + x, oy + y, '#f4f6f1');
+  }
+}
+
+// The front: drawn over the magpie
+function buildShopFront() {
+  const { w, roof, ceil, floor } = SHOP, top = roof - 4, p = painter(w, floor + 4 - top, false);
+  const Y = y => y - top;                                             // canvas rows start at the top of the sign
+  p.px(0, Y(roof), DM_GREEN, w, ceil - roof);                         // sign band, panelled
+  for (let i = 0; i < w; i += 6) p.px(i, Y(roof), DM_LINE, 1, ceil - roof);
+  p.px(0, Y(roof), '#2f7a42', w, 1);
+  p.px(0, Y(ceil) - 1, DM_DARK, w, 1);
+  p.px(8, Y(roof - 4), DM_GREEN, FACE_W + 6, 4);                      // the face pokes above the roof line
+  signFace(p, 11, Y(roof - 4));
+  glyphs('BOTTLE-O', 60, Y(roof + 13), 2, (x, y, s) => p.px(x, y, '#f4f6f1', s, s));
+  // Glass: a faint tint with a few highlight pixels; white frames
+  p.px(0, Y(ceil), 'rgba(80,165,235,0.45)', w, floor - ceil);        // blue glass
+  const gr = rng(4);
+  for (let n = 0; n < 16; n++) {                                      // little highlight streaks on the glass
+    const gx = 4 + gr() * (w - 14), gy = 7 + gr() * (floor - ceil - 18), len = 2 + Math.floor(gr() * 4);
+    for (let k = 0; k < len; k++) p.px(gx + k, Y(ceil) + gy + len - k, 'rgba(255,255,255,0.8)');
+    if (gr() < 0.6) for (let k = 0; k < len - 1; k++) p.px(gx + k + 3, Y(ceil) + gy + len + 4 - k, 'rgba(255,255,255,0.5)');
+  }
+  for (let n = 0; n < 20; n++) p.px(3 + gr() * (w - 6), Y(ceil) + 6 + gr() * (floor - ceil - 9), 'rgba(235,250,255,0.7)');   // specks
+  for (let i = 0; i <= w; i += 25) p.px(Math.min(i, w - 1), Y(ceil), '#e6e8e6', 1, floor - ceil);
+  p.px(0, Y(ceil) + 5, '#e6e8e6', w, 1);                             // transom
+  p.px(58, Y(ceil) + 6, DM_GREEN, 34, 6);                             // the green header over the doors
+  glyphs('BOTTLE-O', 60, Y(ceil) + 6, 1, (x, y) => p.px(x, y, '#f4f6f1'));
+  for (const px0 of [3, w - 19]) {                                    // lime "direct to boot" posters
+    p.px(px0, Y(ceil) + 9, LIME, 16, 28);
+    p.px(px0 + 3, Y(ceil) + 16, DM_DARK, 7, 2); p.px(px0 + 3, Y(ceil) + 20, DM_DARK, 9, 2); p.px(px0 + 3, Y(ceil) + 24, DM_DARK, 6, 2);
+    for (let k = 0; k < 5; k++) p.px(px0 + 11 + (k < 3 ? k : 4 - k), Y(ceil) + 28 + k, DM_DARK);   // arrow
+  }
+  p.px(0, Y(roof), DM_DARK, 3, floor - roof);                         // corner pillars
+  p.px(w - 3, Y(roof), DM_DARK, 3, floor - roof);
+  p.px(0, Y(floor) - 3, '#d5d7d2', w, 3);                             // kick plate
+  p.px(78, Y(ceil) - 3, '#9aa0a2', w - 78, 3);                        // awning
+  p.px(78, Y(ceil), 'rgba(0,0,0,0.15)', w - 78, 2);
+  return { c: p.c, top };
+}
+
+// Pixel sprites for what falls out: a blue Foster's can with its red F, and a square
+// Johnnie Walker Red Label bottle with its slanted red label and gold striding man
+const LOOT_ART = {
+  can: { rows: ['ssssss', 'BBBBBB', 'BWWWWB', 'BWRRRB', 'BWRWWB', 'BWRRWB', 'BWRWWB', 'BWWWWB', 'BYYYYB', 'BBBBBB', 'ssssss'],
+    pal: { s: '#c9ccd0', B: '#1e56b5', W: '#f4f4f4', R: '#d22b2b', Y: '#e8c13a' } },
+  bottle: { rows: ['..rr..', '..rr..', '..aa..', '..aa..', '.aaaa.', 'aaaaaa', 'aaaaaa', 'aaakkk', 'arrrrr', 'rrryrr', 'rryyrr', 'rrryrr', 'rrrrra', 'aaaaaa', 'aaaaaa', 'AAAAAA'],
+    pal: { r: '#c8102e', a: '#c27a2c', k: '#141414', y: '#e8b84a', A: '#7a4010' } }
+};
+const lootSprites = {};
+for (const [name, art] of Object.entries(LOOT_ART)) {
+  const c = makeCanvas(art.rows[0].length, art.rows.length), g = c.getContext('2d');
+  art.rows.forEach((row, y) => [...row].forEach((ch, x) => { if (art.pal[ch]) { g.fillStyle = art.pal[ch]; g.fillRect(x, y, 1, 1); } }));
+  lootSprites[name] = c;
+}
+
+const loot = [], bubbles = [];
+const DRUNK_TIME = 10, ROLL_TIME = 0.9, LOOT_TIME = 4;
+
+// Out the other side: bottles and cans tumble out of the door, and the magpie does a barrel roll and goes wobbly
+function leaveShop(exitRight) {
+  const ex = SHOP.x + (exitRight ? SHOP.w + 2 : -2), dir = exitRight ? 1 : -1;
+  for (let i = 0; i < 10; i++)
+    loot.push({ type: i % 3 ? 'can' : 'bottle', x: ex, y: 146 + Math.random() * 10, vx: dir * (30 + Math.random() * 70), vy: -40 - Math.random() * 60,
+      rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, rest: 162 + Math.random() * 6, life: LOOT_TIME });
+  bird.drunk = DRUNK_TIME;
+  bird.roll = ROLL_TIME;
+}
+
+function updateShopAndDrunk(dt) {
+  for (const l of loot) {
+    l.life -= dt;
+    if (l.y < l.rest || l.vy < 0) {
+      l.vy += 320 * dt; l.x += l.vx * dt; l.y += l.vy * dt; l.rot += l.vr * dt;
+      if (l.y >= l.rest && l.vy > 0) { l.y = l.rest; l.vy = Math.abs(l.vy) > 40 ? -l.vy * 0.3 : 0; l.vx *= 0.5; l.vr *= 0.5; }
+    }
+  }
+  for (let i = loot.length - 1; i >= 0; i--) if (loot[i].life <= 0) loot.splice(i, 1);
+
+  bird.roll = Math.max(0, bird.roll - dt);
+  if (bird.drunk > 0) {
+    bird.drunk = Math.max(0, bird.drunk - dt);
+    if (!bird.grounded) {                                             // erratic flight
+      bird.vx += (Math.sin(time * 2.3) * 140 + (Math.random() - 0.5) * 500) * dt;
+      bird.vy += (Math.cos(time * 3.7) * 180 + (Math.random() - 0.5) * 500) * dt;
+    }
+    if (Math.random() < dt * 9)
+      bubbles.push({ x: bird.x + bird.face * 7, y: bird.y - 5, vy: -14 - Math.random() * 14, r: 0.7 + Math.random() * 0.9, phase: Math.random() * 6, life: 1.6 });
+  }
+  for (const b of bubbles) { b.life -= dt; b.y += b.vy * dt; b.x += Math.sin(time * 5 + b.phase) * 6 * dt; }
+  for (let i = bubbles.length - 1; i >= 0; i--) if (bubbles[i].life <= 0) bubbles.splice(i, 1);
+}
+
+function drawLootAndBubbles(g) {
+  g.imageSmoothingEnabled = false;
+  for (const l of loot) {
+    const img = lootSprites[l.type];
+    g.globalAlpha = Math.min(1, l.life / 1.5);
+    g.setTransform(K * 1.5, 0, 0, K * 1.5, loopX(l.x) * K, l.y * K);   // a little bigger than the scenery pixels
+    g.rotate(l.rot);
+    g.drawImage(img, -img.width / 2, -img.height / 2);
+  }
+  g.globalAlpha = 1;
+  for (const b of bubbles) {
+    g.setTransform(K, 0, 0, K, loopX(b.x) * K, b.y * K);
+    g.globalAlpha = Math.min(1, b.life / 0.6);
+    g.beginPath(); g.arc(0, 0, b.r, 0, Math.PI * 2);
+    g.fillStyle = 'rgba(220,240,255,0.25)'; g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 0.22; g.stroke();
+    g.beginPath(); g.arc(-b.r * 0.35, -b.r * 0.35, b.r * 0.25, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill();
+  }
+  g.globalAlpha = 1;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function drawShopFront(g) {
+  g.imageSmoothingEnabled = false;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(shopFront.c, Math.round(loopX(SHOP.x) * K), Math.round(shopFront.top * K), shopFront.c.width * K, shopFront.c.height * K);
 }
 
 // ---------------------------------------------------------------------------
@@ -951,7 +1159,7 @@ function begin() { if (!started) { started = true; startedAt = time; } }
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1 };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0 };
 
 // Pooping: P drops a white teardrop. It takes a full poop bar, which fills at half the
 // swoop bar's speed (20 seconds). Drops splosh on whatever they hit: the lawn for now;
@@ -990,10 +1198,11 @@ function updateDrops(dt) {
 let cam = bird.x - SCREEN * 0.42, time = 0, distance = 0, lap = 1, lapFlash = 0;
 const trail = [];
 let blur = 0;                     // 0 to 1: how much the screen is smeared by a swoop
-let sunHi, clouds, hills, backStreets, suburb, ground;
+let sunHi, clouds, hills, backStreets, suburb, ground, shopFront;
 
 function controls() {
   const c = { ...keys };
+  if (bird.drunk > 0 && Math.sin(time * 1.3) > 0.55) [c.left, c.right] = [c.right, c.left];   // drunk: left and right swap now and then
   if (touch) {
     const dx = touch.x - (bird.x - cam), dy = touch.y - bird.y;
     if (dx < -8) c.left = true; if (dx > 8) c.right = true;
@@ -1016,6 +1225,9 @@ function update(dt) {
   bird.charge = clamp(bird.charge + (bird.swooping ? -SWOOP_DRAIN : SWOOP_RECHARGE) * dt, 0, 1);
   bird.poop = Math.min(1, bird.poop + POOP_RECHARGE * dt);
   updateDrops(dt);
+  updateShopAndDrunk(dt);
+  const floor = (shopSpan(bird.x) && !bird.inside ? SHOP.roof : LAND_Y) - FEET;   // on the shop roof, or the lawn
+  if (bird.grounded && bird.y < floor - 0.5) bird.grounded = false;                // walked off the roof
 
   if (bird.swooping) {
     // Swoop: straight and fast; up or down angles the dive 30 degrees
@@ -1024,7 +1236,7 @@ function update(dt) {
     bird.vy = SWOOP_SPEED * Math.sin(a);
     bird.y += bird.vy * dt;
     if (bird.y < TOP_Y) bird.y = TOP_Y;
-    if (bird.y > LAND_Y - FEET) bird.y = LAND_Y - FEET;            // skims along the lawn
+    if (bird.y > floor) bird.y = floor;                              // skims along the lawn (or the roof)
   } else if (bird.grounded) {
     bird.vx = dirX * WALK;
     if (dirX) bird.walkT += dt;
@@ -1041,11 +1253,19 @@ function update(dt) {
     bird.vy = Math.max(bird.vy, -MAX_CLIMB);
     bird.y += bird.vy * dt;
     if (bird.y < TOP_Y) { bird.y = TOP_Y; bird.vy = Math.max(0, bird.vy); }
-    if (bird.y >= LAND_Y - FEET) { bird.y = LAND_Y - FEET; bird.vy = 0; bird.grounded = true; bird.walkT = 0; }
+    if (bird.y >= floor) { bird.y = floor; bird.vy = 0; bird.grounded = true; bird.walkT = 0; }
   }
   if (!bird.grounded) bird.flapT += dt * (bird.swooping ? 0 : c.up ? 14 : dirX ? 8 : 0);
   bird.x += bird.vx * dt;
   distance += Math.abs(bird.x - x0);
+
+  // The bottle shop: come in from the side below the roof line and you're inside, under the
+  // ceiling; leave by either side and the fun starts
+  const nowIn = shopSpan(bird.x);
+  if (nowIn && !bird.wasIn) bird.inside = bird.y > SHOP.roof - 2;
+  if (!nowIn && bird.wasIn && bird.inside) { bird.inside = false; leaveShop(mod(bird.x - SHOP.x, LEVEL_W) < LEVEL_W / 2); }
+  if (nowIn && bird.inside && bird.y < SHOP.ceil + 7) { bird.y += (SHOP.ceil + 7 - bird.y) * Math.min(1, 12 * dt); bird.vy = Math.max(0, bird.vy); }
+  bird.wasIn = nowIn;
 
   // Up and down tilt the magpie 30 degrees; it eases between angles
   const targetPitch = bird.grounded ? 0 : dirY * TILT;
@@ -1068,6 +1288,14 @@ function update(dt) {
 }
 
 function magpiePose() {
+  const pose = basePose();
+  pose.roll = bird.roll > 0 ? (1 - bird.roll / ROLL_TIME) * Math.PI * 2 : 0;    // barrel roll: a full turn about his body
+  pose.drunk = bird.drunk > 0;
+  if (pose.drunk) pose.pitch += Math.sin(time * 7) * 0.18;
+  return pose;
+}
+
+function basePose() {
   const c = controls();
   if (bird.grounded) {
     const walking = bird.vx !== 0;
@@ -1190,9 +1418,12 @@ function draw() {
   fctx.setTransform(1, 0, 0, 1, 0, 0);
   fctx.clearRect(0, 0, front.width, front.height);
   drawPoop(fctx);
+  if (!bird.inside) drawShopFront(fctx);                         // outside: the shop is behind him
   const pose = magpiePose();
   fctx.setTransform(K * BIRD_SCALE * bird.face, 0, 0, K * BIRD_SCALE, (bird.x - cam) * K, (bird.y + pose.bob * BIRD_SCALE) * K);
   drawMagpie(fctx, pose);
+  if (bird.inside) drawShopFront(fctx);                          // inside: we see him through the glass
+  drawLootAndBubbles(fctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -1214,6 +1445,7 @@ hills = buildHills();
 backStreets = BACK_STREETS.map(buildBackStreet);
 suburb = buildSuburb();
 ground = buildGround();
+shopFront = buildShopFront();
 resize();
 addEventListener('resize', resize);
 isTouch = matchMedia('(pointer: coarse)').matches;

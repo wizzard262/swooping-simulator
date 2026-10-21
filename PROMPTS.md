@@ -106,8 +106,27 @@
 
 - Remove the suburb's back buildings when we get to the bridge and the Opera House
 
+## 18. The BOTTLE-O
+
+- At ground level, a Dan Murphy's style bottle shop (picture in `prompt-art/04-dan-murphys-shop.png`)
+  - A big sign says BOTTLE-O, but the colours and style are obviously Dan Murphy's, with the face in pixel art
+  - A glass front; the bird can fly through it fairly easily from either direction, and we can see him do it. The glass is typical pixel-art glass: a few little highlight pixels, and tinted
+- When the bird flies through, as he leaves, a few bottles and cans of Foster's and Johnnie Walker fall out of the door, then fade and disappear in about 4 seconds
+- He does a 360 about his own axis (a barrel roll, not a loop the loop)
+- For 10 seconds his flying is erratic, small bubbles rise off him, and his eyes are bright red with a flare around them
+
+## 19. Pictures and screenshots
+
+- Do you need me to send the Sun King and magpie pictures again? (Yes: pictures pasted now are saved as files, the earlier ones weren't)
+- Under the prompts link, add a **screenshots** link: a page listing the screenshots in order, top to bottom, as the game evolves
+
+## 20. Shop tweaks
+
+- Make the shop glass bluer with more of those little highlight pixels
+- Make the bottles and cans bigger, and more obviously Foster's and Johnnie Walker Red Label
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 60 min so far | Prompts 1–17: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour |
+| 1 | 2026-10-21 | about 75 min so far | Prompts 1–20: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page |
