@@ -1529,7 +1529,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistDepth: 0, onRoo: false, rooAt: 0 };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, onRoo: false, rooAt: 0 };
 
 // Stunts: B for a barrel roll (a full turn about his body), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
@@ -1667,7 +1667,7 @@ function update(dt) {
   } else if (bird.grounded) {
     bird.vx = dirX * WALK;
     if (dirX) bird.walkT += dt;
-    if (c.up) { bird.grounded = false; bird.vy = -60; bird.onRoo = false; if (bird.onHoist) { bird.onHoist = false; bird.vx = HOIST.spin * bird.hoistR * -Math.sin(HOIST.angle + bird.hoistAt) * 0.8; } }
+    if (c.up) { bird.grounded = false; bird.vy = -60; bird.onRoo = false; if (bird.onHoist) { bird.onHoist = false; bird.vx = bird.face * HOIST.spin * 20; } }   // off the hoist: flung the way he's facing
   }
   if (!bird.grounded && !bird.swooping) {
     const maxX = c.down ? MAX_X_DIVE : MAX_X;
@@ -1685,7 +1685,7 @@ function update(dt) {
       if (overRoo && floorTop === rooTop()) { bird.onRoo = true; bird.rooAt = clamp(rooDx(bird.x), -6, 6); }   // landed on the kangaroo
       else if (floorTop === HOIST.top) {                               // landed on the Hills Hoist: hop on for a ride
         const dx = clamp(hoistDx(bird.x), -HOIST.r, HOIST.r);
-        bird.onHoist = true; bird.hoistR = Math.abs(dx); bird.hoistAt = (dx >= 0 ? 0 : Math.PI) - HOIST.angle;
+        bird.onHoist = true; bird.hoistR = Math.abs(dx); bird.hoistAt = (bird.face > 0 ? 0 : Math.PI) - HOIST.angle;   // starts facing the way he landed
       }
     }
   }
@@ -1710,13 +1710,11 @@ function update(dt) {
     bird.y = rooTop() - FEET; bird.vx = 0; bird.face = ROO.dir;
   }
   updateHoist(dt);
-  if (bird.onHoist) {                                                // riding the hoist round
-    const a = HOIST.angle + bird.hoistAt;
-    bird.x = HOIST.x + Math.round((bird.x - HOIST.x) / LEVEL_W) * LEVEL_W + Math.cos(a) * bird.hoistR;
-    bird.y = HOIST.top - FEET + Math.sin(a) * 1.5;
+  if (bird.onHoist) {                                                // on the hoist: he stays put and turns round with it
+    bird.y = HOIST.top - FEET;
     bird.vx = 0;
-    if (HOIST.spin > 0.05) bird.face = -Math.sin(a) >= 0 ? 1 : -1;   // he turns with it, facing the way he's carried
-    bird.hoistDepth = Math.sin(a);                                     // nearer or further round
+    bird.hoistTurn = Math.cos(HOIST.angle + bird.hoistAt);             // 1 facing right, -1 facing left, between = turning
+    bird.face = bird.hoistTurn >= 0 ? 1 : -1;
   }
 
   // Up and down tilt the magpie 30 degrees; it eases between angles
@@ -1900,7 +1898,8 @@ function draw() {
   const pose = magpiePose();
   // A barrel roll corkscrews: he swings up and round the line of flight, smaller on the far side
   const ra = pose.roll || 0, cork = Math.sin(ra) * 8;
-  const depth = (1 - 0.18 * (1 - Math.cos(ra)) / 2) * (bird.onHoist ? 0.92 + 0.08 * bird.hoistDepth : 1);   // smaller on the far side of the hoist
+  const depth = 1 - 0.18 * (1 - Math.cos(ra)) / 2;
+  const turn = bird.onHoist ? Math.sign(bird.hoistTurn || 1) * Math.max(0.2, Math.abs(bird.hoistTurn)) : bird.face;   // turning on the hoist
   // Slightly pixelated: he's drawn at 1/BIRD_PIX of the screen's resolution, then scaled up
   const sc = K * BIRD_SCALE * depth / BIRD_PIX;
   bbctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1912,7 +1911,7 @@ function draw() {
     drawKangaroo(bbctx);
     crispen(bbctx, rx * K / BIRD_PIX, (ROO.ground - 14 - rooHeight()) * K / BIRD_PIX, Math.ceil(48 * K / BIRD_PIX / 2));
   }
-  bbctx.setTransform(sc * bird.face, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.3) * K / BIRD_PIX, (bird.y - cork + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
+  bbctx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.3) * K / BIRD_PIX, (bird.y - cork + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
   drawMagpie(bbctx, pose);
   crispen(bbctx, (bird.x - cam) * K / BIRD_PIX, bird.y * K / BIRD_PIX, Math.ceil(80 * K / BIRD_PIX / 4) * 2);
   fctx.setTransform(1, 0, 0, 1, 0, 0);
