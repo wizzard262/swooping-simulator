@@ -16,7 +16,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - A cyclist rides along the lawn with 4 short cable ties fanned round his helmet like spokes: poop him and he wobbles, shakes his fist, rings his bell and shouts "Oi!"; swoop him and the cable ties spike you
 - Hang about under the big gum for 3 seconds and a drop bear drops on you, then climbs back into the leaves
 - Land on the postie or the ferry and ride along with them
-- A possum is out on the power line between two houses about a third of the time, scurrying back and forth and stopping for a rest; a screeching flock of cockatoos wheels across the sky; tiny bridge climbers cross the Harbour Bridge (poop on them and they jump up and down swearing: #!$?)
+- A possum is out on the power line between two houses about a third of the time, scurrying back and forth and stopping for a rest (poop on him and he spins round and round the wire for 3 seconds); a screeching flock of cockatoos wheels across the sky; tiny bridge climbers cross the Harbour Bridge (poop on them and they jump up and down swearing: #!$?)
 - Every few minutes a summer storm rolls in: dark sky, rain, lightning and thunder, then a rainbow
 - Score points for knocking things over, poops on target, stunts and rides; quick ones in a row build a combo (up to x5); your high score is remembered. You lose 100 points (a red minus) for swooping the cyclist, landing on the barbecue or getting drop-beared, and the score can go below zero
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
@@ -26,7 +26,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - The game fills the browser's width (a black bar below it in tall windows)
 - Poop during a swoop for a pop-art SWOOP-AND-POOP! above the magpie, loop during one for SWOOP-AND-LOOP!, or barrel roll during one for BARREL SWOOP!
 - Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 5 seconds
-- Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out, he does a barrel roll, and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery
+- Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out, he barrel-rolls out with a pop-art BEER-BARREL!, and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery
 - The magpie drifts down slowly under gravity, lands softly on the lawn and walks along it
 - Touch screens: hold where you want the magpie to go; tap quickly to start or stop a swoop; tap with a second finger to poop
 

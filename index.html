@@ -35,7 +35,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v57</div>
+<div id="ver" title="Version: one for each update published">v58</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -1027,6 +1027,7 @@ function leaveShop(exitRight) {
   }
   bird.drunk = DRUNK_TIME;
   bird.roll = ROLL_TIME;
+  showCombo('BEER-BARREL!');                                         // barrel-rolling out of the BOTTLE-O
 }
 
 function updateShopAndDrunk(dt) {
@@ -2040,7 +2041,8 @@ function wireY(x) {                                                  // the sag 
   const t = clamp((x - WIRE.x0) / (WIRE.x1 - WIRE.x0), 0, 1);
   return Math.round(WIRE.top + 1 + 3 * 4 * t * (1 - t));
 }
-const POSSUM = { in: 8, x: 0, dir: 1, visit: 0, pause: 0 };   // out on the wire about a third of the time
+const POSSUM = { in: 8, x: 0, dir: 1, visit: 0, pause: 0, spin: 0 };   // out on the wire about a third of the time; spin: pooped, whirling round the wire
+const POSSUM_SPIN = 3;
 const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, sting: 0, ties: 4, ground: 170, crank: 0 };   // ties: always on his helmet
 const CYCLIST_SCALE = 0.6;        // a bit taller than the kangaroo
 const DROPBEAR = { state: 'hidden', x: 0, y: 0, vy: 0, t: 0, under: 0 };
@@ -2085,7 +2087,8 @@ function updateMore(dt) {
   // turning back at the poles), then is gone for twice as long: out about a third of the time
   if (POSSUM.visit > 0) {
     POSSUM.visit -= dt;
-    if (POSSUM.pause > 0) POSSUM.pause -= dt;
+    if (POSSUM.spin > 0) POSSUM.spin = Math.max(0, POSSUM.spin - dt);   // whirling round the wire: going nowhere
+    else if (POSSUM.pause > 0) POSSUM.pause -= dt;
     else {
       POSSUM.x += POSSUM.dir * 12 * dt;
       if (Math.random() < dt * 0.4) POSSUM.pause = 1 + Math.random() * 2.5;
@@ -2223,13 +2226,29 @@ function drawClimberBubble() {
 }
 
 // Drawing: possum on the wire (front street layer)
+// Poop on the possum and he whirls round and round the wire for 3 seconds
+const possumSx = () => mod(Math.round(POSSUM.x) - Math.round(cam * PARALLAX.suburb), suburb.P);
+function possumHitBy(sx, y) {
+  if (POSSUM.visit <= 0 || POSSUM.spin > 0) return false;
+  const dx = mod(sx - possumSx() + suburb.P / 2, suburb.P) - suburb.P / 2, wy = wireY(POSSUM.x);
+  return Math.abs(dx) < 5 && y >= wy - 6 && y <= wy + 1;
+}
+function spinPossum() {
+  POSSUM.spin = POSSUM_SPIN; POSSUM.visit = Math.max(POSSUM.visit, POSSUM_SPIN + 3);
+  Sound.boing(); award(80, cam + possumSx(), wireY(POSSUM.x) - 6);
+}
+
 function drawPossum(g) {
   if (POSSUM.visit <= 0) return;
-  const P = suburb.P, sx0 = mod(Math.round(POSSUM.x) - Math.round(cam * PARALLAX.suburb), P), y = wireY(POSSUM.x);
-  const leg = POSSUM.pause > 0 ? 0 : Math.floor(time * 10) % 2, d = POSSUM.dir;
+  const P = suburb.P, sx0 = possumSx(), y = wireY(POSSUM.x);
+  const leg = POSSUM.pause > 0 || POSSUM.spin > 0 ? 0 : Math.floor(time * 10) % 2, d = POSSUM.dir;
+  const k = POSSUM.spin / POSSUM_SPIN, turn = Math.cos(3 * Math.PI * 2 * (1 - k * k));   // three turns round the wire, slowing down; seen side on
   for (let sx = sx0 - P; sx < W + P; sx += P) {
     if (sx < -10 || sx > W + 10) continue;
-    const px = (x, yy, w, h, c) => { g.fillStyle = c; g.fillRect(sx + (d > 0 ? x : -x - w + 1), y + yy, w, h); };
+    const px = (x, yy, w, h, c) => {                                  // each row swung round the wire (over the top, then hanging under it)
+      g.fillStyle = c;
+      for (let r = 0; r < h; r++) g.fillRect(sx + (d > 0 ? x : -x - w + 1), y + Math.round((yy + r) * turn), w, 1);
+    };
     px(-5, -2, 2, 1, '#2a2a2a'); px(-6, -1, 1, 2, '#2a2a2a'); px(-5, 1, 1, 1, '#2a2a2a');   // bushy black tail, curling
     px(-3, -3, 4, 2, '#8a8f96'); px(1, -4, 2, 2, '#9aa0a6'); px(3, -3, 1, 1, '#e8a0a8');   // body, head, pink nose
     px(1, -5, 1, 1, '#5a5f66');                                                            // ear
@@ -2466,6 +2485,7 @@ function updateDrops(dt) {
     if (target) { d.done = true; target.hit(d); splosh(d.x, d.y); }
     else if (climbersHitBy(loopX(d.x), d.y)) { d.done = true; hitClimbers(); }   // splat on the bridge climbers
     else if (postieHitBy(loopX(d.x), d.y)) { d.done = true; knockPostie(); }       // splat on the postie
+    else if (possumHitBy(loopX(d.x), d.y)) { d.done = true; spinPossum(); }        // splat on the possum
     else if (d.y >= LAND_Y + 1) { d.done = true; splosh(d.x, LAND_Y + 1); }
   }
   for (let i = drops.length - 1; i >= 0; i--) if (drops[i].done) drops.splice(i, 1);
