@@ -13,6 +13,12 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - A big gum tree to perch on, with a koala climbing the trunk and central branch up into the canopy and a kookaburra on top: swoop into the kookaburra or poop on him and he tumbles down, sees stars, then flies back up laughing (he also laughs now and then while you can see him)
 - A bloke at his barbie flipping burgers (poop on the hot plate and it sizzles): land on the hot plate and you smoke, go red and get flung off with a sizzle and a scream, tumbling over and over to land on your back with your legs waving
 - The postie rides his motorbike along the front street, stopping at letterboxes; an Aussie flag flaps in one front yard; a green-and-cream ferry crosses the harbour back and forth, and now and then a shark fin cruises past
+- A cyclist rides along the lawn: swoop or poop him and he wobbles, shakes his fist, rings his bell, shouts "Oi!" and sticks more cable ties on his helmet
+- Hang about under the big gum for 3 seconds and a drop bear drops on you, then climbs back into the leaves
+- Land on the postie or the ferry and ride along with them
+- A possum runs along the power line now and then; a screeching flock of cockatoos wheels across the sky; tiny bridge climbers cross the Harbour Bridge
+- Every few minutes a summer storm rolls in: dark sky, rain, lightning and thunder, then a rainbow
+- Score points for knocking things over, poops on target, stunts and rides; quick ones in a row build a combo (up to x5); your high score is remembered
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
 - B for a corkscrew barrel roll, L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
@@ -41,7 +47,7 @@ Standard layout (Xbox, PlayStation and similar). Press any button once after plu
 ## How it's made
 
 - One HTML page, plain JavaScript and the 2D canvas (no WebGL)
-- Sound made in code with Web Audio: the swoop's afterburner roar, poop plop and splosh, clanging cans, hiccups, the magpie's carol, a sizzle, a kookaburra laugh, doiiinggg, and a background of breeze, cicadas and a didgeridoo
+- Sound made in code with Web Audio: the swoop's afterburner roar, poop plop and splosh, clanging cans, hiccups, the magpie's carol, a sizzle, a kookaburra laugh, doiiinggg, a bike bell and an "Oi!", a drop bear's growl, screeching cockatoos, rain and thunder, and a background of breeze, cicadas and a didgeridoo
 - The scenery is pixel art drawn in code at 180 pixels high and scaled up; the magpie is drawn smoothly at about 3/4 of a scenery pixel (a little pixelated), and the sun is a photo of the Sun King emblem (supplied with the prompts), cut out of its background and embedded in the page
 - The level is 6 screens wide and loops round, with 8 parallax layers: lawn, the front street, 3 back streets that tier off into the distance, hills (Sydney Harbour Bridge, Opera House, Uluru) and billowy clouds. The sun moves slowest of all
 - [screenshots/](screenshots/): numbered screenshots of the game as it was built, shown in order on `screenshots.html` (linked in the game, top right)

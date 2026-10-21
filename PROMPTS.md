@@ -401,8 +401,19 @@
 
 - The koala should go along the central branch, up to the tree's canopy
 
+## 82. More ideas
+
+- Give me some more good ideas to put in, Australian ones especially
+  - Picked: a cyclist in a helmet to swoop, a score with combos, weather (storms), cockatoos, a possum on the power line, a beach with lifesavers, a drop bear
+- The drop bear drops if you stay under the tree; it can't be seen until it drops, then it climbs back up and disappears into the canopy
+- The possum is small, in the background with the front row of houses: add a power line
+- Make the postie rideable, so the magpie can ride on him; the ferry the same
+- A few tiny bridge-climber figures moving slowly across the bridge
+- Remove the beach and the shark alarm
+- The cyclist needs to be as big as the kangaroo
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 300 min so far | Prompts 1–81: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry |
+| 1 | 2026-10-21 | about 320 min so far | Prompts 1–82: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score |
