@@ -548,6 +548,7 @@ function letterbox(p, r, x) {
 function buildSuburb() {
   const P = LEVEL_W * PARALLAX.suburb, p = painter(P, H, true), r = rng(2024);
   const lots = 8, lotW = P / lots;
+  let movedHoist = false;
   for (let i = 0; i < lots; i++) {
     const lx = i * lotW;
     if (i === 5) {                                    // a little park
@@ -560,7 +561,11 @@ function buildSuburb() {
     }
     if (r() < 0.75) tree(p, r, lx + 10 + r() * (lotW - 20), SUBURB_BASE - 2, 50 + r() * 28, pick(r, ['gum', 'gum', 'jacaranda', 'leafy']));
     const w = 60 + Math.floor(r() * 16), hx = lx + 10 + Math.floor(r() * (lotW - w - 20));
-    if (r() < 0.45) hillsHoist(p, hx - lx > lotW / 2 - w / 2 ? hx - 14 : hx + w + 14);
+    // A backyard Hills Hoist in some yards; any that would sit under the power line (lots 3 and 4)
+    // goes to the next house along instead (lot 6, past the park)
+    const hoistX = hx - lx > lotW / 2 - w / 2 ? hx - 14 : hx + w + 14;
+    if (r() < 0.45) { if (i === 3 || i === 4) movedHoist = true; else hillsHoist(p, hoistX); }
+    else if (i === 6 && movedHoist) hillsHoist(p, hoistX);
     fence(p, r, lx, lotW);
     HOUSES[i] = { x: hx, w, top: house(p, r, hx, w) };
     if (i === 2) {                                    // a flagpole in this front yard (the flag is drawn each frame)
