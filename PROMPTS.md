@@ -42,3 +42,23 @@
 
 - Keep a series of numbered screenshots in a local folder as the game develops (`screenshots/`), and take one now
 - Decision: the screenshots go on GitHub too, beside this file
+
+## 6. A smooth sun, billowy clouds, a smooth magpie
+
+- Make the sun much more like the picture: not pixel art at all, just a good-quality full render
+- Make the sun half the height
+- Make the clouds much more billowy, not just big blobs, like the picture I gave (towering pixel-art cumulus)
+- Keep a folder of all the art I supply with my prompts (the sun, this cloud picture, anything else)
+  - Decision: `prompt-art/` stays on this PC only, not on GitHub, as the pictures come from the web (the sun is a watermarked stock photo)
+- Use this magpie: again not pixel art, standing like the picture; make him fly too, and let him walk along the ground
+
+## 7. Hills with Australian icons
+
+- Behind the houses, add another scrolling layer of hills with some Australian icons: the Sydney Harbour Bridge, Uluru and the Opera House
+
+## 8. Swooping
+
+- The space bar makes him swoop (go fast for 3 seconds)
+- If you press up or down while swooping, the bird dives or climbs at about 30 degrees, and is drawn tilted that way
+- In fact, up and down always tilt the bird 30 degrees up or down
+- Swooping has a charge bar that takes about 10 seconds to fill; holding Space empties it in about 3 seconds from full

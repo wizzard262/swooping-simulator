@@ -6,10 +6,8 @@
 <title>Swooping Simulator</title>
 <style>
   html, body { margin: 0; height: 100%; background: #0d1b2a; overflow: hidden; touch-action: none; }
-  canvas {
-    display: block; width: 100vw; height: 100vh; object-fit: contain;
-    image-rendering: crisp-edges; image-rendering: pixelated;
-  }
+  canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; object-fit: contain; }
+  #game { image-rendering: crisp-edges; image-rendering: pixelated; }
   #prompts {
     position: fixed; top: 3px; right: 6px;
     font: 10px/1 monospace; color: rgba(255, 255, 255, .75);
@@ -19,7 +17,10 @@
 </style>
 </head>
 <body>
+<!-- Three canvases, one on top of the other: sky and sun (smooth), the pixel-art scenery, the magpie (smooth) -->
+<canvas id="back"></canvas>
 <canvas id="game"></canvas>
+<canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <script>
 'use strict';
@@ -33,13 +34,14 @@ const LEVEL_W = SCREEN * 6;       // the level is 6 screens wide and loops round
 const GRASS_TOP = 152;            // top of the lawn
 const SUBURB_BASE = 154;          // houses stand here (a little hidden by the lawn)
 const LAND_Y = 160;               // the magpie's feet rest here
-const TOP_Y = 10;                 // highest the magpie can fly
-const FEET = 5;                   // sprite anchor to feet
+const TOP_Y = 12;                 // highest the magpie can fly
+const BIRD_SCALE = 0.3;           // internal pixels per magpie unit (about 100 units from tail to bill)
+const FEET = 30 * BIRD_SCALE;     // body centre to feet
 
 // Parallax: how far each layer moves per pixel the camera moves.
 // Each layer repeats every LEVEL_W * factor pixels, so the whole scene loops with the level.
-const PARALLAX = { clouds: 0.25, suburb: 0.5, ground: 1 };
-const SUN_SIZE = 76;
+const PARALLAX = { clouds: 0.2, hills: 0.35, suburb: 0.5, ground: 1 };
+const SUN_SIZE = 38;
 const SUN_LOOPS = 3;              // fly the level this many times to push the sun off one side and back on the other
 
 // Magpie flight
@@ -48,7 +50,9 @@ const MAX_FALL = 45, MAX_DIVE = 170, MAX_CLIMB = 95, MAX_X = 115, MAX_X_DIVE = 1
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-let W = SCREEN;
+const back = document.getElementById('back'), bctx = back.getContext('2d');
+const front = document.getElementById('front'), fctx = front.getContext('2d');
+let W = SCREEN, K = 4;            // K: screen pixels per internal pixel on the smooth canvases
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -68,6 +72,7 @@ const hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
 const mix = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const dither = (x, y, t) => t * 16 > BAYER[(y & 3) * 4 + (x & 3)];
+const hash = (x, y) => { const v = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; return v - Math.floor(v); };
 
 function makeCanvas(w, h) {
   const c = document.createElement('canvas');
@@ -125,7 +130,7 @@ const drawTextCentred = (str, y, col, s = 1) => drawText(str, Math.round((W - te
 // ---------------------------------------------------------------------------
 // Sky (static, dithered bands)
 // ---------------------------------------------------------------------------
-const SKY = ['#3f8fd8', '#4f9ce0', '#62aae7', '#77b8ed', '#8ec6f2', '#a6d3f6', '#bfe0f9', '#d6ecfb'].map(hex);
+const SKY = ['#1c78d8', '#2283dd', '#288ce2', '#2e94e5', '#3a9de8', '#4ca8ea', '#66b6ed', '#86c6f0'].map(hex);
 let skyCanvas;
 function buildSky() {
   const c = makeCanvas(W, H), g = c.getContext('2d'), img = g.createImageData(W, H);
@@ -142,169 +147,344 @@ function buildSky() {
 }
 
 // ---------------------------------------------------------------------------
-// The sun: a pixel-art Sun King (face in a ring of curls, straight and wavy rays,
-// a fleur-de-lis sceptre and a hand of justice crossed behind)
+// The sun: a smooth, full-quality gold Sun King (not pixel art), drawn once at high
+// resolution: straight and wavy rays, a fleur-de-lis sceptre and a hand of justice
+// crossed behind, a ring of curls and a calm face
 // ---------------------------------------------------------------------------
-function buildSun() {
-  const S = SUN_SIZE, c = makeCanvas(S, S), g = c.getContext('2d');
-  const GOLD = { hi: '#fff1a6', lt: '#f8d457', mid: '#e5ab2e', dk: '#bf8219', dd: '#7f520c', ol: '#5a3707' };
-  const map = new Array(S * S).fill(null);
-  const set = (x, y, col) => { if (x >= 0 && y >= 0 && x < S && y < S) map[y * S + x] = col; };
-  const L = Math.SQRT1_2;
-  // light comes from the top left: is this side of a shape facing it?
-  const lit = (nx, ny) => -nx * L - ny * L > 0;
+const GOLD = { hi: '#fff6c4', lt: '#fadb6e', mid: '#e5ad37', dk: '#b77b17', dd: '#7a4d08', line: 'rgba(110,64,6,0.75)' };
+function buildSunHi(N) {
+  const art = makeCanvas(N, N), g = art.getContext('2d'), u = N, c = N / 2;
+  g.lineJoin = g.lineCap = 'round';
+  const lin = (x0, y0, x1, y1, stops) => { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach((s, i) => gr.addColorStop(i / (stops.length - 1), s)); return gr; };
+  const fillStroke = (fill, width = 0.004) => { g.fillStyle = fill; g.fill(); g.strokeStyle = GOLD.line; g.lineWidth = width * u; g.stroke(); };
+  // Light from the top left: is a side whose outward normal is (nx, ny) facing it?
+  const facesLight = (nx, ny) => -nx - ny > 0;
 
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    const dx = x + 0.5 - S / 2, dy = y + 0.5 - S / 2;
-    // Rays: 12 straight spikes, 12 wavy flames between them
-    for (let k = 0; k < 24; k++) {
-      const a = k * Math.PI / 12 - Math.PI / 2, ux = Math.cos(a), uy = Math.sin(a);
-      const along = dx * ux + dy * uy;
-      let perp = ux * dy - uy * dx;
-      if (along < 16) continue;
-      let half, len;
-      if (k % 2 === 0) { len = k % 4 === 0 ? 37 : 33; half = 3.6 * (1 - (along - 16) / (len - 16)); }
-      else { len = 31; perp -= 1.6 * Math.sin(along * 0.55); half = 1.9 - 1.3 * (along - 16) / (len - 16); }
-      if (along > len || Math.abs(perp) > half) continue;
-      const side = perp > 0 ? 1 : -1;
-      const col = Math.abs(perp) < 0.6 ? GOLD.hi : lit(-uy * side, ux * side) ? GOLD.lt : GOLD.dk;
-      set(x, y, col);
+  // Rays: 16 straight spikes with a ridge down the middle, 16 wavy flames between
+  const R0 = 0.17 * u;
+  for (let k = 0; k < 32; k++) {
+    const a = k * Math.PI / 16 - Math.PI / 2;
+    g.save(); g.translate(c, c); g.rotate(a);
+    if (k % 2 === 0) {
+      const len = (k % 4 === 0 ? 0.49 : 0.43) * u, hw = 0.026 * u;
+      for (const side of [-1, 1]) {
+        const lit = facesLight(-Math.sin(a) * side, Math.cos(a) * side);
+        g.beginPath(); g.moveTo(R0, 0); g.lineTo(R0, side * hw); g.lineTo(len, 0); g.closePath();
+        fillStroke(lit ? lin(R0, 0, len, 0, [GOLD.lt, GOLD.hi, GOLD.lt]) : lin(R0, 0, len, 0, [GOLD.dk, GOLD.mid, GOLD.dk]), 0.003);
+      }
+    } else {
+      const len = 0.4 * u, pts = [];
+      for (let i = 0; i <= 24; i++) {
+        const t = i / 24;
+        pts.push([R0 + t * (len - R0), Math.sin(t * Math.PI * 2.3) * 0.024 * u * (0.3 + t), 0.019 * u * (1 - t) + 0.002 * u]);
+      }
+      g.beginPath();
+      pts.forEach(([x, y, w], i) => i ? g.lineTo(x, y - w) : g.moveTo(x, y - w));
+      for (let i = pts.length - 1; i >= 0; i--) g.lineTo(pts[i][0], pts[i][1] + pts[i][2]);
+      g.closePath();
+      fillStroke(lin(0, -0.03 * u, 0, 0.03 * u, [GOLD.hi, GOLD.lt, GOLD.mid, GOLD.dk]), 0.003);
+      g.beginPath();
+      pts.slice(0, -3).forEach(([x, y, w], i) => i ? g.lineTo(x, y - w * 0.3) : g.moveTo(x, y - w * 0.3));
+      g.strokeStyle = 'rgba(255,248,210,0.8)'; g.lineWidth = 0.004 * u; g.stroke();
     }
+    g.restore();
   }
 
-  // Sceptre (top left) and hand of justice (top right), crossed behind the face
-  function staff(dirx, diry, head) {
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-      const dx = x + 0.5 - S / 2, dy = y + 0.5 - S / 2;
-      const along = dx * dirx + dy * diry;          // grows towards the head
-      const perp = dirx * dy - diry * dx;
-      const a = along - 27;                         // distance past the end of the shaft
-      let col = null;
-      if (along > -28 && a < 0 && Math.abs(perp) < 1.1) col = perp < 0 ? GOLD.lt : GOLD.dk;
-      else if (a >= 0 && a < 2 && Math.abs(perp) < 2.6) col = GOLD.mid;          // collar
-      else if (a >= 2 && a < 10) col = head(a - 2, perp);
-      if (col) set(x, y, col);
+  // Sceptre and hand of justice: gold rods crossed behind the head
+  function staff(angle, head) {
+    g.save(); g.translate(c, c); g.rotate(angle);
+    const L = 0.38 * u, w = 0.018 * u;
+    g.beginPath(); g.rect(-L, -w / 2, 2 * L, w);
+    fillStroke(lin(0, -w / 2, 0, w / 2, [GOLD.hi, GOLD.lt, GOLD.mid, GOLD.dk]), 0.003);
+    for (const kx of [-0.33, -0.2, 0.22, 0.32]) {                 // knops along the rod
+      g.beginPath(); g.ellipse(kx * u, 0, 0.012 * u, 0.017 * u, 0, 0, Math.PI * 2);
+      fillStroke(lin(0, -w, 0, w, [GOLD.hi, GOLD.mid, GOLD.dk]), 0.003);
     }
+    g.translate(L, 0); g.rotate(Math.PI / 2);                       // the head points "up" (-y) from here
+    head(0.1 * u);
+    g.restore();
   }
-  const fleur = (a, p) => {
-    const q = Math.abs(p);
-    if (q < 1.4 - a * 0.12 && a < 7) return q < 0.5 ? GOLD.hi : GOLD.lt;      // centre petal
-    if (a < 5 && q > 1.4 && q < 1.4 + 2.6 * Math.sin((a + 0.5) * Math.PI / 5.5)) return p < 0 ? GOLD.lt : GOLD.dk;
-    return null;
+  const fleurDeLis = s => {
+    const gold = lin(-s, -1.6 * s, s, 0, [GOLD.hi, GOLD.lt, GOLD.mid, GOLD.dk]);
+    for (const side of [-1, 1]) {                                   // curling side petals
+      g.beginPath(); g.moveTo(side * 0.2 * s, -0.15 * s);
+      g.bezierCurveTo(side * 0.95 * s, -0.25 * s, side * 1.05 * s, -1.15 * s, side * 0.55 * s, -1.05 * s);
+      g.bezierCurveTo(side * 0.42 * s, -0.75 * s, side * 0.62 * s, -0.5 * s, side * 0.24 * s, -0.38 * s);
+      g.closePath(); fillStroke(gold);
+    }
+    g.beginPath(); g.moveTo(-0.3 * s, -0.1 * s);                    // centre petal
+    g.quadraticCurveTo(-0.42 * s, -0.95 * s, 0, -1.7 * s); g.quadraticCurveTo(0.42 * s, -0.95 * s, 0.3 * s, -0.1 * s);
+    g.closePath(); fillStroke(gold);
+    g.beginPath(); g.rect(-0.42 * s, -0.22 * s, 0.84 * s, 0.24 * s); fillStroke(lin(0, -0.22 * s, 0, 0, [GOLD.hi, GOLD.dk]));
   };
-  const hand = (a, p) => {
-    if (a < 3.5 && Math.abs(p) < 2.6) return p < 0 ? GOLD.lt : GOLD.mid;       // palm
-    if (a < 6.5 && p > -2.6 && p < 2 && Math.floor(p + 2.6) % 2 === 0) return GOLD.lt; // fingers
-    if (a > 0.5 && a < 3 && p >= 2.6 && p < 4) return GOLD.dk;                   // thumb
-    return null;
+  const handOfJustice = s => {
+    const gold = lin(-s, -1.5 * s, s, 0, [GOLD.hi, GOLD.lt, GOLD.mid, GOLD.dk]);
+    [[-0.34, 0.72], [-0.15, 0.84], [0.04, 0.8], [0.22, 0.66]].forEach(([x, h]) => {   // fingers
+      g.beginPath(); g.roundRect(x * s, -(0.62 + h) * s, 0.16 * s, (h + 0.1) * s, 0.08 * s); fillStroke(gold);
+    });
+    g.save(); g.translate(-0.38 * s, -0.42 * s); g.rotate(-0.7);                       // thumb
+    g.beginPath(); g.roundRect(-0.08 * s, -0.5 * s, 0.17 * s, 0.55 * s, 0.08 * s); fillStroke(gold); g.restore();
+    g.beginPath(); g.roundRect(-0.38 * s, -0.7 * s, 0.76 * s, 0.68 * s, 0.14 * s); fillStroke(gold);   // palm
+    g.beginPath(); g.rect(-0.42 * s, -0.08 * s, 0.84 * s, 0.16 * s); fillStroke(lin(0, -0.08 * s, 0, 0.08 * s, [GOLD.hi, GOLD.dk]));
   };
-  staff(-L, -L, fleur);   // head towards the top left
-  staff(L, -L, hand);     // head towards the top right
+  staff(-Math.PI * 3 / 4, fleurDeLis);      // head to the top left
+  staff(-Math.PI / 4, handOfJustice);       // head to the top right
 
-  // Hair: two rings of round curls, each lit from the top left with a dark curl in the middle
-  const FRX = 9, FRY = 11.5, FCY = 1;
-  function curl(cx, cy, rad) {
-    for (let j = Math.floor(cy - rad) - 1; j <= cy + rad; j++) for (let i = Math.floor(cx - rad) - 1; i <= cx + rad; i++) {
-      const u = (i + 0.5 - cx) / rad, v = (j + 0.5 - cy) / rad, d = u * u + v * v;
-      if (d > 1) continue;
-      const b = -(u + v) * 0.6 + (1 - d) * 0.5;
-      const swirl = d > 0.12 && d < 0.4 && u + v > -0.2;
-      set(S / 2 + i, S / 2 + j, swirl ? GOLD.dk : b > 0.55 ? GOLD.hi : b > 0.15 ? GOLD.lt : b > -0.3 ? GOLD.mid : GOLD.dk);
-    }
+  // Hair: flowing locks, then two rings of curls (a gap below the chin)
+  const hairAngles = (count, from, to) => Array.from({ length: count }, (_, k) => from + (k + 0.5) / count * (to - from));
+  for (const a of hairAngles(12, Math.PI * 0.72, Math.PI * 2.28)) {
+    g.save(); g.translate(c, c); g.rotate(a);
+    g.beginPath();
+    const pts = [];
+    for (let i = 0; i <= 12; i++) { const t = i / 12; pts.push([0.12 * u + t * 0.17 * u, Math.sin(t * Math.PI * 1.6) * 0.03 * u, 0.04 * u * (1 - t) + 0.004 * u]); }
+    pts.forEach(([x, y, w], i) => i ? g.lineTo(x, y - w) : g.moveTo(x, y - w));
+    for (let i = pts.length - 1; i >= 0; i--) g.lineTo(pts[i][0], pts[i][1] + pts[i][2]);
+    g.closePath(); fillStroke(lin(0, -0.04 * u, 0, 0.04 * u, [GOLD.hi, GOLD.lt, GOLD.mid, GOLD.dk]));
+    g.restore();
   }
-  for (const [ring, rad, count, phase] of [[7.5, 4, 13, 0.5], [3.5, 4.4, 14, 0]]) {
-    for (let k = 0; k < count; k++) {
-      const th = Math.PI / 2 + 0.75 + (k + phase) / count * (Math.PI * 2 - 1.5);   // leaves a gap below the chin
-      curl(Math.cos(th) * (FRX + ring), FCY + Math.sin(th) * (FRY + ring * 0.8), rad);
-    }
+  const curl = (x, y, r, turn) => {
+    const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+    gr.addColorStop(0, GOLD.hi); gr.addColorStop(0.45, GOLD.lt); gr.addColorStop(0.8, GOLD.mid); gr.addColorStop(1, GOLD.dk);
+    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); fillStroke(gr, 0.003);
+    g.beginPath();                                                   // the curl's spiral groove
+    for (let i = 0; i <= 40; i++) { const t = i / 40, ang = turn * t * Math.PI * 3.2, rr = r * (0.82 - 0.7 * t); const px = x + Math.cos(ang) * rr, py = y + Math.sin(ang) * rr; i ? g.lineTo(px, py) : g.moveTo(px, py); }
+    g.strokeStyle = 'rgba(120,72,8,0.8)'; g.lineWidth = 0.0045 * u; g.stroke();
+  };
+  const FRX = 0.1 * u, FRY = 0.125 * u, FCY = c + 0.012 * u;
+  const jitter = rng(5);
+  for (const [ring, r, count] of [[0.07, 0.042, 20], [0.035, 0.038, 18]]) {
+    hairAngles(count, Math.PI * 0.62, Math.PI * 2.38).forEach((a, k) => {
+      const rr = ring + (jitter() - 0.5) * 0.02;
+      curl(c + Math.cos(a) * (FRX + rr * u), FCY + Math.sin(a) * (FRY + rr * u * 0.8), r * u * (0.8 + jitter() * 0.4), k % 2 ? 1 : -1);
+    });
   }
 
-  // Face: an oval lit from the top left
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    const fx = (x + 0.5 - S / 2) / FRX, fy = (y + 0.5 - S / 2 - FCY) / FRY;
-    if (fx * fx + fy * fy >= 1) continue;
-    const shade = -(fx * 0.8 + fy * 0.6) * 0.75 + 0.35 * (1 - fx * fx - fy * fy);
-    set(x, y, shade > 0.55 ? GOLD.hi : shade > 0.1 ? GOLD.lt : shade > -0.35 ? GOLD.mid : GOLD.dk);
+  // Neck under the chin, then the face: a calm oval, lit from the top left
+  g.beginPath(); g.ellipse(c, FCY + FRY * 0.95, FRX * 0.62, FRY * 0.45, 0, 0, Math.PI * 2);
+  fillStroke(lin(c - FRX, 0, c + FRX, 0, [GOLD.lt, GOLD.mid, GOLD.dk]), 0.004);
+  const fg = g.createRadialGradient(c - 0.035 * u, FCY - 0.045 * u, 0.01 * u, c, FCY, 0.15 * u);
+  fg.addColorStop(0, '#fff3b0'); fg.addColorStop(0.45, '#f7d25c'); fg.addColorStop(0.8, '#dda334'); fg.addColorStop(1, '#a8701a');
+  g.beginPath(); g.ellipse(c, FCY, FRX, FRY, 0, 0, Math.PI * 2); fillStroke(fg, 0.004);
+  const X = dx => c + dx * u, Y = dy => FCY + dy * u;
+  const soft = (x, y, rx, ry, col) => { g.beginPath(); g.ellipse(X(x), Y(y), rx * u, ry * u, 0, 0, Math.PI * 2); g.fillStyle = col; g.fill(); };
+  for (const s of [-1, 1]) {
+    soft(s * 0.042, -0.026, 0.032, 0.016, 'rgba(150,95,15,0.35)');                      // eye socket
+    g.beginPath(); g.moveTo(X(s * 0.012), Y(-0.052));                                   // brow
+    g.quadraticCurveTo(X(s * 0.045), Y(-0.075), X(s * 0.08), Y(-0.05));
+    g.strokeStyle = '#9a6412'; g.lineWidth = 0.008 * u; g.stroke();
+    g.beginPath(); g.moveTo(X(s * 0.018), Y(-0.026));                                   // almond eye
+    g.quadraticCurveTo(X(s * 0.044), Y(-0.044), X(s * 0.07), Y(-0.024));
+    g.quadraticCurveTo(X(s * 0.044), Y(-0.01), X(s * 0.018), Y(-0.026));
+    g.fillStyle = '#f6d878'; g.fill();
+    soft(s * 0.043, -0.026, 0.009, 0.009, '#9c6610');
+    g.beginPath(); g.moveTo(X(s * 0.018), Y(-0.026)); g.quadraticCurveTo(X(s * 0.044), Y(-0.044), X(s * 0.07), Y(-0.024));
+    g.strokeStyle = '#6e4506'; g.lineWidth = 0.006 * u; g.stroke();
   }
-  const c0 = S / 2, c1 = S / 2 + FCY;
-  const face = (i, j, col) => set(c0 + i, c1 + j, col);
-  for (const i of [-6, -5, -4, -3, -2, 1, 2, 3, 4, 5]) face(i, -6 + (i === -6 || i === 5 ? 1 : 0), GOLD.dk);  // brows
-  for (const i of [-5, -4, -3, -2, 1, 2, 3, 4]) face(i, -4, GOLD.dk);                         // upper lids
-  for (const i of [-5, -2, 1, 4]) face(i, -3, GOLD.hi);                                       // whites of the eyes
-  for (const i of [-4, -3, 2, 3]) face(i, -3, GOLD.dd);                                       // pupils
-  for (let j = -3; j < 3; j++) { face(-1, j, GOLD.hi); face(0, j, GOLD.dk); }                 // nose
-  for (const i of [-2, -1, 0, 1]) face(i, 3, GOLD.dk);
-  face(-1, 3, GOLD.mid);
-  for (const i of [-2, -1, 0, 1]) face(i, 5, GOLD.dk);                                        // upper lip
-  for (const i of [-3, -2, -1, 0, 1, 2]) face(i, 6, GOLD.dd);                                 // mouth
-  for (const i of [-2, -1, 0, 1]) face(i, 7, GOLD.hi);                                        // lower lip
-  face(-1, 9, GOLD.mid); face(0, 9, GOLD.mid);                                                // chin
+  g.beginPath(); g.moveTo(X(0.004), Y(-0.03)); g.lineTo(X(0.022), Y(0.035)); g.lineTo(X(0.01), Y(0.048)); g.lineTo(X(0.002), Y(0.04)); g.closePath();
+  g.fillStyle = 'rgba(130,80,10,0.45)'; g.fill();                                       // shadow down the nose
+  g.beginPath(); g.moveTo(X(-0.006), Y(-0.025)); g.lineTo(X(-0.009), Y(0.03));
+  g.strokeStyle = 'rgba(255,246,190,0.9)'; g.lineWidth = 0.006 * u; g.stroke();         // bridge of the nose
+  soft(-0.014, 0.047, 0.007, 0.004, '#8a5a0c'); soft(0.014, 0.047, 0.007, 0.004, '#8a5a0c');   // nostrils
+  soft(0, 0.09, 0.026, 0.01, '#efc24c');                                                // lower lip
+  soft(-0.006, 0.087, 0.012, 0.004, 'rgba(255,244,190,0.9)');
+  g.beginPath(); g.moveTo(X(-0.036), Y(0.078)); g.quadraticCurveTo(X(-0.016), Y(0.069), X(0), Y(0.075));
+  g.quadraticCurveTo(X(0.016), Y(0.069), X(0.036), Y(0.078));
+  g.strokeStyle = '#7a4d08'; g.lineWidth = 0.006 * u; g.stroke();                       // mouth
+  soft(0, 0.103, 0.018, 0.005, 'rgba(120,70,10,0.35)');                                // under the lip
+  soft(-0.006, 0.116, 0.02, 0.01, 'rgba(255,240,160,0.6)');                             // chin
 
-  // Dark outline round the whole shape so it reads against the sky
-  const outline = [];
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    if (map[y * S + x]) continue;
-    const n = (xx, yy) => xx >= 0 && yy >= 0 && xx < S && yy < S && map[yy * S + xx] && map[yy * S + xx] !== GOLD.ol;
-    if (n(x - 1, y) || n(x + 1, y) || n(x, y - 1) || n(x, y + 1)) outline.push([x, y]);
-  }
-  for (const [x, y] of outline) map[y * S + x] = GOLD.ol;
-  for (let i = 0; i < S * S; i++) if (map[i]) { g.fillStyle = map[i]; g.fillRect(i % S, Math.floor(i / S), 1, 1); }
-  return c;
+  // Finish: a warm glow behind, and a soft shadow so the gold reads against the blue
+  const out = makeCanvas(N, N), o = out.getContext('2d');
+  const glow = o.createRadialGradient(c, c, 0.12 * u, c, c, 0.5 * u);
+  glow.addColorStop(0, 'rgba(255,238,160,0.6)'); glow.addColorStop(1, 'rgba(255,238,160,0)');
+  o.fillStyle = glow; o.fillRect(0, 0, N, N);
+  o.shadowColor = 'rgba(90,50,0,0.55)'; o.shadowBlur = 0.012 * u; o.shadowOffsetY = 0.004 * u;
+  o.drawImage(art, 0, 0);
+  return out;
 }
 
 // ---------------------------------------------------------------------------
-// Clouds: chunky pixel cumulus, white with pale blue shading (Harrier Carrier style)
+// Clouds: billowy pixel-art cumulus. Many round puffs, lit from the top left; lower
+// puffs sit in front, so their bright tops show as billows inside the cloud.
+// Colours taken from the reference picture in prompt-art/.
 // ---------------------------------------------------------------------------
-const CLOUD = { white: '#ffffff', pale: '#d6eefc', shade: '#b8dcf4' };
-function makeCloud(r, w, h) {
-  // Lumpy outline: lots of round puffs, taller in the middle, sitting on a flat base with wispy ends
-  const base = h - 2, puffs = [], n = Math.max(4, Math.round(w / 4));
-  for (let i = 0; i < n; i++) {
-    const u = 0.08 + r() * 0.84, tall = Math.sin(Math.PI * u) ** 1.5;
-    const rad = Math.min(2 + r() * h * 0.2 + tall * h * 0.14, u * w - 1, w - 2 - u * w);   // keep inside the canvas
-    puffs.push({ cx: u * w, cy: base - rad * 0.4 - r() * tall * Math.max(0, base - rad * 1.4), rad });
+const CLOUD_TONES = ['#fafcff', '#e2ebfa', '#c8e2f9', '#a8d6f8', '#84d0f6', '#6cb6e8'];
+const CLOUD_LIGHT = (() => { const v = [-0.45, -0.8, 0.45], m = Math.hypot(...v); return v.map(a => a / m); })();
+function makeCloud(r, w, h, tower) {
+  const base = h - 2, unit = clamp(h / 8, 2.5, 6), puffs = [];
+  const humps = [];
+  for (let i = 0, n = 2 + Math.floor(r() * 3); i < n; i++) humps.push({ x: w * (0.2 + 0.6 * r()), s: w * (0.1 + 0.14 * r()), t: 0.35 + 0.4 * r() });
+  if (tower) humps.push({ x: w * (0.35 + 0.3 * r()), s: w * 0.19, t: 1 });
+  const prof = x => humps.reduce((v, hp) => Math.max(v, hp.t * Math.exp(-(((x - hp.x) / hp.s) ** 2))), 0);
+  const surface = x => base - unit - prof(x) * (base - 2 * unit - 1);   // height of the top puffs' centres
+
+  for (let x = unit; x < w - unit; x += unit * (0.6 + 0.5 * r())) {     // bumpy top
+    const s = surface(x);
+    if (s > base - unit * 1.2 && r() < 0.4) continue;
+    const rad = unit * (0.7 + 0.6 * r());
+    puffs.push({ cx: x, cy: Math.min(s + rad * 0.3, base - rad * 0.4), rad });
   }
-  puffs.sort((a, b) => a.cy - b.cy);                // lower puffs sit in front
-  const front = new Int16Array(w * h).fill(-1);
-  for (let y = 0; y <= base; y++) for (let x = 0; x < w; x++)
-    puffs.forEach((p, i) => { if ((x - p.cx) ** 2 + (y - p.cy) ** 2 <= p.rad * p.rad) front[y * w + x] = i; });
-  const left = Math.min(...puffs.map(p => p.cx - p.rad)), right = Math.max(...puffs.map(p => p.cx + p.rad));
-  for (let y = base - 1; y <= base + 1; y++) {       // wisps along the base
-    const reach = (base + 1 - y) * 3 + 2 + r() * 4;
-    for (let x = Math.max(0, Math.floor(left - reach)); x < Math.min(w, right + reach); x++)
-      if (front[y * w + x] < 0 && r() < 0.8) front[y * w + x] = -2;
+  let area = 0;
+  for (let x = 0; x < w; x++) area += Math.max(0, base - surface(x));
+  for (let k = 0, n = Math.round(area / (unit * unit * 2)); k < n; k++) {   // billows inside
+    const x = unit + r() * (w - 2 * unit), top = surface(x);
+    if (top > base - unit) continue;
+    const rad = unit * (0.7 + 0.9 * r());
+    let cy = top + unit + r() * (base - top - unit);
+    cy = clamp(cy, top - unit * 0.3 + rad, base - rad * 0.3);
+    puffs.push({ cx: x, cy, rad });
   }
-  const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h && front[y * w + x] !== -1;
+  for (let x = unit; x < w - unit; x += unit * 0.9) {                   // flat base
+    if (surface(x) > base - unit) continue;
+    const rad = unit * (0.7 + 0.5 * r());
+    puffs.push({ cx: x, cy: base - rad * 0.6, rad });
+  }
+  for (let k = 0, n = 2 + Math.floor(r() * 4); k < n; k++) {           // little torn-off bits
+    const x = unit + r() * (w - 2 * unit), rad = 1 + r() * 1.4;
+    puffs.push({ cx: x, cy: Math.max(rad, surface(x) - unit * 1.4 - r() * 3), rad });
+  }
+  puffs.sort((a, b) => a.cy - b.cy);
+
+  const owner = new Int16Array(w * h).fill(-1);
+  puffs.forEach((p, i) => {
+    for (let y = Math.max(0, Math.floor(p.cy - p.rad)); y <= Math.min(base, Math.ceil(p.cy + p.rad)); y++)
+      for (let x = Math.max(0, Math.floor(p.cx - p.rad)); x <= Math.min(w - 1, Math.ceil(p.cx + p.rad)); x++)
+        if ((x + 0.5 - p.cx) ** 2 + (y + 0.5 - p.cy) ** 2 <= p.rad * p.rad) owner[y * w + x] = i;
+  });
+  let topY = h;
+  for (let i = 0; i < w * h; i++) if (owner[i] >= 0) { topY = Math.floor(i / w); break; }
 
   const c = makeCanvas(w, h), g = c.getContext('2d');
-  const top = Math.min(...puffs.map(p => p.cy - p.rad));
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const i = front[y * w + x];
-    let col = null;
-    if (i === -2) col = r() < 0.5 ? CLOUD.pale : CLOUD.white;
-    else if (i >= 0) {
-      // Each puff is lit from the top left, and the cloud darkens towards its base
-      const p = puffs[i], u = (x - p.cx) / p.rad, v = (y - p.cy) / p.rad;
-      const b = 0.55 - 0.55 * (u * 0.6 + v * 0.8) - 0.25 * (u * u + v * v) - 0.35 * (y - top) / (h - top) + (r() - 0.5) * 0.15;
-      if (b > 0.5) col = CLOUD.white;
-      else if (b > 0.2) col = dither(x, y, (b - 0.2) / 0.3) ? CLOUD.white : CLOUD.pale;
-      else if (b > -0.15) col = CLOUD.pale;
-      else col = dither(x, y, (b + 0.5) / 0.35) ? CLOUD.pale : CLOUD.shade;
-      if (!at(x, y + 1) && y > top + 2) col = CLOUD.shade;
-    } else if (r() < 0.05 && (at(x - 1, y) || at(x + 1, y) || at(x, y - 2) || at(x, y + 2))) {
-      col = r() < 0.5 ? CLOUD.pale : CLOUD.white;    // stray puffs of vapour round the edge
-    }
-    if (col) { g.fillStyle = col; g.fillRect(x, y, 1, 1); }
+    const i = owner[y * w + x];
+    if (i < 0) continue;
+    const p = puffs[i], u = (x + 0.5 - p.cx) / p.rad, v = (y + 0.5 - p.cy) / p.rad;
+    const nz = Math.sqrt(Math.max(0, 1 - u * u - v * v));
+    const lam = Math.max(0, u * CLOUD_LIGHT[0] + v * CLOUD_LIGHT[1] + nz * CLOUD_LIGHT[2]);
+    const depth = (y - topY) / (base - topY + 1);
+    let val = lam * 1.0 + 0.3 - depth * 0.6;
+    const above = y > 0 ? owner[(y - 1) * w + x] : -1, below = y < h - 1 ? owner[(y + 1) * w + x] : -1;
+    if (above >= 0 && above < i) val = Math.max(val, 0.86 - depth * 0.3);  // bright rim where a billow overlaps the one behind
+    if (below > i) val -= 0.12;                                             // shadow just above a billow in front
+    val += (BAYER[(y & 3) * 4 + (x & 3)] / 16 - 0.47) * 0.08;
+    g.fillStyle = CLOUD_TONES[val > 0.9 ? 0 : val > 0.72 ? 1 : val > 0.56 ? 2 : val > 0.42 ? 3 : val > 0.28 ? 4 : 5];
+    g.fillRect(x, y, 1, 1);
   }
   return c;
 }
 function buildClouds() {
-  const r = rng(7), P = LEVEL_W * PARALLAX.clouds, n = 9, list = [];
+  const r = rng(7), P = LEVEL_W * PARALLAX.clouds, n = 8, list = [];
   for (let i = 0; i < n; i++) {
-    const w = 24 + Math.floor(r() * 80), h = clamp(Math.round(w * (0.28 + r() * 0.3)), 10, 44);
-    list.push({ x: (i + r() * 0.6) * P / n, y: 6 + Math.floor(r() * 90), img: makeCloud(r, w, h) });
+    const tower = i === 1 || i === 5;
+    const w = tower ? 90 + Math.floor(r() * 40) : 30 + Math.floor(r() * 70);
+    const h = tower ? 60 + Math.floor(r() * 20) : clamp(Math.round(w * (0.3 + r() * 0.25)), 14, 40);
+    const bottom = tower ? 85 + r() * 25 : 30 + r() * 75;
+    list.push({ x: (i + r() * 0.6) * P / n, y: Math.max(2, Math.round(bottom - h)), img: makeCloud(r, w, h, tower) });
   }
   return { P, list, wind: 3 };
+}
+
+// ---------------------------------------------------------------------------
+// Hills behind the houses, with Australian icons: Sydney Harbour with the Harbour
+// Bridge and the Opera House, and Uluru out in the red centre
+// ---------------------------------------------------------------------------
+const HILL_GREENS = ['#7cc457', '#5aa846', '#43913d', '#317a36', '#24652f'];
+function buildHills() {
+  const P = LEVEL_W * PARALLAX.hills, p = painter(P, H, true), r = rng(31);
+  const WATER = 138, HARBOUR = [90, 300], OUTBACK = [400, 600], ULURU_X = 450;
+  const ph = [1, 2, 3, 5, 8].map(() => r() * Math.PI * 2);
+  const zone = (x, [a, b], soft) => clamp(Math.min(x - a, b - x) / soft, 0, 1);
+  const top = x => {
+    let y = 124 + [10, 6, 4, 2, 1].reduce((s, amp, i) => s + amp * Math.sin(2 * Math.PI * [1, 2, 3, 5, 8][i] * x / P + ph[i]), 0);
+    y += (WATER + 2 - y) * zone(x, HARBOUR, 30);                        // dip down to the harbour
+    y += (136 - y) * zone(x, OUTBACK, 40);                              // flat red plain
+    return Math.round(y);
+  };
+  for (let x = 0; x < P; x++) {
+    const t = top(x), slope = top(x + 1) - top(x - 1), red = zone(x, OUTBACK, 40), harbour = zone(x, HARBOUR, 30);
+    for (let y = t; y < H; y++) {
+      const d = y - t;
+      let c;
+      if (red > 0.5) c = d === 0 ? '#e0905a' : (x * 7 + y * 13) % 17 === 0 ? '#7d7a3a' : dither(x, y, d / 14) ? '#b9643a' : '#cc7646';
+      else {
+        let tone = slope < -1 ? 0 : slope > 1 ? 2 : 1;                    // slopes facing the light are paler
+        if (d < 2) tone = 0;
+        else if (d > 3) tone += hash(x, y) < 0.35 ? 2 : 1;                 // forest texture
+        c = HILL_GREENS[Math.min(4, tone)];
+      }
+      if (harbour > 0 && t >= WATER - 2 && y >= WATER) c = (y + Math.floor(x / 9)) % 6 === 0 ? '#9fd8f2' : y === WATER ? '#7cc4ea' : '#3d93d4';
+      p.px(x, y, mix(c, '#8fc3ea', 0.12));                               // a little haze for distance
+    }
+  }
+
+  // Bush on the hills: little dark trees, lit on the left
+  for (let k = 0; k < 420; k++) {
+    const x = Math.floor(r() * P);
+    if (zone(x, OUTBACK, 30) > 0 || zone(x, HARBOUR, 20) > 0) continue;
+    const y = top(x) + 1 + Math.floor(r() ** 2 * 14), th = 3 + Math.floor(r() * 3);
+    for (let j = 0; j < th; j++) {
+      const half = Math.min(j, th - 1 - j < 1 ? 0 : 2) >> 1;
+      p.px(x - half, y - th + j, mix(HILL_GREENS[4], '#8fc3ea', 0.12), half * 2 + 1, 1);
+      p.px(x - half, y - th + j, mix(HILL_GREENS[2], '#8fc3ea', 0.12));
+    }
+  }
+
+  // Sydney Harbour Bridge: a steel arch between granite pylons, with the deck through it
+  const bx0 = 110, bx1 = 220, mid = (bx0 + bx1) / 2, half = (bx1 - bx0) / 2 - 12, deck = 127;
+  const arch = (x, apex, end) => apex + (end - apex) * ((x - mid) / half) ** 2;
+  for (let x = bx0 + 12; x <= bx1 - 12; x++) {
+    const yt = Math.round(arch(x, 99, 120)), yb = Math.round(arch(x, 104, 134));
+    for (let y = yt; y <= Math.min(yb, WATER); y++) {
+      const edge = y === yt || y === yb, lattice = (x + y) % 4 === 0 || (x - y) % 4 === 0;
+      if (edge) p.px(x, y, '#4f565e');
+      else if (lattice) p.px(x, y, '#7a838c');
+    }
+    if (yb < deck && x % 3 === 0) p.px(x, yb, '#6a727a', 1, deck - yb);  // hangers
+  }
+  p.px(bx0, deck, '#5a6168', bx1 - bx0, 2);
+  p.px(bx0, deck + 2, '#3c4248', bx1 - bx0, 1);
+  for (const px0 of [bx0 + 2, bx1 - 12]) {                               // granite pylons
+    p.px(px0, 110, '#c9b99a', 10, WATER - 110);
+    p.px(px0 + 7, 110, '#a8987a', 3, WATER - 110);
+    p.px(px0 - 1, 109, '#ddd0b2', 12, 2);
+    p.px(px0 + 3, 113, '#8f8064', 4, 5);
+  }
+
+  // Sydney Opera House: white sails on a sandstone podium
+  // Each shell is a pointed sail: a steep curved front rising to its tip, a long curved back
+  const ox = 236, ob = 136;
+  p.px(ox - 4, ob, '#d8c8a8', 62, 3);
+  p.px(ox - 4, ob + 3, '#b8a888', 62, 1);
+  for (const [sx, w, h] of [[ox + 34, 13, 15], [ox + 43, 11, 11], [ox, 18, 24], [ox + 11, 16, 19], [ox + 22, 13, 14]]) {
+    const peak = Math.round(w * 0.22);
+    for (let i = 0; i < w; i++) {
+      const t = i < peak ? Math.sqrt(i / peak) : 1 - ((i - peak) / (w - peak)) ** 1.7;
+      const hh = Math.round(h * t);
+      for (let j = 0; j < hh; j++) {
+        let c = i <= peak ? '#ffffff' : i > w - 3 ? '#c9cdd0' : (j + 2 * i) % 6 === 0 ? '#dfe0da' : '#f1f0ea';
+        if (j === hh - 1 && i > peak) c = '#d6d8d6';                     // edge of the shell
+        if (j < 3 && i > 1 && i < w * 0.55) c = '#3c4650';               // glass under the shell
+        p.px(sx + i, ob - 1 - j, c);
+      }
+    }
+  }
+
+  // Uluru: a red monolith with dark gullies down its face, scrub along its foot
+  const uw = 96, uh = 27, ub = 137;
+  for (let i = 0; i < uw; i++) {
+    const t = i / (uw - 1);
+    const hh = Math.round(uh * Math.sqrt(Math.max(0, 1 - Math.abs(2 * t - 1) ** 3.2)) + Math.sin(i * 0.7) * 0.6);
+    for (let j = 0; j < hh; j++) {
+      const y = ub - j, fromTop = hh - j;
+      let c = t < 0.35 ? '#de7a3e' : t < 0.75 ? '#c75d2c' : '#a8471f';
+      if (fromTop <= 1) c = t < 0.6 ? '#ee9a5c' : '#cf6a36';
+      else if (i % 7 === 3 && fromTop < hh * 0.8) c = '#9a3f1c';          // gullies
+      else if (dither(i, j, j / uh * 0.5)) c = mix(c, '#7a2e14', 0.35);   // darker towards the base
+      p.px(ULURU_X + i, y, c);
+    }
+  }
+  for (let k = 0; k < 40; k++) p.px(ULURU_X - 10 + r() * (uw + 20), ub + r() * 2, r() < 0.5 ? '#6f7a34' : '#58622a', 2, 1);
+  return { P, c: p.c };
 }
 
 // ---------------------------------------------------------------------------
@@ -540,72 +720,143 @@ function buildGround() {
 }
 
 // ---------------------------------------------------------------------------
-// The magpie: black and white, red-brown eye, pale bill with a dark tip
+// The magpie, drawn smoothly (not pixel art): glossy black, white nape, shoulders
+// and tail base, a pale bill with a dark tip and a red-brown eye.
+// Units: about 100 from tail to bill; origin at the body centre, facing right, +y down.
 // ---------------------------------------------------------------------------
-const PAL = { K: '#15151a', k: '#3a3a42', W: '#f4f4ef', w: '#cfd4da', e: '#c0392b', b: '#d5d9e2', d: '#2b2b30', L: '#2a2a2a' };
-const BODY = [
-  '', '', '', '',
-  '................KKK.....',
-  '...............KKKKK....',
-  '..............WKKeKKbbd.',
-  '.............WWKKKKKb...',
-  'KKWWWWWKKKKKKWWKKKK.....',
-  '.KKWWWWKKKKKKKKKKKKK....',
-  '......KKKKKKKKKKKKK.....',
-  '........KKKKKKKKK.......',
-  '', '', ''
-];
-const WINGS = {
-  glide: { 7: '.......wWWWWW', 8: '.....kkKKKWWW', 9: '..kkkkkKKK' },
-  up: { 0: '..kk', 1: '...kkk', 2: '....kkKK', 3: '.....kKKKK', 4: '......KKKKWW', 5: '.......KKWWWW', 6: '........WWWWW', 7: '.........WWWW' },
-  down: { 8: '.........WWWW', 9: '........KKWWW', 10: '.......KKKKK', 11: '......kKKKK', 12: '.....kkKK', 13: '....kkk', 14: '...kk' },
-  fold: { 8: '.......WWWWWW', 9: '...kkkkKKKKK' },
-  stand: { 8: '.......WWWWWW', 9: '...kkkkKKKKK', 12: '..........L..L', 13: '..........L..L', 14: '..........LL.LL' }
-};
-const BIRD_W = 24, BIRD_H = 15, ANCHOR_X = 12, ANCHOR_Y = 9;
-const birdFrames = {};
-function buildBird() {
-  for (const name in WINGS) {
-    const rows = BODY.map(s => s.padEnd(BIRD_W, '.').split(''));
-    for (const j in WINGS[name]) [...WINGS[name][j]].forEach((ch, i) => { if (ch !== '.') rows[j][i] = ch; });
-    const right = makeCanvas(BIRD_W, BIRD_H), left = makeCanvas(BIRD_W, BIRD_H);
-    const gr = right.getContext('2d'), gl = left.getContext('2d');
-    rows.forEach((row, y) => row.forEach((ch, x) => {
-      if (ch === '.') return;
-      gr.fillStyle = gl.fillStyle = PAL[ch];
-      gr.fillRect(x, y, 1, 1);
-      gl.fillRect(BIRD_W - 1 - x, y, 1, 1);
-    }));
-    birdFrames[name] = { 1: right, '-1': left };
+function blackFill(g, x, y, r) {
+  const gr = g.createRadialGradient(x - r * 0.4, y - r * 0.5, r * 0.05, x, y, r * 1.2);
+  gr.addColorStop(0, '#4b5060'); gr.addColorStop(0.35, '#22232b'); gr.addColorStop(1, '#0c0c10');
+  return gr;
+}
+function whiteFill(g, x, y, r) {
+  const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.4, r * 0.05, x, y, r * 1.1);
+  gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.6, '#eceef1'); gr.addColorStop(1, '#b8bcc6');
+  return gr;
+}
+function blob(g, fill, draw) { g.beginPath(); draw(); g.closePath(); g.fillStyle = fill; g.fill(); }
+
+// A spread wing at the shoulder; open runs from 1 (raised) through 0 (edge on) to -1 (lowered)
+function spreadWing(g, open, far) {
+  g.save();
+  g.translate(far ? 9 : 5, far ? -9 : -6);
+  g.rotate(-0.15);
+  g.scale(far ? 0.9 : 1, Math.abs(open) < 0.12 ? Math.sign(open || 1) * 0.12 : open);
+  blob(g, far ? '#101014' : blackFill(g, 0, -25, 30), () => {
+    g.moveTo(9, 0); g.bezierCurveTo(12, -18, 9, -38, 0, -50);
+    for (const [x, y] of [[-6, -49], [-4, -44], [-11, -45], [-9, -40], [-16, -40], [-14, -35], [-21, -34]]) g.lineTo(x, y);
+    g.bezierCurveTo(-20, -22, -16, -8, -13, 0);
+  });
+  blob(g, far ? '#9da1aa' : whiteFill(g, 3, -10, 14), () => {           // white shoulder
+    g.moveTo(9, 0); g.bezierCurveTo(11, -9, 10, -17, 7, -22);
+    g.quadraticCurveTo(-2, -20, -6, -12); g.quadraticCurveTo(-6, -4, -6, 0);
+  });
+  g.strokeStyle = 'rgba(80,90,115,0.5)'; g.lineWidth = 0.8;               // feather lines
+  for (const [x, y] of [[-5, -46], [-12, -42], [-18, -37]]) { g.beginPath(); g.moveTo(-6, -22); g.lineTo(x, y); g.stroke(); }
+  g.restore();
+}
+
+function foldedWing(g) {
+  blob(g, blackFill(g, -8, -6, 26), () => {
+    g.moveTo(14, -6); g.bezierCurveTo(6, -14, -14, -13, -24, -7);
+    g.lineTo(-41, -1); g.quadraticCurveTo(-24, 6, -8, 6); g.quadraticCurveTo(8, 5, 14, -6);
+  });
+  blob(g, whiteFill(g, 2, -8, 12), () => {                                // white shoulder
+    g.moveTo(13, -5); g.bezierCurveTo(8, -12, -4, -12, -10, -9);
+    g.quadraticCurveTo(-8, -3, 0, -1); g.quadraticCurveTo(8, 0, 13, -5);
+  });
+  g.strokeStyle = 'rgba(90,100,125,0.55)'; g.lineWidth = 0.8;
+  for (const [y0, y1] of [[-4, -1], [0, 1.5], [3, 3.5]]) { g.beginPath(); g.moveTo(-12, y0); g.lineTo(-38, y1); g.stroke(); }
+}
+
+function head(g) {
+  blob(g, '#141418', () => g.ellipse(-7, 5, 11, 9, -0.5, 0, Math.PI * 2));          // neck
+  blob(g, blackFill(g, 0, 0, 11), () => g.arc(0, 0, 11, 0, Math.PI * 2));
+  blob(g, whiteFill(g, -9, 2, 9), () => {                                            // white nape
+    g.moveTo(-5, -9.5); g.quadraticCurveTo(-13, -6, -13, 5); g.lineTo(-7, 9); g.quadraticCurveTo(-9, -1, -3, -8);
+  });
+  const bill = () => { g.moveTo(7, -4.6); g.quadraticCurveTo(17, -5.2, 26, 0.6); g.quadraticCurveTo(17, 3.3, 7, 4.6); };
+  const bg = g.createLinearGradient(0, -5, 0, 5);
+  bg.addColorStop(0, '#eef0f4'); bg.addColorStop(0.5, '#c9cdd6'); bg.addColorStop(1, '#9196a2');
+  blob(g, bg, bill);
+  g.save(); g.beginPath(); bill(); g.clip(); g.fillStyle = '#25262c'; g.fillRect(20, -8, 10, 16); g.restore();   // dark tip
+  g.beginPath(); g.moveTo(8, 0.8); g.quadraticCurveTo(16, 1.1, 24.5, 0.7);
+  g.strokeStyle = '#555a66'; g.lineWidth = 0.6; g.stroke();
+  blob(g, '#a3301c', () => g.arc(3, -3, 2.4, 0, Math.PI * 2));                      // eye
+  blob(g, '#130808', () => g.arc(3.3, -3, 1.2, 0, Math.PI * 2));
+  blob(g, '#ffffff', () => g.arc(2.6, -3.8, 0.6, 0, Math.PI * 2));
+  g.beginPath(); g.arc(0, 0, 9.5, Math.PI * 1.05, Math.PI * 1.55);                  // sheen
+  g.strokeStyle = 'rgba(130,150,200,0.35)'; g.lineWidth = 1.6; g.stroke();
+}
+
+// pose: { pitch (radians, + is nose down), headPitch, wings: 'folded' | open amount, legs: walk phase or null }
+function drawMagpie(g, pose) {
+  if (pose.legs !== null) {                                                // legs, in the upright frame
+    const swing = Math.sin(pose.legs) * 5;
+    g.strokeStyle = '#3a3b40'; g.lineCap = 'round';
+    for (const [hip, foot, lift] of [[-3, -4 + swing, Math.max(0, Math.sin(pose.legs)) * 3], [5, 6 - swing, Math.max(0, -Math.sin(pose.legs)) * 3]]) {
+      const fy = 30 - lift;
+      g.lineWidth = 2.8; g.beginPath(); g.moveTo(hip, 10); g.lineTo(foot, fy); g.stroke();
+      g.lineWidth = 1.6; g.beginPath();
+      g.moveTo(foot, fy); g.lineTo(foot + 6, fy);
+      g.moveTo(foot, fy); g.lineTo(foot + 4.5, fy - 1.2);
+      g.moveTo(foot, fy); g.lineTo(foot - 3, fy); g.stroke();
+    }
+    blob(g, '#141418', () => g.ellipse(1, 12, 8, 6, 0, 0, Math.PI * 2));           // feathered thighs
   }
+  g.save();
+  g.rotate(pose.pitch);
+  const spread = pose.wings !== 'folded';
+  if (spread) spreadWing(g, pose.wings, true);
+  const tailW = spread ? 1.35 : 1;                                         // tail: white base, black tip
+  const tail = () => { g.moveTo(-16, -4 * tailW); g.lineTo(-41, -3 * tailW); g.quadraticCurveTo(-47, 1, -41, 6 * tailW); g.lineTo(-16, 6); };
+  blob(g, whiteFill(g, -26, 0, 16), tail);
+  g.save(); g.beginPath(); tail(); g.clip(); g.fillStyle = '#121216'; g.fillRect(-50, -12, 14, 24); g.restore();
+  blob(g, blackFill(g, 0, 0, 24), () => g.ellipse(0, 0, 24, 15, 0, 0, Math.PI * 2));   // body
+  blob(g, whiteFill(g, -15, 7, 8), () => g.ellipse(-15, 7, 8, 4.5, 0.2, 0, Math.PI * 2));  // under the tail
+  blob(g, whiteFill(g, 6, -12, 14), () => {                                // white back of the neck
+    g.moveTo(22, -12); g.quadraticCurveTo(10, -17, -6, -14); g.quadraticCurveTo(-12, -11, -8, -7);
+    g.quadraticCurveTo(6, -9, 18, -3);
+  });
+  if (spread) spreadWing(g, pose.wings, false); else foldedWing(g);
+  g.save(); g.translate(24, -9); g.rotate(pose.headPitch); head(g); g.restore();
+  g.restore();
 }
 
 // ---------------------------------------------------------------------------
-// Input: arrow keys or WASD; on touch screens, hold where you want to fly
+// Input: arrow keys or WASD, hold Space to swoop; on touch screens, hold where you
+// want to fly and tap quickly to start or stop a swoop
 // ---------------------------------------------------------------------------
-const keys = { up: false, down: false, left: false, right: false };
+const keys = { up: false, down: false, left: false, right: false, swoop: false };
 const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
-let started = false, startedAt = 0, touch = null, isTouch = false;
-addEventListener('keydown', e => { const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); begin(); } });
-addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+let started = false, startedAt = 0, touch = null, touchAt = 0, touchSwoop = false, isTouch = false;
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); keys.swoop = true; begin(); return; }
+  const k = KEYMAP[e.code];
+  if (k) { keys[k] = true; e.preventDefault(); begin(); }
+});
+addEventListener('keyup', e => { if (e.code === 'Space') keys.swoop = false; const k = KEYMAP[e.code]; if (k) keys[k] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; touch = null; });
 function toInternal(e) {
   const rect = canvas.getBoundingClientRect(), s = Math.min(rect.width / W, rect.height / H);
   return { x: (e.clientX - rect.left - (rect.width - W * s) / 2) / s, y: (e.clientY - rect.top - (rect.height - H * s) / 2) / s };
 }
-canvas.addEventListener('pointerdown', e => { isTouch = e.pointerType !== 'mouse'; touch = toInternal(e); canvas.setPointerCapture(e.pointerId); begin(); });
-canvas.addEventListener('pointermove', e => { if (touch) touch = toInternal(e); });
-canvas.addEventListener('pointerup', () => { touch = null; });
-canvas.addEventListener('pointercancel', () => { touch = null; });
+front.addEventListener('pointerdown', e => { isTouch = e.pointerType !== 'mouse'; touch = toInternal(e); touchAt = performance.now(); front.setPointerCapture(e.pointerId); begin(); });
+front.addEventListener('pointermove', e => { if (touch) touch = toInternal(e); });
+front.addEventListener('pointerup', () => { if (performance.now() - touchAt < 180) touchSwoop = !touchSwoop; touch = null; });
+front.addEventListener('pointercancel', () => { touch = null; });
 function begin() { if (!started) { started = true; startedAt = time; } }
 
 // ---------------------------------------------------------------------------
 // Game state
 // ---------------------------------------------------------------------------
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0 };
+// Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
+// swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
+const SWOOP_SPEED = 210, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1 };
 let cam = bird.x - SCREEN * 0.42, time = 0, distance = 0, lap = 1, lapFlash = 0;
 const trail = [];
-let sun, clouds, suburb, ground;
+let sunHi, clouds, hills, suburb, ground;
 
 function controls() {
   const c = { ...keys };
@@ -619,17 +870,35 @@ function controls() {
 
 function update(dt) {
   time += dt;
-  const c = controls(), dirX = (c.right ? 1 : 0) - (c.left ? 1 : 0), x0 = bird.x;
-  if (bird.grounded) {
+  const c = controls(), dirX = (c.right ? 1 : 0) - (c.left ? 1 : 0), dirY = (c.down ? 1 : 0) - (c.up ? 1 : 0), x0 = bird.x;
+  if (dirX) bird.face = dirX;
+
+  // Start a swoop with a little charge in the bar; keep going until let go or empty
+  const wantSwoop = keys.swoop || touchSwoop;
+  if (!wantSwoop) bird.spent = false;                               // after running dry, let go of Space before the next swoop
+  if (wantSwoop && !bird.swooping && !bird.spent && bird.charge > 0.05) { bird.swooping = true; bird.grounded = false; }
+  if (bird.swooping && bird.charge <= 0) { bird.spent = true; touchSwoop = false; }
+  if (!wantSwoop || bird.spent) bird.swooping = false;
+  bird.charge = clamp(bird.charge + (bird.swooping ? -SWOOP_DRAIN : SWOOP_RECHARGE) * dt, 0, 1);
+
+  if (bird.swooping) {
+    // Swoop: straight and fast; up or down angles the dive 30 degrees
+    const a = dirY * TILT;
+    bird.vx = bird.face * SWOOP_SPEED * Math.cos(a);
+    bird.vy = SWOOP_SPEED * Math.sin(a);
+    bird.y += bird.vy * dt;
+    if (bird.y < TOP_Y) bird.y = TOP_Y;
+    if (bird.y > LAND_Y - FEET) bird.y = LAND_Y - FEET;            // skims along the lawn
+  } else if (bird.grounded) {
     bird.vx = dirX * WALK;
-    if (dirX) { bird.face = dirX; bird.walkT += dt; }
+    if (dirX) bird.walkT += dt;
     if (c.up) { bird.grounded = false; bird.vy = -60; }
   }
-  if (!bird.grounded) {
-    if (dirX) { bird.vx += dirX * ACCEL_X * dt; bird.face = dirX; }
-    else bird.vx *= Math.exp(-0.8 * dt);                       // glide keeps most of its speed
+  if (!bird.grounded && !bird.swooping) {
     const maxX = c.down ? MAX_X_DIVE : MAX_X;
-    bird.vx = clamp(bird.vx, -maxX, maxX);
+    if (Math.abs(bird.vx) > maxX) bird.vx += (Math.sign(bird.vx) * maxX - bird.vx) * Math.min(1, 2 * dt);  // ease back after a swoop
+    else if (dirX) bird.vx = clamp(bird.vx + dirX * ACCEL_X * dt, -maxX, maxX);
+    else bird.vx *= Math.exp(-0.8 * dt);                           // glide keeps most of its speed
     bird.vy += (GRAVITY - (c.up ? FLAP : 0) + (c.down ? DIVE : 0)) * dt;
     const maxDown = c.down ? MAX_DIVE : MAX_FALL;
     if (bird.vy > maxDown) bird.vy += (maxDown - bird.vy) * Math.min(1, 6 * dt);  // ease to falling speed
@@ -637,18 +906,22 @@ function update(dt) {
     bird.y += bird.vy * dt;
     if (bird.y < TOP_Y) { bird.y = TOP_Y; bird.vy = Math.max(0, bird.vy); }
     if (bird.y >= LAND_Y - FEET) { bird.y = LAND_Y - FEET; bird.vy = 0; bird.grounded = true; bird.walkT = 0; }
-    bird.flapT += dt * (c.up ? 14 : dirX ? 8 : 0);
   }
+  if (!bird.grounded) bird.flapT += dt * (bird.swooping ? 0 : c.up ? 14 : dirX ? 8 : 0);
   bird.x += bird.vx * dt;
   distance += Math.abs(bird.x - x0);
+
+  // Up and down tilt the magpie 30 degrees; it eases between angles
+  const targetPitch = bird.grounded ? 0 : dirY * TILT;
+  bird.pitch += (targetPitch - bird.pitch) * Math.min(1, 8 * dt);
 
   const newLap = Math.floor(bird.x / LEVEL_W) + 1;
   if (newLap > lap) { lap = newLap; lapFlash = 1.6; }
   lapFlash = Math.max(0, lapFlash - dt);
 
-  // Speed streaks when swooping fast
+  // Speed streaks when going fast
   const speed = Math.hypot(bird.vx, bird.vy);
-  if (speed > 120 && Math.random() < dt * 40) trail.push({ x: bird.x - bird.face * 8, y: bird.y + (Math.random() - 0.5) * 8, life: 0.35 });
+  if (speed > 120 && Math.random() < dt * 50) trail.push({ x: bird.x - bird.face * 8, y: bird.y + (Math.random() - 0.5) * 8, life: 0.35 });
   for (const t of trail) t.life -= dt;
   while (trail.length && trail[0].life <= 0) trail.shift();
 
@@ -656,12 +929,18 @@ function update(dt) {
   cam += (target - cam) * Math.min(1, 3 * dt);
 }
 
-function birdFrame() {
+function magpiePose() {
   const c = controls();
-  if (bird.grounded) return 'stand';
-  if (c.down && bird.vy > 60) return 'fold';
-  if (bird.flapT > 0 && (c.up || c.left || c.right)) return ['up', 'glide', 'down', 'glide'][Math.floor(bird.flapT) % 4];
-  return 'glide';
+  if (bird.grounded) {
+    const walking = bird.vx !== 0;
+    return { pitch: -0.35, headPitch: 0.3, wings: 'folded', legs: walking ? bird.walkT * 14 : 0, bob: walking ? -Math.abs(Math.sin(bird.walkT * 14)) * 1.5 : 0 };
+  }
+  const flapping = c.up || c.left || c.right;
+  return {
+    pitch: bird.pitch, headPitch: -bird.pitch * 0.3,
+    wings: bird.swooping ? 'folded' : flapping ? 0.2 + 0.8 * Math.sin(bird.flapT * Math.PI / 2) : 0.35,
+    legs: null, bob: 0
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -671,18 +950,34 @@ function drawTiled(img, P, offset) {
   for (let x = -mod(Math.round(offset), P); x < W; x += P) ctx.drawImage(img, x, 0);
 }
 
+// The swoop charge bar, under the lap counter
+function drawSwoopBar(x, y) {
+  const full = bird.charge >= 1, bw = 40;
+  drawText('SWOOP', x, y, full || bird.swooping ? '#ffe066' : '#ffffff');
+  const bx = x + textWidth('SWOOP') + 4;
+  ctx.fillStyle = '#18222e'; ctx.fillRect(bx - 1, y - 1, bw + 2, 7);
+  ctx.fillStyle = '#3c4a5a'; ctx.fillRect(bx, y, bw, 5);
+  ctx.fillStyle = bird.swooping ? '#ff9a3c' : full && Math.floor(time * 3) % 2 ? '#fff3a0' : '#ffd23f';
+  ctx.fillRect(bx, y, Math.round(bw * bird.charge), 5);
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(bx, y, Math.round(bw * bird.charge), 1);
+}
+
 function draw() {
-  ctx.drawImage(skyCanvas, 0, 0);
-
-  // Sun: slowest of all; it takes SUN_LOOPS trips round the level to cross the screen
+  // Back canvas: the pixel sky scaled up, then the smooth sun.
+  // The sun is slowest of all: it takes SUN_LOOPS trips round the level to cross the screen.
+  bctx.imageSmoothingEnabled = false;
+  bctx.drawImage(skyCanvas, 0, 0, back.width, back.height);
   const span = W + SUN_SIZE, sunX = mod(W * 0.62 - cam * span / (SUN_LOOPS * LEVEL_W) + SUN_SIZE, span) - SUN_SIZE;
-  ctx.drawImage(sun, Math.round(sunX), 10);
+  bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
+  bctx.drawImage(sunHi, sunX * K, 8 * K, SUN_SIZE * K, SUN_SIZE * K);
 
+  // Pixel canvas: clouds, hills, suburb, lawn
+  ctx.clearRect(0, 0, W, H);
   const cOff = cam * PARALLAX.clouds + time * clouds.wind;
   for (const cl of clouds.list)
     for (let x = mod(Math.round(cl.x - cOff), clouds.P) - clouds.P; x < W; x += clouds.P)
       if (x + cl.img.width > 0) ctx.drawImage(cl.img, x, cl.y);
-
+  drawTiled(hills.c, hills.P, cam * PARALLAX.hills);
   drawTiled(suburb.c, suburb.P, cam * PARALLAX.suburb);
   drawTiled(ground.c, ground.P, cam * PARALLAX.ground);
 
@@ -693,20 +988,24 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  const bob = bird.grounded && bird.vx !== 0 && Math.floor(bird.walkT * 8) % 2 ? -1 : 0;
-  ctx.drawImage(birdFrames[birdFrame()][bird.face], Math.round(bird.x - cam) - ANCHOR_X, Math.round(bird.y) - ANCHOR_Y + bob);
-
   drawText('LAP ' + lap + '   ' + Math.floor(distance / 4) + ' M', 4, 4, '#ffffff');
+  drawSwoopBar(4, 12);
   if (lapFlash > 0 && Math.floor(lapFlash * 6) % 2 === 0) drawTextCentred('LAP ' + lap + '!', 60, '#ffe066', 3);
-
   const titleAlpha = started ? clamp(1 - (time - startedAt - 2), 0, 1) : 1;
   if (titleAlpha > 0) {
     ctx.globalAlpha = titleAlpha;
     drawTextCentred('SWOOPING SIMULATOR', 36, '#ffffff', 2);
-    drawTextCentred(isTouch ? 'TOUCH AND HOLD WHERE TO FLY' : 'ARROW KEYS OR WASD TO FLY', 56, '#ffe066');
-    drawTextCentred('UP TO FLAP - DOWN TO SWOOP', 64, '#ffe066');
+    drawTextCentred(isTouch ? 'HOLD WHERE TO FLY - TAP TO SWOOP' : 'ARROW KEYS OR WASD TO FLY', 56, '#ffe066');
+    drawTextCentred(isTouch ? 'UP TO FLAP' : 'UP TO FLAP - HOLD SPACE TO SWOOP', 64, '#ffe066');
     ctx.globalAlpha = 1;
   }
+
+  // Front canvas: the smooth magpie
+  fctx.setTransform(1, 0, 0, 1, 0, 0);
+  fctx.clearRect(0, 0, front.width, front.height);
+  const pose = magpiePose();
+  fctx.setTransform(K * BIRD_SCALE * bird.face, 0, 0, K * BIRD_SCALE, (bird.x - cam) * K, (bird.y + pose.bob * BIRD_SCALE) * K);
+  drawMagpie(fctx, pose);
 }
 
 // ---------------------------------------------------------------------------
@@ -716,14 +1015,17 @@ function resize() {
   W = clamp(Math.round(H * innerWidth / innerHeight), 240, 480);
   canvas.width = W; canvas.height = H;
   ctx.imageSmoothingEnabled = false;
+  K = Math.max(1, Math.min(innerWidth / W, innerHeight / H) * (devicePixelRatio || 1));
+  back.width = front.width = Math.round(W * K);
+  back.height = front.height = Math.round(H * K);
   buildSky();
 }
 
-sun = buildSun();
+sunHi = buildSunHi(512);
 clouds = buildClouds();
+hills = buildHills();
 suburb = buildSuburb();
 ground = buildGround();
-buildBird();
 resize();
 addEventListener('resize', resize);
 isTouch = matchMedia('(pointer: coarse)').matches;
