@@ -360,8 +360,21 @@
 - Fix the resize when the browser is widened: make it full width; a black strip at the bottom is fine if it keeps the aspect ratio better
   - The game always fills the width now, however wide the window (it used to stop at 4:1); taller windows get a black strip below
 
+## 72. Burnt on the barbie
+
+- When the bird sizzles on the barbecue, make him scream and tumble onto his back waving his legs, then he stands back up
+- When he tumbles, he spins and rotates
+
+## 73. A bigger kookaburra
+
+- Make the kookaburra twice the size
+
+## 74. The live address
+
+- What's the live URL on GitHub? (https://wizzard262.github.io/swooping-simulator/)
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 255 min so far | Prompts 1–71: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark |
+| 1 | 2026-10-21 | about 265 min so far | Prompts 1–74: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark |
