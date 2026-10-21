@@ -791,6 +791,7 @@ function buildGround() {
   glyphs('SWOOPING', sx + 2, sy + 2, 1, (x, y) => p.px(x, y, '#1c1c1c'));
   glyphs('MAGPIES', sx + 4, sy + 9, 1, (x, y) => p.px(x, y, '#1c1c1c'));
   shopInterior(p, r);
+  shopSign(p);
   return { P, c: p.c };
 }
 
@@ -936,11 +937,12 @@ function drawMagpie(g, pose) {
 }
 
 // ---------------------------------------------------------------------------
-// The bottle shop on the lawn: a BOTTLE-O in Dan Murphy's green, with the face on the sign.
+// The bottle shop on the lawn: a BOTTLE-O in Dan Murphy's green. The face and name are on a
+// sign on posts above the roof (scenery only: the magpie flies past it).
 // The interior (shelves of bottles) is part of the ground layer, behind the magpie; the
 // front (sign, glass, posters) is drawn on top of him, so we see him fly through the glass.
 // ---------------------------------------------------------------------------
-const SHOP = { x: 1000, w: 150, roof: 84, ceil: 120, floor: 160 };
+const SHOP = { x: 1000, w: 75, roof: 112, ceil: 120, floor: 160 };
 const DM_GREEN = '#1f5b2c', DM_DARK = '#164622', DM_LINE = '#2a6d38', LIME = '#d4e62a';
 const shopSpan = x => mod(x - SHOP.x, LEVEL_W) < SHOP.w;
 
@@ -968,7 +970,7 @@ function shopInterior(p, r) {
 
 // The Dan Murphy's style face: a grinning man with slicked-back hair, white on green, woodcut
 // style. Drawn smoothly at 4x, then turned into white pixels.
-const FACE_W = 30, FACE_H = 40;
+const FACE_W = 22, FACE_H = 29;
 function signFace(p, ox, oy) {
   const S = 4, c = makeCanvas(FACE_W * S, FACE_H * S), g = c.getContext('2d');
   g.scale(S * FACE_W / 26, S * FACE_H / 32); g.lineCap = g.lineJoin = 'round';   // drawn in a 26 x 32 box
@@ -1007,39 +1009,49 @@ function signFace(p, ox, oy) {
 }
 
 // The front: drawn over the magpie
+// The sign on posts above the roof: the face and BOTTLE-O. Part of the ground layer, behind the magpie.
+function shopSign(p) {
+  const bw = 94, bh = 33, bx = SHOP.x + Math.round(SHOP.w / 2 - bw / 2), by = SHOP.roof - 10 - bh;
+  for (const dx of [-14, 12]) { p.px(SHOP.x + SHOP.w / 2 + dx, by + bh, '#8a8f94', 2, 10); p.px(SHOP.x + SHOP.w / 2 + dx + 1, by + bh, '#6d7276', 1, 10); }
+  p.px(bx - 1, by - 1, DM_DARK, bw + 2, bh + 2);
+  p.px(bx, by, DM_GREEN, bw, bh);
+  for (let i = 3; i < bw; i += 6) p.px(bx + i, by, DM_LINE, 1, bh);
+  p.px(bx, by, '#2f7a42', bw, 1);
+  signFace(p, bx + 3, by + 3);
+  glyphs('BOTTLE-O', bx + 28, by + 12, 2, (x, y, s) => p.px(x, y, '#f4f6f1', s, s));
+}
+
 function buildShopFront() {
-  const { w, roof, ceil, floor } = SHOP, top = roof - 4, p = painter(w, floor + 4 - top, false);
-  const Y = y => y - top;                                             // canvas rows start at the top of the sign
-  p.px(0, Y(roof), DM_GREEN, w, ceil - roof);                         // sign band, panelled
+  const { w, roof, ceil, floor } = SHOP, top = roof, p = painter(w, floor + 4 - top, false);
+  const Y = y => y - top;                                             // canvas rows start at the roof
+  p.px(0, Y(roof), DM_GREEN, w, ceil - roof);                         // green fascia, panelled
   for (let i = 0; i < w; i += 6) p.px(i, Y(roof), DM_LINE, 1, ceil - roof);
   p.px(0, Y(roof), '#2f7a42', w, 1);
   p.px(0, Y(ceil) - 1, DM_DARK, w, 1);
-  p.px(8, Y(roof - 4), DM_GREEN, FACE_W + 6, 4);                      // the face pokes above the roof line
-  signFace(p, 11, Y(roof - 4));
-  glyphs('BOTTLE-O', 60, Y(roof + 13), 2, (x, y, s) => p.px(x, y, '#f4f6f1', s, s));
   // Glass: a faint tint with a few highlight pixels; white frames
   p.px(0, Y(ceil), 'rgba(80,165,235,0.45)', w, floor - ceil);        // blue glass
   const gr = rng(4);
-  for (let n = 0; n < 16; n++) {                                      // little highlight streaks on the glass
+  for (let n = 0; n < 10; n++) {                                      // little highlight streaks on the glass
     const gx = 4 + gr() * (w - 14), gy = 7 + gr() * (floor - ceil - 18), len = 2 + Math.floor(gr() * 4);
     for (let k = 0; k < len; k++) p.px(gx + k, Y(ceil) + gy + len - k, 'rgba(255,255,255,0.8)');
     if (gr() < 0.6) for (let k = 0; k < len - 1; k++) p.px(gx + k + 3, Y(ceil) + gy + len + 4 - k, 'rgba(255,255,255,0.5)');
   }
-  for (let n = 0; n < 20; n++) p.px(3 + gr() * (w - 6), Y(ceil) + 6 + gr() * (floor - ceil - 9), 'rgba(235,250,255,0.7)');   // specks
+  for (let n = 0; n < 12; n++) p.px(3 + gr() * (w - 6), Y(ceil) + 6 + gr() * (floor - ceil - 9), 'rgba(235,250,255,0.7)');   // specks
   for (let i = 0; i <= w; i += 25) p.px(Math.min(i, w - 1), Y(ceil), '#e6e8e6', 1, floor - ceil);
   p.px(0, Y(ceil) + 5, '#e6e8e6', w, 1);                             // transom
-  p.px(58, Y(ceil) + 6, DM_GREEN, 34, 6);                             // the green header over the doors
-  glyphs('BOTTLE-O', 60, Y(ceil) + 6, 1, (x, y) => p.px(x, y, '#f4f6f1'));
-  for (const px0 of [3, w - 19]) {                                    // lime "direct to boot" posters
-    p.px(px0, Y(ceil) + 9, LIME, 16, 28);
-    p.px(px0 + 3, Y(ceil) + 16, DM_DARK, 7, 2); p.px(px0 + 3, Y(ceil) + 20, DM_DARK, 9, 2); p.px(px0 + 3, Y(ceil) + 24, DM_DARK, 6, 2);
-    for (let k = 0; k < 5; k++) p.px(px0 + 11 + (k < 3 ? k : 4 - k), Y(ceil) + 28 + k, DM_DARK);   // arrow
+  const hx = Math.round(w / 2 - 17);
+  p.px(hx, Y(ceil) + 6, DM_GREEN, 34, 6);                             // the green header over the doors
+  glyphs('BOTTLE-O', hx + 2, Y(ceil) + 6, 1, (x, y) => p.px(x, y, '#f4f6f1'));
+  for (const px0 of [3, w - 15]) {                                    // lime "direct to boot" posters
+    p.px(px0, Y(ceil) + 14, LIME, 12, 23);
+    p.px(px0 + 2, Y(ceil) + 18, DM_DARK, 6, 2); p.px(px0 + 2, Y(ceil) + 22, DM_DARK, 8, 2); p.px(px0 + 2, Y(ceil) + 26, DM_DARK, 5, 2);
+    for (let k = 0; k < 5; k++) p.px(px0 + 8 + (k < 3 ? k : 4 - k), Y(ceil) + 30 + k, DM_DARK);   // arrow
   }
   p.px(0, Y(roof), DM_DARK, 3, floor - roof);                         // corner pillars
   p.px(w - 3, Y(roof), DM_DARK, 3, floor - roof);
   p.px(0, Y(floor) - 3, '#d5d7d2', w, 3);                             // kick plate
-  p.px(78, Y(ceil) - 3, '#9aa0a2', w - 78, 3);                        // awning
-  p.px(78, Y(ceil), 'rgba(0,0,0,0.15)', w - 78, 2);
+  p.px(Math.round(w * 0.55), Y(ceil) - 2, '#9aa0a2', w - Math.round(w * 0.55), 3);   // awning
+  p.px(Math.round(w * 0.55), Y(ceil) + 1, 'rgba(0,0,0,0.15)', w - Math.round(w * 0.55), 2);
   return { c: p.c, top };
 }
 

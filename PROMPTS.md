@@ -125,8 +125,17 @@
 - Make the shop glass bluer with more of those little highlight pixels
 - Make the bottles and cans bigger, and more obviously Foster's and Johnnie Walker Red Label
 
+## 21. A smaller shop with a pole sign
+
+- Make the BOTTLE-O name and face into a sign on a post on top of the building, which the bird doesn't interact with
+- Make the bottle shop half the length
+
+## 22. The sun, again
+
+- I really, really want the sun not to be pixel art at all, but photo-real like the picture I gave (sent again: a Shutterstock preview, with its watermark)
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 75 min so far | Prompts 1–20: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page |
+| 1 | 2026-10-21 | about 80 min so far | Prompts 1–22: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page |
