@@ -1607,10 +1607,12 @@ function drawRooBody(g, crouch, ext, swing) {
 // The animals and the bloke are drawn like the magpie (smooth, then slightly pixelated).
 // ---------------------------------------------------------------------------
 const KOALA = { u: 0.3, target: 0.6, wait: 0, step: 0 };
-const KOOKA = { x: 0, y: 0, state: 'perched', t: 0, fx: 0, fy: 0, vy: 0, rot: 0 };
+const KOOKA = { x: 0, y: 0, state: 'perched', t: 0, fx: 0, fy: 0, vy: 0, rot: 0, callIn: 20, calling: 0 };
+const KOOKA_CALL_TIME = 1.4;      // his laugh; now and then (about every 30 seconds) while he's on screen
 const KOOKA_SCALE = 0.6;          // a big kookaburra (twice the size he was)
 const BBQ_SCALE = 0.48;
-const BBQ = { x: 800, top: Math.round(166 - 32 * BBQ_SCALE), half: 17 * BBQ_SCALE * 0.8, flipT: 0, flipIn: 2 };
+const BBQ_WIDE = 1.6;              // twice as wide as it was
+const BBQ = { x: 800, top: Math.round(166 - 32 * BBQ_SCALE), half: 17 * BBQ_SCALE * BBQ_WIDE, flipT: 0, flipIn: 2 };
 const POSTIE = { x: 40, dir: 1, stop: 0, last: -1, wheel: 0 };
 const SHARK = { in: 20, t: 0, x: 0, dir: 1 };
 const smoke = [];
@@ -1625,7 +1627,15 @@ function knockKooka() {
   Object.assign(KOOKA, { state: 'falling', t: 0, fx: KOOKA.x, fy: KOOKA.y, vy: -40, rot: 0 });
   Sound.boing();
 }
+const BBQ_TARGET = {                 // poop on the hot plate: it sizzles
+  get x() { return BBQ.x - BBQ.half; }, y: BBQ.top - 3, w: 2 * BBQ.half, h: 6,
+  hit() {
+    Sound.sizzle();
+    for (let i = 0; i < 10; i++) smoke.push({ x: BBQ.x + (Math.random() - 0.5) * 2 * BBQ.half, y: BBQ.top - 2, life: 1.2, r: 1.5 + Math.random() * 1.5, bbq: true });
+  }
+};
 function setUpCast() {
+  TARGETS.push(BBQ_TARGET);
   const top = PERCHES.reduce((a, b) => b.y < a.y ? b : a);            // the kookaburra sits on the highest perch
   KOOKA.x = (top.x0 + top.x1) / 2; KOOKA.y = top.y;
   TARGETS.push(KOOKA_TARGET);
@@ -1642,6 +1652,11 @@ function updateCast(dt) {
   // Kookaburra: knocked off, he tumbles to the ground spinning, sees stars, then flies back up
   if (bird.swooping && KOOKA.state === 'perched' && Math.abs(kookaDx(bird.x)) < 13 && Math.abs(bird.y - (KOOKA.y - 10)) < 14) knockKooka();
   KOOKA.t += dt;
+  KOOKA.calling = Math.max(0, KOOKA.calling - dt);
+  const kx = loopX(KOOKA.x);
+  if (KOOKA.state === 'perched' && kx > 0 && kx < W && (KOOKA.callIn -= dt) <= 0) {   // laughs now and then while you can see him
+    KOOKA.callIn = 15 + Math.random() * 30; KOOKA.calling = KOOKA_CALL_TIME; Sound.laugh();
+  }
   if (KOOKA.state === 'falling') {
     KOOKA.vy += 300 * dt; KOOKA.fy += KOOKA.vy * dt; KOOKA.fx += 12 * dt; KOOKA.rot += 9 * dt;
     if (KOOKA.fy >= LAND_Y + 4) { KOOKA.fy = LAND_Y + 4; KOOKA.state = 'stunned'; KOOKA.t = 0; }
@@ -1649,7 +1664,7 @@ function updateCast(dt) {
   else if (KOOKA.state === 'flying') {
     const k = Math.min(1, KOOKA.t / 1.4), e = k * k * (3 - 2 * k);
     KOOKA.fx = KOOKA.sx + (KOOKA.x - KOOKA.sx) * e; KOOKA.fy = KOOKA.sy + (KOOKA.y - KOOKA.sy) * e - Math.sin(k * Math.PI) * 20;
-    if (k >= 1) { KOOKA.state = 'perched'; Sound.laugh(); }
+    if (k >= 1) { KOOKA.state = 'perched'; KOOKA.calling = KOOKA_CALL_TIME; Sound.laugh(); }
   }
   // Barbecue: every few seconds he flips a burger
   BBQ.flipIn -= dt;
@@ -1741,8 +1756,14 @@ function drawKookaburra(g, flap) {
   fill('#4a3220', () => g.ellipse(4, -19.5, 4, 1.8, 0, 0, Math.PI * 2)); // crown
   fill('#4a3220', () => g.ellipse(4, -16, 4.5, 1.2, 0, 0, Math.PI * 2)); // eye stripe
   fill('#111', () => g.arc(6, -16.4, 0.9, 0, Math.PI * 2));
-  fill('#2b2520', () => { g.moveTo(9, -17.5); g.lineTo(18, -15.5); g.lineTo(9, -14.5); });   // bill
-  fill('#d9cfb8', () => { g.moveTo(9, -14.5); g.lineTo(17, -15.2); g.lineTo(9, -13.2); });
+  const open = KOOKA.calling > 0 && KOOKA.state === 'perched' ? Math.abs(Math.sin((KOOKA_CALL_TIME - KOOKA.calling) * Math.PI * 7)) : 0;   // beak working as he laughs
+  if (open > 0.05) fill('#6a1f22', () => { g.moveTo(9, -15); g.lineTo(17, -16 - open * 4); g.lineTo(17, -14 + open * 3); });
+  g.save(); g.translate(9, -15); g.rotate(-open * 0.35); g.translate(-9, 15);
+  fill('#2b2520', () => { g.moveTo(9, -17.5); g.lineTo(18, -15.5); g.lineTo(9, -14.5); });   // bill (top)
+  g.restore();
+  g.save(); g.translate(9, -14); g.rotate(open * 0.3); g.translate(-9, 14);
+  fill('#d9cfb8', () => { g.moveTo(9, -14.5); g.lineTo(17, -15.2); g.lineTo(9, -13.2); });   // bill (bottom)
+  g.restore();
   fill('#4a3d30', () => g.rect(-1, -2, 1.2, 2)); fill('#4a3d30', () => g.rect(2, -2, 1.2, 2));
 }
 
@@ -1757,8 +1778,8 @@ function drawCharacter(xWorld, yFeet, scale, dir, draw, rot = 0, wide = 1) {
   crispen(bbctx, sx * K / BIRD_PIX, (yFeet - 10) * K / BIRD_PIX, Math.ceil(26 * K / BIRD_PIX));
 }
 function drawCast() {
-  drawCharacter(BBQ.x, 166, BBQ_SCALE, 1, drawBbq, 0, 0.8);             // 50% taller than before, and a little wider
-  drawCharacter(BBQ.x - 15, 166, BBQ_SCALE, 1, drawBloke);
+  drawCharacter(BBQ.x, 166, BBQ_SCALE, 1, drawBbq, 0, BBQ_WIDE);
+  drawCharacter(BBQ.x - BBQ.half - 9, 166, BBQ_SCALE, 1, drawBloke);
   if (TRUNK.length) {
     const i = Math.floor(KOALA.u * (TRUNK.length - 1)), [tx, ty] = TRUNK[i];
     drawCharacter(tx, ty + 6, 0.36, 1, drawKoala);
