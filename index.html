@@ -35,7 +35,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v56</div>
+<div id="ver" title="Version: one for each update published">v57</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -1555,7 +1555,7 @@ const Sound = (() => {
 const HOIST = { x: 90 - 3 * 60 + LEVEL_W, r: 30,   // three of its widths left of where it was (the level loops)
   mastTop: 113, top: 115, spin: 0, angle: 0.4 };
 const HOIST_LINES = [0.45, 0.75, 1];
-const HANG_Y = { wings: 12, feet: 9 };   // hanging under it: how far below the top his middle is (by his wings, or upside down by his feet)
+const HANG_Y = { feet: 9 };              // hanging upside down under it by his feet: how far below the top his middle is
 const WASHING = [                                                    // [side 0-3, line, along 0-1, kind, colour]
   [0, 2, 0.3, 'shirt', '#d64534'], [0, 1, 0.7, 'sock', '#f2efe6'], [1, 2, 0.5, 'sheet', '#f4f1e8'],
   [1, 0, 0.4, 'towel', '#3f6fc4'], [2, 2, 0.6, 'towel', '#f1c640'], [2, 1, 0.25, 'shirt', '#5aa846'],
@@ -1567,7 +1567,10 @@ const HOIST_WHIRL = 10;            // how fast a swoop past sends it spinning (r
 function updateHoist(dt) {
   // Swoop past it and it whirls round the way you went, the washing flung outwards, then slowly winds down
   if (bird.swooping && !bird.onHoist && !bird.hanging && Math.abs(hoistDx(bird.x)) < HOIST.r && bird.y > HOIST.mastTop - 20 && bird.y < LAND_Y - 5
-      && Math.abs(HOIST.spin) < HOIST_WHIRL * 0.8) HOIST.spin = -Math.sign(bird.vx || bird.face) * HOIST_WHIRL;
+      && Math.abs(HOIST.spin) < HOIST_WHIRL * 0.8) {
+    HOIST.spin = -Math.sign(bird.vx || bird.face) * HOIST_WHIRL;
+    showCombo('WHIPPER SNIPPER!', true);                             // +200, the words travelling along above him, flashing
+  }
   const riding = bird.onHoist || bird.hanging, target = riding ? 2.6 : 0;   // spins up with him on it (or under it), slows down without
   HOIST.spin += (target - HOIST.spin) * Math.min(1, (riding ? 1.2 : 0.5) * dt);
   HOIST.angle += HOIST.spin * dt;
@@ -2574,9 +2577,9 @@ function update(dt) {
     bird.y += bird.vy * dt;
     if (bird.y < TOP_Y) { bird.y = TOP_Y; bird.vy = Math.max(0, bird.vy); }
     if (bird.vy < 0 && bird.loopT <= 0 && Math.abs(hoistDx(bird.x)) < HOIST.r - 2 && bird.y > HOIST.top && bird.y < HOIST.top + 14) {
-      // flew up under the Hills Hoist: grab hold and ride round underneath it, half the time by his wings, half upside down by his feet
+      // flew up under the Hills Hoist: grab hold and ride round underneath it, upside down by his feet
       const dx = hoistDx(bird.x);
-      bird.hanging = Math.random() < 0.5 ? 'wings' : 'feet'; bird.vx = bird.vy = 0; bird.hoistR = Math.abs(dx); award(20);
+      bird.hanging = 'feet'; bird.vx = bird.vy = 0; bird.hoistR = Math.abs(dx); award(20);
       bird.hoistAt = (dx >= 0 ? 0 : Math.PI) - HOIST.angle;
       bird.hoistFaceAt = (bird.face > 0 ? 0 : Math.PI) - HOIST.angle;
     }
@@ -2686,9 +2689,7 @@ function magpiePose() {
     const up = bird.onBack < GET_UP_TIME ? bird.onBack / GET_UP_TIME : 1;
     Object.assign(pose, { pitch: -0.35, headPitch: 0.5, wings: 'folded', legs: time * 22, flip: Math.PI * up, bob: 15 * up });
   }
-  if (bird.hanging === 'wings') {                                    // hanging on by his wings, looking up, legs kicking
-    Object.assign(pose, { pitch: -0.25, headPitch: -0.8, wings: 0.8 + 0.12 * Math.sin(time * 18), legs: time * 16, dangle: false, burn: 0, bob: 0 });
-  } else if (bird.hanging === 'feet') {                              // upside down by his feet, swinging round
+  if (bird.hanging === 'feet') {                              // upside down by his feet, swinging round
     Object.assign(pose, { pitch: -0.35, headPitch: 0.4, wings: 0.2 + 0.3 * Math.sin(time * 14), legs: 0, dangle: false, burn: 0, bob: 0,
       flip: Math.sin(time * 3) * 0.45, hang: true });
   }
