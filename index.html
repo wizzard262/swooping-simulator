@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Swooping Simulator</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d1b2a; overflow: hidden; touch-action: none; }
+  canvas {
+    display: block; width: 100vw; height: 100vh; object-fit: contain;
+    image-rendering: crisp-edges; image-rendering: pixelated;
+  }
+  #prompts {
+    position: fixed; top: 3px; right: 6px;
+    font: 10px/1 monospace; color: rgba(255, 255, 255, .75);
+    text-decoration: none; text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+  }
+  #prompts:hover { color: #fff; text-decoration: underline; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// World
+// ---------------------------------------------------------------------------
+const H = 180;                    // internal height in pixels; width follows the window
+const SCREEN = 320;
+const LEVEL_W = SCREEN * 6;       // the level is 6 screens wide and loops round
+const GRASS_TOP = 152;            // top of the lawn
+const SUBURB_BASE = 154;          // houses stand here (a little hidden by the lawn)
+const LAND_Y = 160;               // the magpie's feet rest here
+const TOP_Y = 10;                 // highest the magpie can fly
+const FEET = 5;                   // sprite anchor to feet
+
+// Parallax: how far each layer moves per pixel the camera moves.
+// Each layer repeats every LEVEL_W * factor pixels, so the whole scene loops with the level.
+const PARALLAX = { clouds: 0.25, suburb: 0.5, ground: 1 };
+const SUN_SIZE = 76;
+const SUN_LOOPS = 3;              // fly the level this many times to push the sun off one side and back on the other
+
+// Magpie flight
+const GRAVITY = 70, FLAP = 230, DIVE = 230, ACCEL_X = 230;
+const MAX_FALL = 45, MAX_DIVE = 170, MAX_CLIMB = 95, MAX_X = 115, MAX_X_DIVE = 150, WALK = 28;
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W = SCREEN;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function rng(seed) {
+  return function () {
+    seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const pick = (r, list) => list[Math.floor(r() * list.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const mod = (a, n) => ((a % n) + n) % n;
+const hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+const mix = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const dither = (x, y, t) => t * 16 > BAYER[(y & 3) * 4 + (x & 3)];
+
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+// A canvas to paint pixels on. With wrap, anything off one side comes back on the other,
+// so the layer tiles seamlessly.
+function painter(w, h, wrap) {
+  const c = makeCanvas(w, h), g = c.getContext('2d');
+  return {
+    c, w, h,
+    px(x, y, col, pw = 1, ph = 1) {
+      x = Math.round(x); y = Math.round(y);
+      g.fillStyle = col;
+      if (!wrap) return g.fillRect(x, y, pw, ph);
+      x = mod(x, w);
+      g.fillRect(x, y, pw, ph);
+      if (x + pw > w) g.fillRect(x - w, y, pw, ph);
+    }
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 3x5 pixel font: each glyph is 5 rows of 3 bits (4 = left, 2 = middle, 1 = right)
+// ---------------------------------------------------------------------------
+const FONT = {
+  A: '25755', B: '65656', C: '34443', D: '65556', E: '74647', F: '74644', G: '34553', H: '55755',
+  I: '72227', J: '11152', K: '55655', L: '44447', M: '57755', N: '65555', O: '25552', P: '65644',
+  Q: '25563', R: '65655', S: '34216', T: '72222', U: '55557', V: '55552', W: '55775', X: '55255',
+  Y: '55222', Z: '71247', 0: '75557', 1: '26227', 2: '61247', 3: '61216', 4: '55711', 5: '74616',
+  6: '34757', 7: '71222', 8: '75757', 9: '75716', ' ': '00000', '-': '00700', '.': '00002',
+  '!': '22202', ':': '02020', '/': '11244'
+};
+function glyphs(str, x, y, s, plot) {
+  for (const ch of str) {
+    const g = FONT[ch];
+    if (g) for (let row = 0; row < 5; row++)
+      for (let col = 0; col < 3; col++)
+        if (+g[row] & (4 >> col)) plot(x + col * s, y + row * s, s);
+    x += 4 * s;
+  }
+}
+const textWidth = (str, s = 1) => str.length * 4 * s - s;
+function drawText(str, x, y, col, s = 1, outline = '#18222e') {
+  ctx.fillStyle = outline;
+  for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1], [-1, 1], [1, -1], [-1, -1]])
+    glyphs(str, x + ox, y + oy, s, (px, py, ps) => ctx.fillRect(px, py, ps, ps));
+  ctx.fillStyle = col;
+  glyphs(str, x, y, s, (px, py, ps) => ctx.fillRect(px, py, ps, ps));
+}
+const drawTextCentred = (str, y, col, s = 1) => drawText(str, Math.round((W - textWidth(str, s)) / 2), y, col, s);
+
+// ---------------------------------------------------------------------------
+// Sky (static, dithered bands)
+// ---------------------------------------------------------------------------
+const SKY = ['#3f8fd8', '#4f9ce0', '#62aae7', '#77b8ed', '#8ec6f2', '#a6d3f6', '#bfe0f9', '#d6ecfb'].map(hex);
+let skyCanvas;
+function buildSky() {
+  const c = makeCanvas(W, H), g = c.getContext('2d'), img = g.createImageData(W, H);
+  for (let y = 0; y < H; y++) {
+    const t = Math.min(1, y / GRASS_TOP) * (SKY.length - 1), i = Math.floor(t), f = t - i;
+    for (let x = 0; x < W; x++) {
+      const o = (y * W + x) * 4;
+      img.data.set(SKY[Math.min(SKY.length - 1, i + (dither(x, y, f) ? 1 : 0))], o);
+      img.data[o + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  skyCanvas = c;
+}
+
+// ---------------------------------------------------------------------------
+// The sun: a pixel-art Sun King (face in a ring of curls, straight and wavy rays,
+// a fleur-de-lis sceptre and a hand of justice crossed behind)
+// ---------------------------------------------------------------------------
+function buildSun() {
+  const S = SUN_SIZE, c = makeCanvas(S, S), g = c.getContext('2d');
+  const GOLD = { hi: '#fff1a6', lt: '#f8d457', mid: '#e5ab2e', dk: '#bf8219', dd: '#7f520c', ol: '#5a3707' };
+  const map = new Array(S * S).fill(null);
+  const set = (x, y, col) => { if (x >= 0 && y >= 0 && x < S && y < S) map[y * S + x] = col; };
+  const L = Math.SQRT1_2;
+  // light comes from the top left: is this side of a shape facing it?
+  const lit = (nx, ny) => -nx * L - ny * L > 0;
+
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const dx = x + 0.5 - S / 2, dy = y + 0.5 - S / 2;
+    // Rays: 12 straight spikes, 12 wavy flames between them
+    for (let k = 0; k < 24; k++) {
+      const a = k * Math.PI / 12 - Math.PI / 2, ux = Math.cos(a), uy = Math.sin(a);
+      const along = dx * ux + dy * uy;
+      let perp = ux * dy - uy * dx;
+      if (along < 16) continue;
+      let half, len;
+      if (k % 2 === 0) { len = k % 4 === 0 ? 37 : 33; half = 3.6 * (1 - (along - 16) / (len - 16)); }
+      else { len = 31; perp -= 1.6 * Math.sin(along * 0.55); half = 1.9 - 1.3 * (along - 16) / (len - 16); }
+      if (along > len || Math.abs(perp) > half) continue;
+      const side = perp > 0 ? 1 : -1;
+      const col = Math.abs(perp) < 0.6 ? GOLD.hi : lit(-uy * side, ux * side) ? GOLD.lt : GOLD.dk;
+      set(x, y, col);
+    }
+  }
+
+  // Sceptre (top left) and hand of justice (top right), crossed behind the face
+  function staff(dirx, diry, head) {
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const dx = x + 0.5 - S / 2, dy = y + 0.5 - S / 2;
+      const along = dx * dirx + dy * diry;          // grows towards the head
+      const perp = dirx * dy - diry * dx;
+      const a = along - 27;                         // distance past the end of the shaft
+      let col = null;
+      if (along > -28 && a < 0 && Math.abs(perp) < 1.1) col = perp < 0 ? GOLD.lt : GOLD.dk;
+      else if (a >= 0 && a < 2 && Math.abs(perp) < 2.6) col = GOLD.mid;          // collar
+      else if (a >= 2 && a < 10) col = head(a - 2, perp);
+      if (col) set(x, y, col);
+    }
+  }
+  const fleur = (a, p) => {
+    const q = Math.abs(p);
+    if (q < 1.4 - a * 0.12 && a < 7) return q < 0.5 ? GOLD.hi : GOLD.lt;      // centre petal
+    if (a < 5 && q > 1.4 && q < 1.4 + 2.6 * Math.sin((a + 0.5) * Math.PI / 5.5)) return p < 0 ? GOLD.lt : GOLD.dk;
+    return null;
+  };
+  const hand = (a, p) => {
+    if (a < 3.5 && Math.abs(p) < 2.6) return p < 0 ? GOLD.lt : GOLD.mid;       // palm
+    if (a < 6.5 && p > -2.6 && p < 2 && Math.floor(p + 2.6) % 2 === 0) return GOLD.lt; // fingers
+    if (a > 0.5 && a < 3 && p >= 2.6 && p < 4) return GOLD.dk;                   // thumb
+    return null;
+  };
+  staff(-L, -L, fleur);   // head towards the top left
+  staff(L, -L, hand);     // head towards the top right
+
+  // Hair: two rings of round curls, each lit from the top left with a dark curl in the middle
+  const FRX = 9, FRY = 11.5, FCY = 1;
+  function curl(cx, cy, rad) {
+    for (let j = Math.floor(cy - rad) - 1; j <= cy + rad; j++) for (let i = Math.floor(cx - rad) - 1; i <= cx + rad; i++) {
+      const u = (i + 0.5 - cx) / rad, v = (j + 0.5 - cy) / rad, d = u * u + v * v;
+      if (d > 1) continue;
+      const b = -(u + v) * 0.6 + (1 - d) * 0.5;
+      const swirl = d > 0.12 && d < 0.4 && u + v > -0.2;
+      set(S / 2 + i, S / 2 + j, swirl ? GOLD.dk : b > 0.55 ? GOLD.hi : b > 0.15 ? GOLD.lt : b > -0.3 ? GOLD.mid : GOLD.dk);
+    }
+  }
+  for (const [ring, rad, count, phase] of [[7.5, 4, 13, 0.5], [3.5, 4.4, 14, 0]]) {
+    for (let k = 0; k < count; k++) {
+      const th = Math.PI / 2 + 0.75 + (k + phase) / count * (Math.PI * 2 - 1.5);   // leaves a gap below the chin
+      curl(Math.cos(th) * (FRX + ring), FCY + Math.sin(th) * (FRY + ring * 0.8), rad);
+    }
+  }
+
+  // Face: an oval lit from the top left
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const fx = (x + 0.5 - S / 2) / FRX, fy = (y + 0.5 - S / 2 - FCY) / FRY;
+    if (fx * fx + fy * fy >= 1) continue;
+    const shade = -(fx * 0.8 + fy * 0.6) * 0.75 + 0.35 * (1 - fx * fx - fy * fy);
+    set(x, y, shade > 0.55 ? GOLD.hi : shade > 0.1 ? GOLD.lt : shade > -0.35 ? GOLD.mid : GOLD.dk);
+  }
+  const c0 = S / 2, c1 = S / 2 + FCY;
+  const face = (i, j, col) => set(c0 + i, c1 + j, col);
+  for (const i of [-6, -5, -4, -3, -2, 1, 2, 3, 4, 5]) face(i, -6 + (i === -6 || i === 5 ? 1 : 0), GOLD.dk);  // brows
+  for (const i of [-5, -4, -3, -2, 1, 2, 3, 4]) face(i, -4, GOLD.dk);                         // upper lids
+  for (const i of [-5, -2, 1, 4]) face(i, -3, GOLD.hi);                                       // whites of the eyes
+  for (const i of [-4, -3, 2, 3]) face(i, -3, GOLD.dd);                                       // pupils
+  for (let j = -3; j < 3; j++) { face(-1, j, GOLD.hi); face(0, j, GOLD.dk); }                 // nose
+  for (const i of [-2, -1, 0, 1]) face(i, 3, GOLD.dk);
+  face(-1, 3, GOLD.mid);
+  for (const i of [-2, -1, 0, 1]) face(i, 5, GOLD.dk);                                        // upper lip
+  for (const i of [-3, -2, -1, 0, 1, 2]) face(i, 6, GOLD.dd);                                 // mouth
+  for (const i of [-2, -1, 0, 1]) face(i, 7, GOLD.hi);                                        // lower lip
+  face(-1, 9, GOLD.mid); face(0, 9, GOLD.mid);                                                // chin
+
+  // Dark outline round the whole shape so it reads against the sky
+  const outline = [];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    if (map[y * S + x]) continue;
+    const n = (xx, yy) => xx >= 0 && yy >= 0 && xx < S && yy < S && map[yy * S + xx] && map[yy * S + xx] !== GOLD.ol;
+    if (n(x - 1, y) || n(x + 1, y) || n(x, y - 1) || n(x, y + 1)) outline.push([x, y]);
+  }
+  for (const [x, y] of outline) map[y * S + x] = GOLD.ol;
+  for (let i = 0; i < S * S; i++) if (map[i]) { g.fillStyle = map[i]; g.fillRect(i % S, Math.floor(i / S), 1, 1); }
+  return c;
+}
+
+// ---------------------------------------------------------------------------
+// Clouds: chunky pixel cumulus, white with pale blue shading (Harrier Carrier style)
+// ---------------------------------------------------------------------------
+const CLOUD = { white: '#ffffff', pale: '#d6eefc', shade: '#b8dcf4' };
+function makeCloud(r, w, h) {
+  // Lumpy outline: lots of round puffs, taller in the middle, sitting on a flat base with wispy ends
+  const base = h - 2, puffs = [], n = Math.max(4, Math.round(w / 4));
+  for (let i = 0; i < n; i++) {
+    const u = 0.08 + r() * 0.84, tall = Math.sin(Math.PI * u) ** 1.5;
+    const rad = Math.min(2 + r() * h * 0.2 + tall * h * 0.14, u * w - 1, w - 2 - u * w);   // keep inside the canvas
+    puffs.push({ cx: u * w, cy: base - rad * 0.4 - r() * tall * Math.max(0, base - rad * 1.4), rad });
+  }
+  puffs.sort((a, b) => a.cy - b.cy);                // lower puffs sit in front
+  const front = new Int16Array(w * h).fill(-1);
+  for (let y = 0; y <= base; y++) for (let x = 0; x < w; x++)
+    puffs.forEach((p, i) => { if ((x - p.cx) ** 2 + (y - p.cy) ** 2 <= p.rad * p.rad) front[y * w + x] = i; });
+  const left = Math.min(...puffs.map(p => p.cx - p.rad)), right = Math.max(...puffs.map(p => p.cx + p.rad));
+  for (let y = base - 1; y <= base + 1; y++) {       // wisps along the base
+    const reach = (base + 1 - y) * 3 + 2 + r() * 4;
+    for (let x = Math.max(0, Math.floor(left - reach)); x < Math.min(w, right + reach); x++)
+      if (front[y * w + x] < 0 && r() < 0.8) front[y * w + x] = -2;
+  }
+  const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h && front[y * w + x] !== -1;
+
+  const c = makeCanvas(w, h), g = c.getContext('2d');
+  const top = Math.min(...puffs.map(p => p.cy - p.rad));
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = front[y * w + x];
+    let col = null;
+    if (i === -2) col = r() < 0.5 ? CLOUD.pale : CLOUD.white;
+    else if (i >= 0) {
+      // Each puff is lit from the top left, and the cloud darkens towards its base
+      const p = puffs[i], u = (x - p.cx) / p.rad, v = (y - p.cy) / p.rad;
+      const b = 0.55 - 0.55 * (u * 0.6 + v * 0.8) - 0.25 * (u * u + v * v) - 0.35 * (y - top) / (h - top) + (r() - 0.5) * 0.15;
+      if (b > 0.5) col = CLOUD.white;
+      else if (b > 0.2) col = dither(x, y, (b - 0.2) / 0.3) ? CLOUD.white : CLOUD.pale;
+      else if (b > -0.15) col = CLOUD.pale;
+      else col = dither(x, y, (b + 0.5) / 0.35) ? CLOUD.pale : CLOUD.shade;
+      if (!at(x, y + 1) && y > top + 2) col = CLOUD.shade;
+    } else if (r() < 0.05 && (at(x - 1, y) || at(x + 1, y) || at(x, y - 2) || at(x, y + 2))) {
+      col = r() < 0.5 ? CLOUD.pale : CLOUD.white;    // stray puffs of vapour round the edge
+    }
+    if (col) { g.fillStyle = col; g.fillRect(x, y, 1, 1); }
+  }
+  return c;
+}
+function buildClouds() {
+  const r = rng(7), P = LEVEL_W * PARALLAX.clouds, n = 9, list = [];
+  for (let i = 0; i < n; i++) {
+    const w = 24 + Math.floor(r() * 80), h = clamp(Math.round(w * (0.28 + r() * 0.3)), 10, 44);
+    list.push({ x: (i + r() * 0.6) * P / n, y: 6 + Math.floor(r() * 90), img: makeCloud(r, w, h) });
+  }
+  return { P, list, wind: 3 };
+}
+
+// ---------------------------------------------------------------------------
+// Suburb: single-storey Australian brick houses with shallow roofs, fences,
+// gum trees, jacarandas, bottlebrush, hedges, Hills Hoists and TV aerials
+// ---------------------------------------------------------------------------
+const GUM_LEAF = ['#93a95c', '#6c8a42', '#4e6a33'];
+const JACARANDA = ['#bba5ea', '#9277cf', '#6a53a6'];
+const LEAFY = ['#7caa4c', '#5a8a38', '#3f6a2c'];
+const BUSH = ['#6f9a45', '#4f7b35', '#3a5e29'];
+const BRICKS = [
+  ['#a8492f', '#943f28', '#c9a48a'],   // red
+  ['#d8c39a', '#c6ae86', '#ece2cc'],   // cream
+  ['#8c5636', '#784a2e', '#b99a7c'],   // 70s liver brick
+  ['#cfa268', '#bb8f57', '#e6cfa8']    // blonde
+];
+const ROOFS = [
+  { steel: false, c1: '#b4532f', c2: '#963f20', c3: '#c96a42', cap: '#7f3519', fascia: '#ece6d6' },  // terracotta tiles
+  { steel: false, c1: '#7d7064', c2: '#685d53', c3: '#8e8276', cap: '#544b43', fascia: '#e2dccd' },  // concrete tiles
+  { steel: true, c1: '#5d6263', c2: '#4b4f50', cap: '#3f4243', fascia: '#5d6263' },                  // Colorbond grey
+  { steel: true, c1: '#e6dbb8', c2: '#d1c49e', cap: '#bfb18b', fascia: '#e6dbb8' },                  // Colorbond cream
+  { steel: true, c1: '#7b302b', c2: '#682823', cap: '#561f1b', fascia: '#efe9dc' }                   // Colorbond red
+];
+
+function leafClump(p, r, cx, cy, rx, ry, pal, flatBase) {
+  for (let dy = -Math.ceil(ry); dy <= Math.ceil(ry); dy++) {
+    if (flatBase && dy > 0) break;
+    for (let dx = -Math.ceil(rx); dx <= Math.ceil(rx); dx++) {
+      const e = (dx / rx) ** 2 + (dy / ry) ** 2;
+      if (e > 1 - r() * 0.3) continue;
+      const t = dy / ry + dx / rx * 0.4 + (r() - 0.5) * 0.5;
+      p.px(cx + dx, cy + dy, t < -0.45 ? pal[0] : t < 0.35 ? pal[1] : pal[2]);
+    }
+  }
+}
+
+function tree(p, r, x0, base, height, kind) {
+  const clumps = [];
+  const bark = kind === 'gum' ? ['#efe8d8', '#d9cfb9', '#b0a38a'] : ['#7a6250', '#5f4a3b', '#46362a'];
+  const spread = kind === 'jacaranda' ? 0.95 : 0.7;
+  function branch(x, y, ang, len, w, depth) {
+    for (let i = 0; i < len; i++) {
+      x += Math.cos(ang); y += Math.sin(ang); ang += (r() - 0.5) * 0.12;
+      const ww = Math.max(1, Math.round(w * (1 - 0.4 * i / len)));
+      for (let s = 0; s < ww; s++) {
+        let c = bark[1];
+        if (ww > 1 && s === 0) c = bark[0];
+        else if (ww > 1 && s === ww - 1) c = bark[2];
+        else if (kind === 'gum' && r() < 0.08) c = '#c99a5e';
+        p.px(x - ww / 2 + s, y, c);
+      }
+    }
+    if (depth < 3) {
+      const n = 2 + (r() < 0.4 ? 1 : 0);
+      for (let k = 0; k < n; k++)
+        branch(x, y, ang + (k - (n - 1) / 2) * spread + (r() - 0.5) * 0.3, len * (0.55 + r() * 0.2), w * 0.6, depth + 1);
+    }
+    if (depth >= 2) clumps.push([x, y]);
+  }
+  branch(x0, base, -Math.PI / 2 + (r() - 0.5) * 0.25, height * 0.4, kind === 'gum' ? 4 : 3, 0);
+  const pal = kind === 'gum' ? GUM_LEAF : kind === 'jacaranda' ? JACARANDA : LEAFY;
+  const size = kind === 'gum' ? 1 : 1.35;
+  for (const [cx, cy] of clumps) leafClump(p, r, cx, cy, (5 + r() * 4) * size, (3 + r() * 2) * size, pal);
+}
+
+function bush(p, r, x, base, kind) {
+  if (kind === 'hedge') {
+    const w = 10 + Math.floor(r() * 10), h = 5 + Math.floor(r() * 3);
+    for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) {
+      if ((y === 0 && (i === 0 || i === w - 1))) continue;
+      p.px(x + i, base - h + y, y === 0 ? BUSH[0] : (r() < 0.25 ? BUSH[2] : BUSH[1]));
+    }
+    return;
+  }
+  const rx = 3 + r() * 3, ry = 3 + r() * 2.5;
+  leafClump(p, r, x, base, rx, ry * 1.4, BUSH, true);
+  if (kind === 'bottlebrush') {
+    for (let k = 0; k < rx * 2; k++) {
+      const bx = x + (r() - 0.5) * rx * 1.6, by = base - 2 - r() * ry * 1.1;
+      p.px(bx, by, '#d42f2f'); p.px(bx, by + 1, '#a61f22');
+    }
+  } else if (kind === 'agapanthus') {
+    for (let k = 0; k < 4; k++) p.px(x + (k - 1.5) * 2.5, base - ry * 1.4 - 2, '#7d8fe0', 2, 2);
+  }
+}
+
+function fence(p, r, x, w) {
+  const cols = pick(r, [['#5d6466', '#4c5254', '#737a7c'], ['#6f8a6c', '#5c7559', '#86a083'], ['#8a8578', '#77736a', '#a19c8f']]);
+  const top = SUBURB_BASE - 11;
+  for (let i = 0; i < w; i++) for (let y = top; y < SUBURB_BASE; y++)
+    p.px(x + i, y, y === top ? cols[2] : i % 3 === 0 ? cols[1] : cols[0]);
+}
+
+function hillsHoist(p, x) {
+  const top = SUBURB_BASE - 30;
+  p.px(x, top, '#9da3a8', 1, 30);
+  for (let i = 1; i <= 16; i++) { const dy = Math.round(i / 4); p.px(x - i, top + dy, '#b9bec2'); p.px(x + i, top + dy, '#b9bec2'); }
+  p.px(x - 12, top + 4, '#d64534', 5, 5);    // shirt
+  p.px(x - 5, top + 3, '#f2efe6', 4, 8);     // sheet
+  p.px(x + 4, top + 3, '#3f6fc4', 4, 7);     // towel
+  p.px(x + 10, top + 4, '#f1c640', 3, 4);    // tea towel
+}
+
+function house(p, r, x, w) {
+  const B = SUBURB_BASE, wallH = 15 + Math.floor(r() * 4), top = B - wallH;
+  const [bc, bc2, mortar] = pick(r, BRICKS);
+  for (let y = top; y < B; y++) for (let i = 0; i < w; i++) {
+    const row = y - top, course = Math.floor(row / 3);
+    const isMortar = row % 3 === 2 || (i + (course % 2) * 2) % 5 === 4;
+    p.px(x + i, y, isMortar ? mortar : ((i * 7 + course * 13) % 11 < 3 ? bc2 : bc));
+  }
+  p.px(x, top, 'rgba(0,0,0,0.28)', w, 1);       // shadow under the eaves
+
+  // Garage roller door at one end
+  const garageLeft = r() < 0.5, gw = 16, gx = garageLeft ? x + 3 : x + w - 3 - gw;
+  for (let y = B - 11; y < B; y++) p.px(gx, y, y === B - 11 ? '#8f897d' : y % 2 ? '#d8d2c4' : '#c4bdae', gw, 1);
+
+  // Front door, then aluminium windows along the rest of the wall
+  const sx = garageLeft ? gx + gw + 4 : x + 4, ex = garageLeft ? x + w - 4 : gx - 4;
+  const dx = garageLeft ? sx : ex - 6;
+  p.px(dx, B - 12, '#bdb6a8', 7, 12);
+  p.px(dx + 1, B - 11, pick(r, ['#7a4b2c', '#2f4a3a', '#efebe1', '#8a2f2a']), 5, 11);
+  p.px(dx + 4, B - 6, '#e6c35a');
+  const frame = r() < 0.5 ? '#e8e8e4' : '#b9bec2';
+  let wx = garageLeft ? dx + 11 : sx, wEnd = garageLeft ? ex : dx - 5;
+  while (wx + 10 <= wEnd) {
+    const ww = Math.min(14, wEnd - wx), wy = top + 4;
+    p.px(wx, wy, frame, ww, 7);
+    for (let j = 0; j < 5; j++) p.px(wx + 1, wy + 1 + j, ['#c3dbe8', '#a9c7d9', '#8fb1c6', '#7aa0b8', '#6f94ad'][j], ww - 2, 1);
+    p.px(wx + Math.floor(ww / 2), wy + 1, frame, 1, 5);
+    p.px(wx + 2, wy + 3, '#e8f4fa'); p.px(wx + 3, wy + 2, '#e8f4fa');
+    p.px(wx - 1, wy + 7, '#cfc8b8', ww + 2, 1);
+    wx += ww + 6;
+  }
+
+  // Shallow hip roof: a low trapezoid with wide eaves
+  const roof = pick(r, ROOFS), rh = 5 + Math.floor(r() * 3), run = 2.6;
+  for (let j = 0; j < rh; j++) {
+    const y = top - 1 - j, xl = x - 3 + Math.round(j * run), xr = x + w + 2 - Math.round(j * run);
+    for (let xx = xl; xx <= xr; xx++) {
+      let c;
+      if (j === 0) c = roof.fascia;
+      else if (j === rh - 1 || xx === xl || xx === xr) c = roof.cap;
+      else if (roof.steel) c = xx & 1 ? roof.c1 : roof.c2;
+      else c = j % 2 === 0 ? roof.c2 : ((xx + j) % 4 === 0 ? roof.c3 : roof.c1);
+      p.px(xx, y, c);
+    }
+  }
+  const ridge = top - rh;
+  if (r() < 0.45) {                                   // solar panels
+    const n = 3 + Math.floor(r() * 4), px0 = x + 9 + Math.floor(r() * Math.max(1, w - 18 - n * 5));
+    for (let k = 0; k < n; k++) { p.px(px0 + k * 5, top - 4, '#27365c', 4, 3); p.px(px0 + k * 5, top - 4, '#3d5288', 4, 1); }
+  }
+  if (r() < 0.5) {                                    // TV aerial
+    const ax = x + Math.round(w * (0.25 + r() * 0.5));
+    p.px(ax, ridge - 10, '#9aa0a5', 1, 10);
+    p.px(ax - 5, ridge - 10, '#9aa0a5', 11, 1);
+    for (let k = 0; k < 6; k++) { const len = 5 - Math.floor(k * 0.6); p.px(ax - 5 + k * 2, ridge - 10 - Math.floor(len / 2), '#b3b9bd', 1, len); }
+  }
+  if (r() < 0.2) {                                    // brick chimney
+    const cx = x + Math.round(w * (0.2 + r() * 0.6));
+    p.px(cx, ridge - 4, bc, 4, 5); p.px(cx - 1, ridge - 5, mortar, 6, 1);
+  }
+}
+
+function letterbox(p, r, x) {
+  const B = SUBURB_BASE;
+  if (r() < 0.5) {                                    // brick pillar
+    p.px(x, B - 8, '#a8492f', 5, 8); p.px(x - 1, B - 9, '#c9a48a', 7, 1); p.px(x + 1, B - 6, '#2a2a2a', 3, 1);
+  } else {                                            // post and box
+    p.px(x + 2, B - 7, '#6b5038', 1, 7); p.px(x, B - 11, '#c0392b', 5, 4); p.px(x, B - 11, '#e05a48', 5, 1);
+  }
+}
+
+function buildSuburb() {
+  const P = LEVEL_W * PARALLAX.suburb, p = painter(P, H, true), r = rng(2024);
+  const lots = 8, lotW = P / lots;
+  for (let i = 0; i < lots; i++) {
+    const lx = i * lotW;
+    if (i === 5) {                                    // a little park
+      tree(p, r, lx + 25, SUBURB_BASE, 80, 'gum');
+      tree(p, r, lx + 70, SUBURB_BASE, 66, 'gum');
+      tree(p, r, lx + 100, SUBURB_BASE, 52, 'leafy');
+      p.px(lx + 45, SUBURB_BASE - 6, '#8a5a32', 14, 2); p.px(lx + 47, SUBURB_BASE - 4, '#6b4426', 1, 4); p.px(lx + 56, SUBURB_BASE - 4, '#6b4426', 1, 4);
+      bush(p, r, lx + 85, SUBURB_BASE, 'bottlebrush');
+      continue;
+    }
+    if (r() < 0.75) tree(p, r, lx + 10 + r() * (lotW - 20), SUBURB_BASE - 2, 50 + r() * 28, pick(r, ['gum', 'gum', 'jacaranda', 'leafy']));
+    const w = 60 + Math.floor(r() * 16), hx = lx + 10 + Math.floor(r() * (lotW - w - 20));
+    if (r() < 0.45) hillsHoist(p, hx - lx > lotW / 2 - w / 2 ? hx - 14 : hx + w + 14);
+    fence(p, r, lx, lotW);
+    house(p, r, hx, w);
+    letterbox(p, r, lx + 3);
+    for (let k = 0; k < 2 + Math.floor(r() * 3); k++)
+      bush(p, r, hx + 6 + r() * (w - 12), SUBURB_BASE, pick(r, ['bush', 'bottlebrush', 'hedge', 'agapanthus']));
+  }
+  return { P, c: p.c };
+}
+
+// ---------------------------------------------------------------------------
+// Ground: mown lawn with stripes, clover and dandelions, a lap flag and a warning sign
+// ---------------------------------------------------------------------------
+function buildGround() {
+  const P = LEVEL_W, p = painter(P, H, true), r = rng(99);
+  const light = ['#7db446', '#77ad42'], dark = ['#6a9c3a', '#64953a'];
+  for (let x = 0; x < P; x++) {
+    const stripe = Math.sin(x / 48 * Math.PI);        // mower stripes
+    const tuft = r() < 0.35 ? 1 + Math.floor(r() * 2) : 0;
+    for (let y = GRASS_TOP - tuft; y < H; y++) {
+      const depth = (y - GRASS_TOP) / (H - GRASS_TOP);
+      const isLight = dither(x, y, (stripe + 1) / 2);
+      let c = isLight ? light[depth > 0.6 ? 1 : 0] : dark[depth > 0.6 ? 1 : 0];
+      if (y < GRASS_TOP) c = '#8bc252';
+      else if (y === GRASS_TOP) c = '#93c95a';
+      else if (r() < 0.06) c = '#5a8a32';
+      p.px(x, y, c);
+    }
+  }
+  for (let k = 0; k < 160; k++) {                     // clover and dandelions
+    const x = r() * P, y = GRASS_TOP + 3 + r() * (H - GRASS_TOP - 4);
+    p.px(x, y, r() < 0.7 ? '#f4f4ee' : '#f2d43a');
+  }
+  // Lap flag (the start of each loop)
+  p.px(20, 132, '#d8d8d8', 1, 44);
+  for (let j = 0; j < 6; j++) for (let i = 0; i < 10; i++) p.px(21 + i, 132 + j, (Math.floor(i / 2) + Math.floor(j / 2)) % 2 ? '#1c1c1c' : '#f6f6f6');
+  // Warning sign
+  const sx = 70, sy = 128;
+  p.px(sx + 6, sy + 16, '#8a8f94', 2, 30); p.px(sx + 27, sy + 16, '#8a8f94', 2, 30);
+  p.px(sx, sy, '#1c1c1c', 35, 17); p.px(sx + 1, sy + 1, '#f2c230', 33, 15);
+  glyphs('SWOOPING', sx + 2, sy + 2, 1, (x, y) => p.px(x, y, '#1c1c1c'));
+  glyphs('MAGPIES', sx + 4, sy + 9, 1, (x, y) => p.px(x, y, '#1c1c1c'));
+  return { P, c: p.c };
+}
+
+// ---------------------------------------------------------------------------
+// The magpie: black and white, red-brown eye, pale bill with a dark tip
+// ---------------------------------------------------------------------------
+const PAL = { K: '#15151a', k: '#3a3a42', W: '#f4f4ef', w: '#cfd4da', e: '#c0392b', b: '#d5d9e2', d: '#2b2b30', L: '#2a2a2a' };
+const BODY = [
+  '', '', '', '',
+  '................KKK.....',
+  '...............KKKKK....',
+  '..............WKKeKKbbd.',
+  '.............WWKKKKKb...',
+  'KKWWWWWKKKKKKWWKKKK.....',
+  '.KKWWWWKKKKKKKKKKKKK....',
+  '......KKKKKKKKKKKKK.....',
+  '........KKKKKKKKK.......',
+  '', '', ''
+];
+const WINGS = {
+  glide: { 7: '.......wWWWWW', 8: '.....kkKKKWWW', 9: '..kkkkkKKK' },
+  up: { 0: '..kk', 1: '...kkk', 2: '....kkKK', 3: '.....kKKKK', 4: '......KKKKWW', 5: '.......KKWWWW', 6: '........WWWWW', 7: '.........WWWW' },
+  down: { 8: '.........WWWW', 9: '........KKWWW', 10: '.......KKKKK', 11: '......kKKKK', 12: '.....kkKK', 13: '....kkk', 14: '...kk' },
+  fold: { 8: '.......WWWWWW', 9: '...kkkkKKKKK' },
+  stand: { 8: '.......WWWWWW', 9: '...kkkkKKKKK', 12: '..........L..L', 13: '..........L..L', 14: '..........LL.LL' }
+};
+const BIRD_W = 24, BIRD_H = 15, ANCHOR_X = 12, ANCHOR_Y = 9;
+const birdFrames = {};
+function buildBird() {
+  for (const name in WINGS) {
+    const rows = BODY.map(s => s.padEnd(BIRD_W, '.').split(''));
+    for (const j in WINGS[name]) [...WINGS[name][j]].forEach((ch, i) => { if (ch !== '.') rows[j][i] = ch; });
+    const right = makeCanvas(BIRD_W, BIRD_H), left = makeCanvas(BIRD_W, BIRD_H);
+    const gr = right.getContext('2d'), gl = left.getContext('2d');
+    rows.forEach((row, y) => row.forEach((ch, x) => {
+      if (ch === '.') return;
+      gr.fillStyle = gl.fillStyle = PAL[ch];
+      gr.fillRect(x, y, 1, 1);
+      gl.fillRect(BIRD_W - 1 - x, y, 1, 1);
+    }));
+    birdFrames[name] = { 1: right, '-1': left };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Input: arrow keys or WASD; on touch screens, hold where you want to fly
+// ---------------------------------------------------------------------------
+const keys = { up: false, down: false, left: false, right: false };
+const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
+let started = false, startedAt = 0, touch = null, isTouch = false;
+addEventListener('keydown', e => { const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); begin(); } });
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; touch = null; });
+function toInternal(e) {
+  const rect = canvas.getBoundingClientRect(), s = Math.min(rect.width / W, rect.height / H);
+  return { x: (e.clientX - rect.left - (rect.width - W * s) / 2) / s, y: (e.clientY - rect.top - (rect.height - H * s) / 2) / s };
+}
+canvas.addEventListener('pointerdown', e => { isTouch = e.pointerType !== 'mouse'; touch = toInternal(e); canvas.setPointerCapture(e.pointerId); begin(); });
+canvas.addEventListener('pointermove', e => { if (touch) touch = toInternal(e); });
+canvas.addEventListener('pointerup', () => { touch = null; });
+canvas.addEventListener('pointercancel', () => { touch = null; });
+function begin() { if (!started) { started = true; startedAt = time; } }
+
+// ---------------------------------------------------------------------------
+// Game state
+// ---------------------------------------------------------------------------
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0 };
+let cam = bird.x - SCREEN * 0.42, time = 0, distance = 0, lap = 1, lapFlash = 0;
+const trail = [];
+let sun, clouds, suburb, ground;
+
+function controls() {
+  const c = { ...keys };
+  if (touch) {
+    const dx = touch.x - (bird.x - cam), dy = touch.y - bird.y;
+    if (dx < -8) c.left = true; if (dx > 8) c.right = true;
+    if (dy < -8) c.up = true; if (dy > 8) c.down = true;
+  }
+  return c;
+}
+
+function update(dt) {
+  time += dt;
+  const c = controls(), dirX = (c.right ? 1 : 0) - (c.left ? 1 : 0), x0 = bird.x;
+  if (bird.grounded) {
+    bird.vx = dirX * WALK;
+    if (dirX) { bird.face = dirX; bird.walkT += dt; }
+    if (c.up) { bird.grounded = false; bird.vy = -60; }
+  }
+  if (!bird.grounded) {
+    if (dirX) { bird.vx += dirX * ACCEL_X * dt; bird.face = dirX; }
+    else bird.vx *= Math.exp(-0.8 * dt);                       // glide keeps most of its speed
+    const maxX = c.down ? MAX_X_DIVE : MAX_X;
+    bird.vx = clamp(bird.vx, -maxX, maxX);
+    bird.vy += (GRAVITY - (c.up ? FLAP : 0) + (c.down ? DIVE : 0)) * dt;
+    const maxDown = c.down ? MAX_DIVE : MAX_FALL;
+    if (bird.vy > maxDown) bird.vy += (maxDown - bird.vy) * Math.min(1, 6 * dt);  // ease to falling speed
+    bird.vy = Math.max(bird.vy, -MAX_CLIMB);
+    bird.y += bird.vy * dt;
+    if (bird.y < TOP_Y) { bird.y = TOP_Y; bird.vy = Math.max(0, bird.vy); }
+    if (bird.y >= LAND_Y - FEET) { bird.y = LAND_Y - FEET; bird.vy = 0; bird.grounded = true; bird.walkT = 0; }
+    bird.flapT += dt * (c.up ? 14 : dirX ? 8 : 0);
+  }
+  bird.x += bird.vx * dt;
+  distance += Math.abs(bird.x - x0);
+
+  const newLap = Math.floor(bird.x / LEVEL_W) + 1;
+  if (newLap > lap) { lap = newLap; lapFlash = 1.6; }
+  lapFlash = Math.max(0, lapFlash - dt);
+
+  // Speed streaks when swooping fast
+  const speed = Math.hypot(bird.vx, bird.vy);
+  if (speed > 120 && Math.random() < dt * 40) trail.push({ x: bird.x - bird.face * 8, y: bird.y + (Math.random() - 0.5) * 8, life: 0.35 });
+  for (const t of trail) t.life -= dt;
+  while (trail.length && trail[0].life <= 0) trail.shift();
+
+  const target = bird.x - W * 0.42 + bird.face * W * 0.06 + bird.vx * 0.25;
+  cam += (target - cam) * Math.min(1, 3 * dt);
+}
+
+function birdFrame() {
+  const c = controls();
+  if (bird.grounded) return 'stand';
+  if (c.down && bird.vy > 60) return 'fold';
+  if (bird.flapT > 0 && (c.up || c.left || c.right)) return ['up', 'glide', 'down', 'glide'][Math.floor(bird.flapT) % 4];
+  return 'glide';
+}
+
+// ---------------------------------------------------------------------------
+// Drawing
+// ---------------------------------------------------------------------------
+function drawTiled(img, P, offset) {
+  for (let x = -mod(Math.round(offset), P); x < W; x += P) ctx.drawImage(img, x, 0);
+}
+
+function draw() {
+  ctx.drawImage(skyCanvas, 0, 0);
+
+  // Sun: slowest of all; it takes SUN_LOOPS trips round the level to cross the screen
+  const span = W + SUN_SIZE, sunX = mod(W * 0.62 - cam * span / (SUN_LOOPS * LEVEL_W) + SUN_SIZE, span) - SUN_SIZE;
+  ctx.drawImage(sun, Math.round(sunX), 10);
+
+  const cOff = cam * PARALLAX.clouds + time * clouds.wind;
+  for (const cl of clouds.list)
+    for (let x = mod(Math.round(cl.x - cOff), clouds.P) - clouds.P; x < W; x += clouds.P)
+      if (x + cl.img.width > 0) ctx.drawImage(cl.img, x, cl.y);
+
+  drawTiled(suburb.c, suburb.P, cam * PARALLAX.suburb);
+  drawTiled(ground.c, ground.P, cam * PARALLAX.ground);
+
+  ctx.fillStyle = '#ffffff';
+  for (const t of trail) {
+    ctx.globalAlpha = t.life / 0.35;
+    ctx.fillRect(Math.round(t.x - cam - bird.face * 3), Math.round(t.y), 4, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  const bob = bird.grounded && bird.vx !== 0 && Math.floor(bird.walkT * 8) % 2 ? -1 : 0;
+  ctx.drawImage(birdFrames[birdFrame()][bird.face], Math.round(bird.x - cam) - ANCHOR_X, Math.round(bird.y) - ANCHOR_Y + bob);
+
+  drawText('LAP ' + lap + '   ' + Math.floor(distance / 4) + ' M', 4, 4, '#ffffff');
+  if (lapFlash > 0 && Math.floor(lapFlash * 6) % 2 === 0) drawTextCentred('LAP ' + lap + '!', 60, '#ffe066', 3);
+
+  const titleAlpha = started ? clamp(1 - (time - startedAt - 2), 0, 1) : 1;
+  if (titleAlpha > 0) {
+    ctx.globalAlpha = titleAlpha;
+    drawTextCentred('SWOOPING SIMULATOR', 36, '#ffffff', 2);
+    drawTextCentred(isTouch ? 'TOUCH AND HOLD WHERE TO FLY' : 'ARROW KEYS OR WASD TO FLY', 56, '#ffe066');
+    drawTextCentred('UP TO FLAP - DOWN TO SWOOP', 64, '#ffe066');
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Setup and main loop
+// ---------------------------------------------------------------------------
+function resize() {
+  W = clamp(Math.round(H * innerWidth / innerHeight), 240, 480);
+  canvas.width = W; canvas.height = H;
+  ctx.imageSmoothingEnabled = false;
+  buildSky();
+}
+
+sun = buildSun();
+clouds = buildClouds();
+suburb = buildSuburb();
+ground = buildGround();
+buildBird();
+resize();
+addEventListener('resize', resize);
+isTouch = matchMedia('(pointer: coarse)').matches;
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
