@@ -134,8 +134,18 @@
 
 - I really, really want the sun not to be pixel art at all, but photo-real like the picture I gave (sent again: a Shutterstock preview, with its watermark)
 
+## 23. Bottles back as they were, and on the shelves
+
+- The bottles coming out of the BOTTLE-O before were perfect: put them back as they were
+  - Decision: back to the first small ones (the plain Foster's can and black-label bottle)
+- Fill the shop's shelves with those same pictures at half the size
+
+## 24. The sun picture
+
+- Use `C:\Users\jones\Desktop\sun.png` for the sun, cut out from its background
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 80 min so far | Prompts 1–22: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page |
+| 1 | 2026-10-21 | about 85 min so far | Prompts 1–24: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun |
