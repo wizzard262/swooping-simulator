@@ -8,7 +8,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 
 - Arrow keys or W A S D: up to flap, down to dive, left and right to fly; up and down tilt the magpie 30 degrees
 - Hold Space to swoop: very fast flight with afterburner flames and a motion blur, steered 30 degrees up or down with the arrows. The charge bar empties in 3 seconds and refills in 10
-- Land on the Hills Hoist next to the BOTTLE-O and it spins you round; press up to fly off
+- Land on the Hills Hoist (half a lap from the BOTTLE-O) and it spins you round with it; press up to fly off
 - B for a corkscrew barrel roll, L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
 - The game fills the browser's width (a black bar below it in tall windows)
@@ -17,6 +17,20 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out, he does a barrel roll, and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery
 - The magpie drifts down slowly under gravity, lands softly on the lawn and walks along it
 - Touch screens: hold where you want the magpie to go; tap quickly to start or stop a swoop; tap with a second finger to poop
+
+### Game controller
+
+Standard layout (Xbox, PlayStation and similar). Press any button once after plugging it in so the browser sees it.
+
+| Control | Does |
+|---|---|
+| Left stick or D-pad | Fly |
+| A / Cross | Flap |
+| Right trigger or right bumper (hold) | Swoop |
+| X / Square | Poop |
+| B / Circle | Barrel roll |
+| Y / Triangle | Loop-the-loop |
+| Back / Select | Sound on or off |
 
 ## How it's made
 

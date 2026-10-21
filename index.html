@@ -649,7 +649,7 @@ function buildGround() {
     p.px(x, y, r() < 0.7 ? '#f4f4ee' : '#f2d43a');
   }
   // Warning sign
-  const sx = 70, sy = 128;
+  const sx = 8, sy = 128;                            // at the start of the lap
   p.px(sx + 6, sy + 16, '#8a8f94', 2, 30); p.px(sx + 27, sy + 16, '#8a8f94', 2, 30);
   p.px(sx, sy, '#1c1c1c', 35, 17); p.px(sx + 1, sy + 1, '#f2c230', 33, 15);
   glyphs('SWOOPING', sx + 2, sy + 2, 1, (x, y) => p.px(x, y, '#1c1c1c'));
@@ -1313,11 +1313,12 @@ const Sound = (() => {
 })();
 
 // ---------------------------------------------------------------------------
-// The Hills Hoist on the lawn by the shop: a rotary clothesline with washing on it. The
+// The Hills Hoist on the lawn, as far from the shop as the looping level allows (half a lap
+// away): a rotary clothesline with washing on it. The
 // magpie can land on top; then it spins round with him riding on it. Drawn as pixel art each
 // frame (it turns), seen from the side: four arms on a mast, lines strung between them.
 // ---------------------------------------------------------------------------
-const HOIST = { x: SHOP.x + SHOP.w + 48, r: 30, mastTop: 113, top: 115, spin: 0, angle: 0.4 };
+const HOIST = { x: 90, r: 30, mastTop: 113, top: 115, spin: 0, angle: 0.4 };
 const HOIST_LINES = [0.45, 0.75, 1];
 const WASHING = [                                                    // [side 0-3, line, along 0-1, kind, colour]
   [0, 2, 0.3, 'shirt', '#d64534'], [0, 1, 0.7, 'sock', '#f2efe6'], [1, 2, 0.5, 'sheet', '#f4f1e8'],
@@ -1417,7 +1418,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0 };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistDepth: 0 };
 
 // Stunts: B for a barrel roll (a full turn about his body), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
@@ -1485,8 +1486,33 @@ const trail = [];
 let blur = 0;                     // 0 to 1: how much the screen is smeared by a swoop
 let sunHi, clouds, hills, backStreets, suburb, ground, shopFront, shelfStock;
 
+// Game controller (standard layout, e.g. Xbox or PlayStation):
+//   left stick or D-pad: fly   A / Cross: flap   right trigger or right bumper (hold): swoop
+//   X / Square: poop   B / Circle: barrel roll   Y / Triangle: loop-the-loop   Back / Select: sound
+const PAD = { up: false, down: false, left: false, right: false, swoop: false, connected: false };
+let padPrev = [];
+function pollPad() {
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()] : [];
+  const gp = pads.find(p => p && p.connected);
+  PAD.connected = !!gp;
+  if (!gp) { Object.assign(PAD, { up: false, down: false, left: false, right: false, swoop: false }); padPrev = []; return; }
+  const b = i => !!(gp.buttons[i] && gp.buttons[i].pressed), ax = gp.axes[0] || 0, ay = gp.axes[1] || 0, dead = 0.35;
+  PAD.left = ax < -dead || b(14); PAD.right = ax > dead || b(15);
+  PAD.up = ay < -dead || b(12) || b(0); PAD.down = ay > dead || b(13);
+  PAD.swoop = b(7) || b(5);
+  const pressed = i => b(i) && !padPrev[i];
+  if (pressed(2)) poop();
+  if (pressed(1)) barrelRoll();
+  if (pressed(3)) loopTheLoop();
+  if (pressed(8)) Sound.toggle();
+  if (gp.buttons.some((x, i) => x.pressed && !padPrev[i]) || Math.abs(ax) > dead || Math.abs(ay) > dead) begin();
+  padPrev = gp.buttons.map(x => x.pressed);
+}
+addEventListener('gamepadconnected', () => { isTouch = false; });
+
 function controls() {
   const c = { ...keys };
+  for (const k of ['up', 'down', 'left', 'right']) c[k] = c[k] || PAD[k];
   if (bird.drunk > 0 && Math.sin(time * 1.3) > 0.55) [c.left, c.right] = [c.right, c.left];   // drunk: left and right swap now and then
   if (touch) {
     const dx = touch.x - (bird.x - cam), dy = touch.y - bird.y;
@@ -1498,11 +1524,12 @@ function controls() {
 
 function update(dt) {
   time += dt;
+  pollPad();
   const c = controls(), dirX = (c.right ? 1 : 0) - (c.left ? 1 : 0), dirY = (c.down ? 1 : 0) - (c.up ? 1 : 0), x0 = bird.x;
   if (dirX) bird.face = dirX;
 
   // Start a swoop with a little charge in the bar; keep going until let go or empty
-  const wantSwoop = keys.swoop || touchSwoop;
+  const wantSwoop = keys.swoop || touchSwoop || PAD.swoop;
   if (!wantSwoop) bird.spent = false;                               // after running dry, let go of Space before the next swoop
   if (wantSwoop && !bird.swooping && !bird.spent && bird.loopT <= 0 && bird.charge > 0.05) { bird.swooping = true; bird.grounded = false; }
   if (bird.swooping && bird.charge <= 0) { bird.spent = true; touchSwoop = false; }
@@ -1568,6 +1595,8 @@ function update(dt) {
     bird.x = HOIST.x + Math.round((bird.x - HOIST.x) / LEVEL_W) * LEVEL_W + Math.cos(a) * bird.hoistR;
     bird.y = HOIST.top - FEET + Math.sin(a) * 1.5;
     bird.vx = 0;
+    if (HOIST.spin > 0.05) bird.face = -Math.sin(a) >= 0 ? 1 : -1;   // he turns with it, facing the way he's carried
+    bird.hoistDepth = Math.sin(a);                                     // nearer or further round
   }
 
   // Up and down tilt the magpie 30 degrees; it eases between angles
@@ -1725,19 +1754,20 @@ function draw() {
   ctx.globalAlpha = 1;
 
   drawText('LAP ' + lap + '   ' + Math.floor(distance / 4) + ' M', 4, 4, '#ffffff');
-  drawBar('SWOOP', 4, 12, bird.charge, '#ffd23f', '#fff3a0', bird.swooping, isTouch ? 'QUICK TAP' : 'SPACE BAR');
-  drawBar('POOP', 4, 20, bird.poop, '#e9ece6', '#ffffff', false, isTouch ? 'SECOND FINGER' : 'P KEY');
+  const pad = PAD.connected;                                        // with a controller, show its buttons instead
+  drawBar('SWOOP', 4, 12, bird.charge, '#ffd23f', '#fff3a0', bird.swooping, pad ? 'RIGHT TRIGGER' : isTouch ? 'QUICK TAP' : 'SPACE BAR');
+  drawBar('POOP', 4, 20, bird.poop, '#e9ece6', '#ffffff', false, pad ? 'X' : isTouch ? 'SECOND FINGER' : 'P KEY');
   const hintX = 4 + textWidth('SWOOP') + 4 + 40 + 4;               // lines up with the bars' key hints
-  drawText('BARREL ROLL', 4, 28, bird.roll > 0 ? '#ffe066' : '#ffffff'); drawText('- B KEY', hintX, 28, '#ffffff');
-  drawText('LOOP-DE-LOOP', 4, 36, bird.loopT > 0 ? '#ffe066' : '#ffffff'); drawText('- L KEY', hintX, 36, '#ffffff');
-  drawText(Sound.isMuted() ? 'SOUND OFF' : 'SOUND ON', 4, 44, '#ffffff'); drawText('- M KEY', hintX, 44, '#ffffff');
+  drawText('BARREL ROLL', 4, 28, bird.roll > 0 ? '#ffe066' : '#ffffff'); drawText(pad ? '- B' : '- B KEY', hintX, 28, '#ffffff');
+  drawText('LOOP-DE-LOOP', 4, 36, bird.loopT > 0 ? '#ffe066' : '#ffffff'); drawText(pad ? '- Y' : '- L KEY', hintX, 36, '#ffffff');
+  drawText(Sound.isMuted() ? 'SOUND OFF' : 'SOUND ON', 4, 44, '#ffffff'); drawText(pad ? '- BACK' : '- M KEY', hintX, 44, '#ffffff');
   if (lapFlash > 0 && Math.floor(lapFlash * 6) % 2 === 0) drawTextCentred('LAP ' + lap + '!', 60, '#ffe066', 3);
   const titleAlpha = started ? clamp(1 - (time - startedAt - 2), 0, 1) : 1;
   if (titleAlpha > 0) {
     ctx.globalAlpha = titleAlpha;
     drawTextCentred('SWOOPING SIMULATOR', 66, '#ffffff', 2);
-    drawTextCentred(isTouch ? 'HOLD WHERE TO FLY - TAP TO SWOOP' : 'ARROW KEYS OR WASD TO FLY', 86, '#ffe066');
-    drawTextCentred(isTouch ? 'SECOND FINGER TO POOP' : 'UP TO FLAP - HOLD SPACE TO SWOOP - P TO POOP', 94, '#ffe066');
+    drawTextCentred(PAD.connected ? 'LEFT STICK OR D-PAD TO FLY' : isTouch ? 'HOLD WHERE TO FLY - TAP TO SWOOP' : 'ARROW KEYS OR WASD TO FLY', 86, '#ffe066');
+    drawTextCentred(PAD.connected ? 'A TO FLAP - HOLD RIGHT TRIGGER TO SWOOP - X TO POOP' : isTouch ? 'SECOND FINGER TO POOP' : 'UP TO FLAP - HOLD SPACE TO SWOOP - P TO POOP', 94, '#ffe066');
     ctx.globalAlpha = 1;
   }
 
@@ -1749,7 +1779,8 @@ function draw() {
   if (!bird.inside) drawShopFront(fctx);                         // outside: the shop is behind him
   const pose = magpiePose();
   // A barrel roll corkscrews: he swings up and round the line of flight, smaller on the far side
-  const ra = pose.roll || 0, cork = Math.sin(ra) * 8, depth = 1 - 0.18 * (1 - Math.cos(ra)) / 2;
+  const ra = pose.roll || 0, cork = Math.sin(ra) * 8;
+  const depth = (1 - 0.18 * (1 - Math.cos(ra)) / 2) * (bird.onHoist ? 0.92 + 0.08 * bird.hoistDepth : 1);   // smaller on the far side of the hoist
   // Slightly pixelated: he's drawn at 1/BIRD_PIX of the screen's resolution, then scaled up
   const sc = K * BIRD_SCALE * depth / BIRD_PIX;
   bbctx.setTransform(1, 0, 0, 1, 0, 0);

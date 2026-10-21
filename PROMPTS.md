@@ -263,8 +263,18 @@
 - SWOOP-AND-POOP! and SWOOP-AND-LOOP! should both grow from nothing and fade out; the loop one moves around, which I don't want
   - Both now stay put on the screen where the magpie was when they appeared
 
+## 53. Hills Hoist away from the shop
+
+- Put the Hills Hoist as far from the shop as possible; when the bird is on it, the bird and the Hills Hoist spin together
+  - It's now half a lap from the shop (the level loops); the warning sign moved to the start of the lap to make room
+
+## 54. A game controller
+
+- Will this support a controller? I'm going to plug one in. Map the buttons sensibly
+  - Left stick or D-pad: fly; A: flap; right trigger or right bumper (hold): swoop; X: poop; B: barrel roll; Y: loop-the-loop; Back: sound
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 180 min so far | Prompts 1–52: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride |
+| 1 | 2026-10-21 | about 190 min so far | Prompts 1–54: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support |
