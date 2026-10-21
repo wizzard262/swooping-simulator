@@ -1425,7 +1425,7 @@ const Sound = (() => {
   // A kookaburra's laugh: a few low chuckles, building to a loud, raucous, screeching
   // "ha-ha-HA-HA-HA" (harsh, rasping notes that chirp down, faster and higher, a second
   // voice joining in), then tailing off into chuckles again. About 2.5 seconds.
-  let rasp = null;
+  let rasp = null, laughOut = null;   // laughOut: the laugh playing now, so it can be hushed
   function laugh() {
     if (!rasp) {                                                     // a hard clip that makes the notes harsh and screechy
       rasp = new Float32Array(256);
@@ -1434,7 +1434,7 @@ const Sound = (() => {
     const out = ac.createGain(); out.gain.value = 0.5;
     const shaper = ac.createWaveShaper(); shaper.curve = rasp;
     const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.7;
-    shaper.connect(bp); bp.connect(out); out.connect(master);
+    shaper.connect(bp); bp.connect(out); out.connect(master); laughOut = out;
     const syllable = (t, f, len, peak) => {
       const o = ac.createOscillator(), g = ac.createGain();
       o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 1.35, t); o.frequency.exponentialRampToValueAtTime(f * 0.7, t + len);   // each "ha" chirps down
@@ -1451,6 +1451,13 @@ const Sound = (() => {
       t += 0.085 - k * 0.015;
     }
     for (let i = 0; i < 4; i++, t += 0.15) syllable(t, 700 - i * 60, 0.1, 0.25);                // tailing off
+  }
+  // Fade out the laugh (he's gone off screen)
+  function hushLaugh() {
+    if (!laughOut) return;
+    const t = now(), g = laughOut.gain;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.25);
+    laughOut = null;
   }
   // A bicycle bell: ring-ring
   function bell() {
@@ -1534,7 +1541,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
-  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), can: safe(can), boing: safe(boing), carol: safe(carol), sizzle: safe(sizzle), scream: safe(scream), laugh: safe(laugh), didgeridoo: safe(didgeridoo),
+  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), can: safe(can), boing: safe(boing), carol: safe(carol), sizzle: safe(sizzle), scream: safe(scream), laugh: safe(laugh), hushLaugh: safe(hushLaugh), didgeridoo: safe(didgeridoo),
     bell: safe(bell), oi: safe(oi), thunder: safe(thunder), screech: safe(screech), growl: safe(growl) };
 })();
 
@@ -1546,6 +1553,7 @@ const Sound = (() => {
 const HOIST = { x: 90 - 3 * 60 + LEVEL_W, r: 30,   // three of its widths left of where it was (the level loops)
   mastTop: 113, top: 115, spin: 0, angle: 0.4 };
 const HOIST_LINES = [0.45, 0.75, 1];
+const HANG_Y = { wings: 12, feet: 9 };   // hanging under it: how far below the top his middle is (by his wings, or upside down by his feet)
 const WASHING = [                                                    // [side 0-3, line, along 0-1, kind, colour]
   [0, 2, 0.3, 'shirt', '#d64534'], [0, 1, 0.7, 'sock', '#f2efe6'], [1, 2, 0.5, 'sheet', '#f4f1e8'],
   [1, 0, 0.4, 'towel', '#3f6fc4'], [2, 2, 0.6, 'towel', '#f1c640'], [2, 1, 0.25, 'shirt', '#5aa846'],
@@ -1553,9 +1561,13 @@ const WASHING = [                                                    // [side 0-
 ];
 const hoistDx = x => mod(x - HOIST.x + LEVEL_W / 2, LEVEL_W) - LEVEL_W / 2;   // how far from the mast, allowing for the loop
 
+const HOIST_WHIRL = 10;            // how fast a swoop past sends it spinning (radians a second)
 function updateHoist(dt) {
-  const target = bird.onHoist ? 2.6 : 0;                             // spins up with him on it, slows down without
-  HOIST.spin += (target - HOIST.spin) * Math.min(1, (bird.onHoist ? 1.2 : 0.5) * dt);
+  // Swoop past it and it whirls round the way you went, the washing flung outwards, then slowly winds down
+  if (bird.swooping && !bird.onHoist && !bird.hanging && Math.abs(hoistDx(bird.x)) < HOIST.r && bird.y > HOIST.mastTop - 20 && bird.y < LAND_Y - 5
+      && Math.abs(HOIST.spin) < HOIST_WHIRL * 0.8) HOIST.spin = -Math.sign(bird.vx || bird.face) * HOIST_WHIRL;
+  const riding = bird.onHoist || bird.hanging, target = riding ? 2.6 : 0;   // spins up with him on it (or under it), slows down without
+  HOIST.spin += (target - HOIST.spin) * Math.min(1, (riding ? 1.2 : 0.5) * dt);
   HOIST.angle += HOIST.spin * dt;
 }
 
@@ -1570,20 +1582,26 @@ function drawHoist(g) {
   // Points on an arm: side view of a horizontal circle, plus a little droop towards the tips
   const pt = (k, frac) => {
     const a = HOIST.angle + k * Math.PI / 2;
-    return { x: hx + Math.cos(a) * HOIST.r * frac, y: HOIST.mastTop + 1 + frac * 3 + Math.sin(a) * frac * 2, z: Math.sin(a) };
+    return { x: hx + Math.cos(a) * HOIST.r * frac, y: HOIST.mastTop + 1 + frac * 3 + Math.sin(a) * frac * 2, z: Math.sin(a), u: Math.cos(a) };
   };
   px(hx, HOIST.mastTop, 1, LAND_Y - HOIST.mastTop, '#9da3a8');       // mast
   px(hx + 1, HOIST.mastTop, 1, LAND_Y - HOIST.mastTop, '#7d8388');
   // Washing at the back first, then lines and arms, then washing at the front
   const clothes = WASHING.map(([side, li, along, kind, col]) => {
     const a = pt(side, HOIST_LINES[li]), b = pt((side + 1) % 4, HOIST_LINES[li]);
-    return { x: a.x + (b.x - a.x) * along, y: a.y + (b.y - a.y) * along, z: a.z + (b.z - a.z) * along, kind, col };
+    const u = a.u + (b.u - a.u) * along, z = a.z + (b.z - a.z) * along, n = Math.hypot(u, z) || 1;
+    return { x: a.x + (b.x - a.x) * along, y: a.y + (b.y - a.y) * along, z, ux: u / n, uz: z / n, kind, col };   // ux, uz: straight out from the mast
   });
+  // Spinning fast, the washing swings out from the mast (centrifugal force), up to nearly flat out
+  const fling = Math.min(1, (HOIST.spin / 7) ** 2) * 1.15, out = Math.sin(fling), down = Math.cos(fling);
   const drawCloth = c => {
     const col = c.z < 0 ? mix(c.col, '#7d8a96', 0.3) : c.col;       // further side a little duller
     const [w, h] = { shirt: [5, 5], sock: [2, 4], sheet: [7, 9], towel: [4, 7] }[c.kind];
-    px(c.x - w / 2, c.y + 1, w, h, col);
-    if (c.kind === 'shirt') { px(c.x - w / 2 - 1, c.y + 1, 1, 2, col); px(c.x + w / 2, c.y + 1, 1, 2, col); }
+    for (let i = 0; i < h; i++) {                                    // row by row from the pegs, swung outwards
+      const x = c.x - w / 2 + i * out * c.ux, y = c.y + 1 + i * down - i * out * c.uz * 0.15;
+      px(x, y, w, 1, col);
+      if (c.kind === 'shirt' && i < 2) { px(x - 1, y, 1, 1, col); px(x + w, y, 1, 1, col); }   // sleeves
+    }
     px(c.x - 1, c.y, 1, 1, '#e0c070'); px(c.x + 1, c.y, 1, 1, '#e0c070');   // pegs
   };
   clothes.filter(c => c.z < 0).forEach(drawCloth);
@@ -1700,8 +1718,8 @@ function drawRooBody(g, crouch, ext, swing) {
 // The animals and the bloke are drawn like the magpie (smooth, then slightly pixelated).
 // ---------------------------------------------------------------------------
 const KOALA = { u: 0.3, target: 0.6, wait: 0, step: 0 };
-const KOOKA = { x: 0, y: 0, state: 'perched', t: 0, fx: 0, fy: 0, vy: 0, rot: 0, callIn: 20, calling: 0 };
-const KOOKA_CALL_TIME = 2.5;      // his laugh; now and then (about every 30 seconds) while he's on screen
+const KOOKA = { x: 0, y: 0, state: 'perched', t: 0, fx: 0, fy: 0, vy: 0, rot: 0, callIn: 40, calling: 0 };
+const KOOKA_CALL_TIME = 2.5;      // his laugh; rarely (every 1 to 2 minutes of him being on screen), and never off screen
 const KOOKA_SCALE = 0.6;          // a big kookaburra (twice the size he was)
 const BBQ_SCALE = 0.48;
 const BBQ_WIDE = 1.6;              // twice as wide as it was
@@ -1751,10 +1769,11 @@ function updateCast(dt) {
   if (bird.swooping && KOOKA.state === 'perched' && Math.abs(kookaDx(bird.x)) < 13 && Math.abs(bird.y - (KOOKA.y - 10)) < 14) knockKooka();
   KOOKA.t += dt;
   KOOKA.calling = Math.max(0, KOOKA.calling - dt);
-  const kx = loopX(KOOKA.x);
-  if (KOOKA.state === 'perched' && kx > 0 && kx < W && (KOOKA.callIn -= dt) <= 0) {   // laughs now and then while you can see him
-    KOOKA.callIn = 15 + Math.random() * 30; KOOKA.calling = KOOKA_CALL_TIME; Sound.laugh();
+  const kx = loopX(KOOKA.x), kookaSeen = kx > 20 && kx < W - 20;
+  if (KOOKA.state === 'perched' && kookaSeen && (KOOKA.callIn -= dt) <= 0) {   // laughs now and then while you can see him
+    KOOKA.callIn = 60 + Math.random() * 60; KOOKA.calling = KOOKA_CALL_TIME; Sound.laugh();
   }
+  if (KOOKA.calling > 0 && (kx < -10 || kx > W + 10)) { KOOKA.calling = 0; Sound.hushLaugh(); }   // gone off screen: the laugh fades
   if (KOOKA.state === 'falling') {
     KOOKA.vy += 300 * dt; KOOKA.fy += KOOKA.vy * dt; KOOKA.fx += 12 * dt; KOOKA.rot += 9 * dt;
     if (KOOKA.fy >= LAND_Y + 4) { KOOKA.fy = LAND_Y + 4; KOOKA.state = 'stunned'; KOOKA.t = 0; }
@@ -1762,7 +1781,7 @@ function updateCast(dt) {
   else if (KOOKA.state === 'flying') {
     const k = Math.min(1, KOOKA.t / 1.4), e = k * k * (3 - 2 * k);
     KOOKA.fx = KOOKA.sx + (KOOKA.x - KOOKA.sx) * e; KOOKA.fy = KOOKA.sy + (KOOKA.y - KOOKA.sy) * e - Math.sin(k * Math.PI) * 20;
-    if (k >= 1) { KOOKA.state = 'perched'; KOOKA.calling = KOOKA_CALL_TIME; Sound.laugh(); }
+    if (k >= 1) { KOOKA.state = 'perched'; if (kookaSeen) { KOOKA.calling = KOOKA_CALL_TIME; Sound.laugh(); } }   // back on his branch: laughs, if you can see him
   }
   // Barbecue: every few seconds he flips a burger
   BBQ.flipIn -= dt;
@@ -2090,7 +2109,7 @@ function updateMore(dt) {
   } else if (DROPBEAR.state === 'drop') {
     DROPBEAR.vy += 420 * dt; DROPBEAR.y += DROPBEAR.vy * dt; DROPBEAR.x += (bird.x - DROPBEAR.x) * Math.min(1, 4 * dt);
     const hit = Math.abs(bird.x - DROPBEAR.x) < 8 && DROPBEAR.y >= bird.y - 8;
-    if (hit) { bird.flung = true; bird.dazed = true; bird.grounded = false; bird.onHoist = bird.onRoo = false; bird.vy = 60; bird.vx = 0; penalty(100); }
+    if (hit) { bird.flung = true; bird.dazed = true; bird.grounded = false; bird.onHoist = bird.onRoo = false; bird.hanging = null; bird.vy = 60; bird.vx = 0; penalty(100); }
     if (hit || DROPBEAR.y >= LAND_Y) { DROPBEAR.state = 'climb'; DROPBEAR.t = 0; DROPBEAR.from = DROPBEAR.y; DROPBEAR.under = -6; }
   } else if (DROPBEAR.state === 'climb') {
     DROPBEAR.t += dt;
@@ -2374,7 +2393,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0, turnDir: 0, turnRate: 0, callIn: 12, calling: 0, onBbq: false, hot: 0, hotFade: 0, flung: false, onBack: 0, dazed: false, onCarrier: null, carrierAt: 0 };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0, turnDir: 0, turnRate: 0, callIn: 12, calling: 0, onBbq: false, hot: 0, hotFade: 0, flung: false, onBack: 0, dazed: false, onCarrier: null, carrierAt: 0, hanging: null };
 const ON_BACK_TIME = 2.2, GET_UP_TIME = 0.4;   // after the barbecue: on his back waving his legs, then he rolls back up
 const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 20 seconds on the ground
 
@@ -2510,6 +2529,9 @@ function update(dt) {
   const floor = floorTop - FEET;
   if (bird.grounded && bird.y < floor - 0.5) bird.grounded = false;                // walked off the roof
 
+  if (bird.hanging && (c.down || bird.swooping || bird.loopT > 0)) {   // let go of the hoist: off the way he's facing
+    bird.hanging = null; bird.vy = 20; bird.vx = bird.face * Math.abs(HOIST.spin) * 20;
+  }
   if (bird.swooping) {
     // Swoop: straight and fast; up or down angles the dive 30 degrees
     const a = dirY * TILT;
@@ -2526,7 +2548,7 @@ function update(dt) {
     if (dirX) bird.walkT += dt;
     if (c.up) { bird.grounded = false; bird.vy = -60; bird.onRoo = false; if (bird.onHoist) { bird.onHoist = false; bird.vx = bird.face * HOIST.spin * 20; } }   // off the hoist: flung the way he's facing
   }
-  if (!bird.grounded && !bird.swooping) {
+  if (!bird.grounded && !bird.swooping && !bird.hanging) {
     const maxX = c.down ? MAX_X_DIVE : MAX_X;
     // Turning round: whatever speed he's going, he's flying full speed the other way 1 second later
     if (dirX && bird.turnDir !== dirX && dirX * bird.vx < -5) { bird.turnDir = dirX; bird.turnRate = (Math.abs(bird.vx) + maxX) / TURN_TIME; }
@@ -2541,6 +2563,13 @@ function update(dt) {
     bird.vy = Math.max(bird.vy, -MAX_CLIMB);
     bird.y += bird.vy * dt;
     if (bird.y < TOP_Y) { bird.y = TOP_Y; bird.vy = Math.max(0, bird.vy); }
+    if (bird.vy < 0 && bird.loopT <= 0 && Math.abs(hoistDx(bird.x)) < HOIST.r - 2 && bird.y > HOIST.top && bird.y < HOIST.top + 14) {
+      // flew up under the Hills Hoist: grab hold and ride round underneath it, half the time by his wings, half upside down by his feet
+      const dx = hoistDx(bird.x);
+      bird.hanging = Math.random() < 0.5 ? 'wings' : 'feet'; bird.vx = bird.vy = 0; bird.hoistR = Math.abs(dx); award(20);
+      bird.hoistAt = (dx >= 0 ? 0 : Math.PI) - HOIST.angle;
+      bird.hoistFaceAt = (bird.face > 0 ? 0 : Math.PI) - HOIST.angle;
+    }
     if (bird.y >= floor) {
       bird.y = floor; bird.vy = 0; bird.grounded = true; bird.walkT = 0;
       if (bird.flung) { bird.flung = false; bird.onBack = ON_BACK_TIME; bird.vx = 0; }   // came down from the barbecue: tumbles onto his back
@@ -2580,9 +2609,9 @@ function update(dt) {
     bird.y = rooTop() - FEET; bird.vx = 0; bird.face = ROO.dir;
   }
   updateHoist(dt);
-  if (bird.onHoist) {                                                // on the hoist: carried round with it, turning as it turns
+  if (bird.onHoist || bird.hanging) {                               // on (or under) the hoist: carried round with it, turning as it turns
     bird.x = HOIST.x + Math.round((bird.x - HOIST.x) / LEVEL_W) * LEVEL_W + Math.cos(HOIST.angle + bird.hoistAt) * bird.hoistR;
-    bird.y = HOIST.top - FEET;
+    bird.y = bird.hanging ? HOIST.top + HANG_Y[bird.hanging] : HOIST.top - FEET;
     bird.vx = 0;
     bird.hoistTurn = Math.cos(HOIST.angle + bird.hoistFaceAt);         // 1 facing right, -1 facing left, between = turning
     bird.face = bird.hoistTurn >= 0 ? 1 : -1;
@@ -2646,6 +2675,12 @@ function magpiePose() {
   if (bird.onBack > 0) {                                             // on his back, legs waving in the air, then rolling back up
     const up = bird.onBack < GET_UP_TIME ? bird.onBack / GET_UP_TIME : 1;
     Object.assign(pose, { pitch: -0.35, headPitch: 0.5, wings: 'folded', legs: time * 22, flip: Math.PI * up, bob: 15 * up });
+  }
+  if (bird.hanging === 'wings') {                                    // hanging on by his wings, looking up, legs kicking
+    Object.assign(pose, { pitch: -0.25, headPitch: -0.8, wings: 0.8 + 0.12 * Math.sin(time * 18), legs: time * 16, dangle: false, burn: 0, bob: 0 });
+  } else if (bird.hanging === 'feet') {                              // upside down by his feet, swinging round
+    Object.assign(pose, { pitch: -0.35, headPitch: 0.4, wings: 0.2 + 0.3 * Math.sin(time * 14), legs: 0, dangle: false, burn: 0, bob: 0,
+      flip: Math.sin(time * 3) * 0.45, hang: true });
   }
   if (bird.calling > 0) {                                            // calling: head raised, beak opening and shutting
     pose.headPitch = -0.55;
@@ -2838,6 +2873,7 @@ function draw() {
   bbctx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.45) * K / BIRD_PIX, (bird.y - cork + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
   if (bird.hot > 0) bbctx.filter = `sepia(${bird.hot}) saturate(${1 + 6 * bird.hot}) hue-rotate(${-40 * bird.hot}deg) brightness(${1 + 0.4 * bird.hot})`;   // going red
   if (pose.flip) bbctx.rotate(pose.flip);                           // upside down, on his back
+  if (pose.hang) bbctx.scale(1, -1);                                 // hanging upside down by his feet, still facing the same way
   drawMagpie(bbctx, pose);
   bbctx.filter = 'none';
   if (bird.dazed) {                                                  // seeing stars after the drop bear
