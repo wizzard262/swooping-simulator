@@ -915,7 +915,7 @@ function leaveShop(exitRight) {
   const ex = SHOP.x + (exitRight ? SHOP.w + 2 : -2), dir = exitRight ? 1 : -1;
   for (let i = 0; i < 9; i++) {
     const type = i % 3 ? 'can' : 'bottle';
-    setTimeout(() => Sound[type === 'can' ? 'can' : 'glass'](), i * 70 + Math.random() * 40);   // knocking together on the way out
+    setTimeout(() => Sound.can(), i * 70 + Math.random() * 40);    // cans clanging on the way out
     loot.push({ type, x: ex, y: 146 + Math.random() * 10, vx: dir * (30 + Math.random() * 70), vy: -40 - Math.random() * 60,
       rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, rest: 162 + Math.random() * 6, life: LOOT_TIME });
   }
@@ -928,7 +928,7 @@ function updateShopAndDrunk(dt) {
     l.life -= dt;
     if (l.y < l.rest || l.vy < 0) {
       l.vy += 320 * dt; l.x += l.vx * dt; l.y += l.vy * dt; l.rot += l.vr * dt;
-      if (l.y >= l.rest && l.vy > 0) { if (!l.landed) { l.landed = true; Sound[l.type === 'can' ? 'can' : 'glass'](0.5); } l.y = l.rest; l.vy = Math.abs(l.vy) > 40 ? -l.vy * 0.3 : 0; l.vx *= 0.5; l.vr *= 0.5; }
+      if (l.y >= l.rest && l.vy > 0) { if (!l.landed) { l.landed = true; Sound.can(0.5); } l.y = l.rest; l.vy = Math.abs(l.vy) > 40 ? -l.vy * 0.3 : 0; l.vx *= 0.5; l.vr *= 0.5; }
     }
   }
   for (let i = loot.length - 1; i >= 0; i--) if (loot[i].life <= 0) loot.splice(i, 1);
@@ -1067,7 +1067,7 @@ function drawShopFront(g) {
 
 // ---------------------------------------------------------------------------
 // Sound, all made in code with Web Audio (no files): the swoop's afterburner roar, poop plop and splosh, cans and bottles
-// clinking out of the BOTTLE-O, hiccups while drunk, and a gentle
+// clanging out of the BOTTLE-O, hiccups while drunk, and a gentle
 // suburban background of breeze, cicadas, distant birds and now and then a didgeridoo. It starts on the first key press
 // or touch (browsers need that); M or the speaker icon mutes it, and the choice is remembered.
 // ---------------------------------------------------------------------------
@@ -1164,65 +1164,88 @@ const Sound = (() => {
     }
   }
 
-  // A didgeridoo, far off, played like a real one: buzzing lips (a pulse rich in harmonics)
-  // through a tube, with the player's mouth shaping vowels in a rhythm ("woo-wah-dee-doo"),
-  // accents on the beat, a breath snatched now and then (circular breathing), the odd
-  // overtone toot and a little wobble in pitch. It fades in, plays a phrase or two, fades out.
-  const VOWELS = { oo: [300, 850], oh: [480, 900], ah: [720, 1150], eh: [550, 1700], ee: [320, 2100] };
+  // A didgeridoo, far off, built the way a real one makes its sound:
+  // - lips buzzing (a pulse rich in harmonics) into a long tube: the tube is a delay line fed
+  //   back on itself, so it rings at its own resonances and colours the buzz like wood does
+  // - the player's mouth shaping "wo-wow-wow" on each beat (two formants sweeping up and back)
+  // - breath hissing through it, a quick sniff in now and then (circular breathing)
+  // - a voice humming into it now and then (the "dingo howl"), the odd overtone toot, and the
+  //   pitch wandering slightly as the lips loosen and tighten
+  // It fades in, plays for 10 to 15 seconds and fades out.
+  const VOWELS = { oo: [300, 800], oh: [480, 950], ah: [760, 1250] };
   let lipWave = null;
   function didgeridoo() {
-    const t0 = now(), f = 60 + Math.random() * 12, step = 0.15 + Math.random() * 0.04;
-    const steps = 60 + Math.floor(Math.random() * 30), len = steps * step, fade = 2.5;
-    if (!lipWave) {                                                   // the lip buzz: a pulse with slowly falling harmonics
-      const n = 48, re = new Float32Array(n), im = new Float32Array(n);
-      for (let k = 1; k < n; k++) im[k] = 1 / Math.pow(k, 0.75);
+    const t0 = now(), f = 62 + Math.random() * 10, step = 0.15 + Math.random() * 0.04;
+    const steps = 66 + Math.floor(Math.random() * 30), len = steps * step, fade = 2.5;
+    if (!lipWave) {
+      const n = 60, re = new Float32Array(n), im = new Float32Array(n);
+      for (let k = 1; k < n; k++) im[k] = 1 / Math.pow(k, 0.65);
       lipWave = ac.createPeriodicWave(re, im);
     }
     const out = ac.createGain();
-    out.gain.setValueAtTime(0.0001, t0); out.gain.exponentialRampToValueAtTime(0.2, t0 + fade);
-    out.gain.setValueAtTime(0.2, t0 + len - fade); out.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
-    const distance = ac.createBiquadFilter(); distance.type = 'lowpass'; distance.frequency.value = 2600;
+    out.gain.setValueAtTime(0.0001, t0); out.gain.exponentialRampToValueAtTime(0.22, t0 + fade);
+    out.gain.setValueAtTime(0.22, t0 + len - fade); out.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+    const distance = ac.createBiquadFilter(); distance.type = 'lowpass'; distance.frequency.value = 3000;
     distance.connect(out); out.connect(master);
     const accent = ac.createGain(); accent.gain.value = 0.6; accent.connect(distance);
+    const mouth = ac.createGain(); mouth.gain.value = 1;             // everything goes through the mouth shapes
 
+    // The tube: a delay of one period fed back through a gentle lowpass
+    const tube = ac.createDelay(0.1), loop = ac.createGain(), damp = ac.createBiquadFilter();
+    tube.delayTime.value = 1 / f; loop.gain.value = 0.72; damp.type = 'lowpass'; damp.frequency.value = 1600;
+    tube.connect(damp); damp.connect(loop); loop.connect(tube);
     const lips = ac.createOscillator(); lips.setPeriodicWave(lipWave); lips.frequency.value = f;
-    const vib = ac.createOscillator(), vg = ac.createGain(); vib.frequency.value = 4.5; vg.gain.value = f * 0.006;
-    vib.connect(vg); vg.connect(lips.frequency);
-    const body = ac.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 260; body.Q.value = 2;
-    const bodyG = ac.createGain(); bodyG.gain.value = 0.9;
-    lips.connect(body); body.connect(bodyG); bodyG.connect(accent);
-    bodyG.gain.value = 0.55;                                         // less plain drone, more mouth
-    const formants = [[7, 1.4], [11, 1.1]].map(([q, level]) => {
+    const lipsG = ac.createGain(); lipsG.gain.value = 0.35;
+    lips.connect(lipsG); lipsG.connect(tube); lipsG.connect(mouth); tube.connect(mouth);
+
+    // Breath through the tube, and the voice
+    const breath = ac.createBufferSource(), bf = ac.createBiquadFilter(), bgain = ac.createGain();
+    breath.buffer = noise; breath.loop = true; bf.type = 'bandpass'; bf.frequency.value = 1600; bf.Q.value = 0.8; bgain.gain.value = 0.05;
+    breath.connect(bf); bf.connect(bgain); bgain.connect(mouth);
+    const voice = ac.createOscillator(), vg = ac.createGain(); voice.type = 'sawtooth'; voice.frequency.value = f * 2.5; vg.gain.value = 0;
+    voice.connect(vg); vg.connect(tube);
+
+    // The mouth: a low body plus two formants that make the wow
+    const body = ac.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 240;
+    const bodyG = ac.createGain(); bodyG.gain.value = 0.5; mouth.connect(body); body.connect(bodyG); bodyG.connect(accent);
+    const formants = [[6, 1.3], [10, 1.0]].map(([q, level]) => {
       const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
       const g = ac.createGain(); g.gain.value = level;
-      lips.connect(bp); bp.connect(g); g.connect(accent);
+      mouth.connect(bp); bp.connect(g); g.connect(accent);
       return bp;
     });
 
-    // The rhythm: "wo-wow-wow". Each beat the mouth closes to "w" (oo) and then opens wide
-    // into "ow"/"ah", so the formants sweep right up and back: that's the wow. Some beats
-    // only half open, some stay shut, in a pattern repeated with small changes.
     const pattern = [];
-    for (let i = 0; i < 8; i++) pattern.push({ open: i % 4 === 0 ? 1 : i % 2 ? 0.6 + Math.random() * 0.4 : Math.random() < 0.3 ? 0 : 0.85, hit: i % 4 === 0 ? 1 : i % 2 ? 0.6 : 0.8 });
+    for (let i = 0; i < 8; i++) pattern.push({ open: i % 4 === 0 ? 1 : i % 2 ? 0.55 + Math.random() * 0.45 : Math.random() < 0.3 ? 0 : 0.85, hit: i % 4 === 0 ? 1 : i % 2 ? 0.6 : 0.8 });
     for (let i = 0; i < steps; i++) {
       const t = t0 + i * step, p = pattern[i % 8], open = Math.random() < 0.1 ? Math.random() : p.open;
       const w = VOWELS.oo, wide = VOWELS[open > 0.8 ? 'ah' : 'oh'];
-      for (const [k, b] of formants.entries()) {
-        b.frequency.setTargetAtTime(w[k], t, 0.015);                   // "w": lips and tongue close
-        b.frequency.setTargetAtTime(w[k] + (wide[k] - w[k]) * open, t + step * 0.22, 0.045);   // "ow": open wide
-      }
+      formants.forEach((b, k) => {
+        b.frequency.setTargetAtTime(w[k], t, 0.015);
+        b.frequency.setTargetAtTime(w[k] + (wide[k] - w[k]) * open, t + step * 0.22, 0.045);
+      });
       accent.gain.setTargetAtTime(p.hit, t, 0.012);
       accent.gain.setTargetAtTime(p.hit * 0.65, t + step * 0.5, 0.05);
-      if (i % 24 === 23) {                                           // a quick breath in through the nose
-        accent.gain.setTargetAtTime(0.15, t, 0.01);
-        burst(t, 0.12, 'lowpass', 700, 0.7, 0.05, distance);
+      bgain.gain.setTargetAtTime(0.03 + 0.05 * p.hit, t, 0.02);          // breath pushes with the beat
+      const pf = f * (1 + (Math.random() - 0.5) * 0.02);                // lips loosen and tighten
+      lips.frequency.setTargetAtTime(pf, t, 0.08); tube.delayTime.setTargetAtTime(1 / pf, t, 0.08);
+      if (i % 24 === 23) {                                               // a sniff in through the nose
+        accent.gain.setTargetAtTime(0.12, t, 0.01);
+        burst(t, 0.14, 'bandpass', 2500, 0.8, 0.06, distance);
       }
-      if (Math.random() < 0.05 && i > 8 && i < steps - 8) {          // an overtone toot
-        lips.frequency.setTargetAtTime(f * 2.6, t, 0.02);
-        lips.frequency.setTargetAtTime(f, t + step * 2.5, 0.03);
+      if (i % 32 === 12 && Math.random() < 0.7) {                        // the voice howls for a moment
+        voice.frequency.setValueAtTime(f * 2.2, t);
+        voice.frequency.linearRampToValueAtTime(f * 3.1, t + step * 3);
+        vg.gain.setTargetAtTime(0.12, t, 0.05); vg.gain.setTargetAtTime(0, t + step * 4, 0.08);
+      }
+      if (Math.random() < 0.04 && i > 8 && i < steps - 8) {              // an overtone toot
+        lips.frequency.setTargetAtTime(f * 2.6, t, 0.02); tube.delayTime.setTargetAtTime(1 / (f * 2.6), t, 0.02);
+        lips.frequency.setTargetAtTime(f, t + step * 2.5, 0.03); tube.delayTime.setTargetAtTime(1 / f, t + step * 2.5, 0.03);
       }
     }
-    lips.start(t0); vib.start(t0); lips.stop(t0 + len + 0.1); vib.stop(t0 + len + 0.1);
+    const end = t0 + len + 0.1;
+    lips.start(t0); breath.start(t0); voice.start(t0);
+    lips.stop(end); breath.stop(end); voice.stop(end);
   }
 
   // Effects
@@ -1239,15 +1262,6 @@ const Sound = (() => {
     o.type = 'sine'; o.frequency.value = f;
     g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
     o.connect(g); g.connect(dest); o.start(t); o.stop(t + decay + 0.05);
-  }
-  // A glass bottle clinking: a sharp click, then a bright, quick ring in the high kilohertz
-  // (real bottle clinks are short and high), with a dull knock of the bottle's body under it
-  function glass(level = 1) {
-    const t = now() + Math.random() * 0.015, f = 2800 + Math.random() * 2400;
-    burst(t, 0.008, 'highpass', 6000, 0.7, 0.35 * level);
-    ring(600 + Math.random() * 300, t, 0.05, 0.07 * level);
-    for (const [mul, decay, peak] of [[1, 0.22, 0.08], [1.003, 0.2, 0.05], [1.53, 0.14, 0.04], [2.41, 0.08, 0.025]])
-      ring(f * mul, t, decay * (0.7 + Math.random() * 0.6), peak * level);
   }
   // An aluminium can: a hollow, crinkly tonk (thin metal rattling) rather than a ring
   function canHit(t, level) {
@@ -1296,7 +1310,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
-  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), glass: safe(glass), can: safe(can), didgeridoo: safe(didgeridoo) };
+  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), can: safe(can), didgeridoo: safe(didgeridoo) };
 })();
 
 // ---------------------------------------------------------------------------
