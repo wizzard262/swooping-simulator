@@ -306,8 +306,18 @@
 
 - Make the poop bar recharge in 5 seconds
 
+## 63. Turning round
+
+- When the bird turns, he carries on going the old way; he should take 1 second to get going the other way
+  - From any speed (even straight after a swoop) he's now flying full speed the other way 1 second after you turn
+
+## 64. Controller and resizing (checks)
+
+- How did we do with resizing to fit the browser, and the controller support? My controller is a standard USB Xbox one on a PC. Also resize the width to fit when the browser is resized
+  - Both were already in; checked again on the live site: the game refits the width every time the window is resized, and a standard Xbox controller is the layout it's mapped for
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 210 min so far | Prompts 1–62: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat |
+| 1 | 2026-10-21 | about 220 min so far | Prompts 1–64: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat |

@@ -72,6 +72,7 @@ const SUN_LOOPS = 3;              // fly the level this many times to push the s
 // Magpie flight
 const GRAVITY = 70, FLAP = 230, DIVE = 230, ACCEL_X = 230;
 const MAX_FALL = 45, MAX_DIVE = 170, MAX_CLIMB = 95, MAX_X = 115, MAX_X_DIVE = 150, WALK = 56;
+const TURN_TIME = 1;              // seconds to go from flying one way to full speed the other
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -1529,7 +1530,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0 };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0, turnDir: 0, turnRate: 0 };
 
 // Stunts: B for a barrel roll (a full turn about his body), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
@@ -1671,7 +1672,11 @@ function update(dt) {
   }
   if (!bird.grounded && !bird.swooping) {
     const maxX = c.down ? MAX_X_DIVE : MAX_X;
-    if (Math.abs(bird.vx) > maxX) bird.vx += (Math.sign(bird.vx) * maxX - bird.vx) * Math.min(1, 2 * dt);  // ease back after a swoop
+    // Turning round: whatever speed he's going, he's flying full speed the other way 1 second later
+    if (dirX && bird.turnDir !== dirX && dirX * bird.vx < -5) { bird.turnDir = dirX; bird.turnRate = (Math.abs(bird.vx) + maxX) / TURN_TIME; }
+    if (bird.turnDir && (dirX !== bird.turnDir || dirX * bird.vx >= maxX)) bird.turnDir = 0;
+    if (bird.turnDir) bird.vx = clamp(bird.vx + dirX * bird.turnRate * dt, -Math.max(maxX, Math.abs(bird.vx)), Math.max(maxX, Math.abs(bird.vx)));
+    else if (Math.abs(bird.vx) > maxX) bird.vx += (Math.sign(bird.vx) * maxX - bird.vx) * Math.min(1, 2 * dt);  // ease back after a swoop
     else if (dirX) bird.vx = clamp(bird.vx + dirX * ACCEL_X * dt, -maxX, maxX);
     else bird.vx *= Math.exp(-0.8 * dt);                           // glide keeps most of its speed
     bird.vy += (GRAVITY - (c.up ? FLAP : 0) + (c.down ? DIVE : 0)) * dt;
