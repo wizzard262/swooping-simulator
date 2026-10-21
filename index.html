@@ -1547,10 +1547,10 @@ function loopTheLoop() {
   bird.loopT = LOOP_TIME;
 }
 
-// Pooping: P drops a white teardrop. It takes a full poop bar, which fills at half the
-// swoop bar's speed (20 seconds). Drops splosh on whatever they hit: the lawn for now;
+// Pooping: P drops a white teardrop. It takes a full poop bar, which fills again in
+// 5 seconds. Drops splosh on whatever they hit: the lawn for now;
 // targets (people, say) can be added to TARGETS later.
-const POOP_RECHARGE = SWOOP_RECHARGE / 2, DROP_GRAVITY = 320;
+const POOP_RECHARGE = 1 / 5, DROP_GRAVITY = 320;
 const TARGETS = [];               // { x, y, w, h, hit(drop) } in world pixels
 const drops = [], sploshes = [], splashes = [];
 

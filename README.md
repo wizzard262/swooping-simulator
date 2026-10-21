@@ -14,7 +14,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - M (or the speaker icon) turns the sound on and off
 - The game fills the browser's width (a black bar below it in tall windows)
 - Poop during a swoop for a pop-art SWOOP-AND-POOP! above the magpie, or loop during one for SWOOP-AND-LOOP!
-- Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 20 seconds
+- Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 5 seconds
 - Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out, he does a barrel roll, and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery
 - The magpie drifts down slowly under gravity, lands softly on the lawn and walks along it
 - Touch screens: hold where you want the magpie to go; tap quickly to start or stop a swoop; tap with a second finger to poop
