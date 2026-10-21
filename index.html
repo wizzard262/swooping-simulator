@@ -735,6 +735,30 @@ function head(g, drunk) {
   g.strokeStyle = 'rgba(130,150,200,0.35)'; g.lineWidth = 1.6; g.stroke();
 }
 
+// While swooping, his legs dangle back and down from his belly at about 15 degrees,
+// fluttering a little in the wind. Drawn in the body frame, under the body.
+function danglingLegs(g) {
+  g.save();
+  g.strokeStyle = '#3a3b40'; g.lineCap = g.lineJoin = 'round';
+  [[-3, 0], [4, 1.9]].forEach(([hip, phase]) => {
+    const a = Math.PI - Math.PI / 12 + Math.sin(time * 26 + phase) * 0.07;   // 15 degrees below straight back, fluttering
+    const knee = [hip + Math.cos(a) * 14, 11 + Math.sin(a) * 14];
+    const a2 = a + Math.sin(time * 31 + phase) * 0.12;
+    const foot = [knee[0] + Math.cos(a2) * 13, knee[1] + Math.sin(a2) * 13];
+    for (const [w, col] of [[4.2, '#202126'], [2.4, '#55575e']]) {       // dark leg with a lighter shine
+      g.strokeStyle = col; g.lineWidth = w;
+      g.beginPath(); g.moveTo(hip, 9); g.lineTo(...knee); g.lineTo(...foot); g.stroke();
+    }
+    g.strokeStyle = '#2a2b30'; g.lineWidth = 2; g.beginPath();             // toes, curled and flicking
+    for (const t of [-0.6, 0, 0.6]) {
+      const ta = a2 + t + Math.sin(time * 40 + phase + t) * 0.1;
+      g.moveTo(...foot); g.lineTo(foot[0] + Math.cos(ta) * 6, foot[1] + Math.sin(ta) * 6);
+    }
+    g.stroke();
+  });
+  g.restore();
+}
+
 // Afterburner flames out of the tail while swooping; power 0 to 1
 function afterburner(g, power) {
   if (power < 0.02) return;
@@ -755,7 +779,8 @@ function afterburner(g, power) {
   g.restore();
 }
 
-// pose: { pitch (radians, + is nose down), headPitch, wings: 'folded' | open amount, legs: walk phase or null, burn: afterburner 0 to 1 }
+// pose: { pitch (radians, + is nose down), headPitch, wings: 'folded' | open amount, legs: walk phase or null,
+//         burn: afterburner 0 to 1, dangle: legs trailing in a swoop }
 function drawMagpie(g, pose) {
   if (pose.legs !== null) {                                                // legs, in the upright frame
     const swing = Math.sin(pose.legs) * 5;
@@ -775,6 +800,7 @@ function drawMagpie(g, pose) {
   afterburner(g, pose.burn || 0);
   g.scale(1, Math.cos(pose.roll || 0));
   const spread = pose.wings !== 'folded';
+  if (pose.dangle) danglingLegs(g);
   if (spread) spreadWing(g, pose.wings, true);
   const tailW = spread ? 1.35 : 1;                                         // tail: white base, black tip
   const tail = () => { g.moveTo(-16, -4 * tailW); g.lineTo(-41, -3 * tailW); g.quadraticCurveTo(-47, 1, -41, 6 * tailW); g.lineTo(-16, 6); };
@@ -990,16 +1016,27 @@ function buildShelfStock() {
   return c;
 }
 
-function drawShelfStock(g) {
+// Draw a picture on the smooth canvas, smeared along the flight in a swoop like the scenery
+function drawSmeared(g, img, x, y, w, h) {
   g.imageSmoothingEnabled = false;
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.drawImage(shelfStock, Math.round(loopX(SHOP.x) * K), Math.round(SHOP.ceil * K), SHOP.w * K, (SHOP.floor - SHOP.ceil) * K);
+  g.drawImage(img, Math.round(x * K), Math.round(y * K), w * K, h * K);
+  if (blur > 0.02) {
+    const v = Math.hypot(bird.vx, bird.vy) || 1, step = 2.2 * blur;
+    for (let i = 1; i <= 7; i++) {
+      g.globalAlpha = 1 / (i + 1);
+      g.drawImage(img, Math.round((x + bird.vx / v * step * i) * K), Math.round((y + bird.vy / v * step * i) * K), w * K, h * K);
+    }
+    g.globalAlpha = 1;
+  }
+}
+
+function drawShelfStock(g) {
+  drawSmeared(g, shelfStock, loopX(SHOP.x), SHOP.ceil, SHOP.w, SHOP.floor - SHOP.ceil);
 }
 
 function drawShopFront(g) {
-  g.imageSmoothingEnabled = false;
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.drawImage(shopFront.c, Math.round(loopX(SHOP.x) * K), Math.round(shopFront.top * K), shopFront.c.width * K, shopFront.c.height * K);
+  drawSmeared(g, shopFront.c, loopX(SHOP.x), shopFront.top, shopFront.c.width, shopFront.c.height);
 }
 
 // ---------------------------------------------------------------------------
@@ -1184,7 +1221,7 @@ function basePose() {
   return {
     pitch: bird.pitch, headPitch: -bird.pitch * 0.3,
     wings: bird.swooping ? 'folded' : flapping ? 0.2 + 0.8 * Math.sin(bird.flapT * Math.PI / 2) : 0.35,
-    legs: null, bob: 0, burn: blur
+    legs: null, bob: 0, burn: blur, dangle: bird.swooping
   };
 }
 

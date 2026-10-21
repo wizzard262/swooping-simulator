@@ -149,8 +149,16 @@
 - After the poop bar put the text "- P KEY", and after the swoop bar "- SPACE BAR"
   - On touch screens they read "- SECOND FINGER" and "- QUICK TAP" instead
 
+## 26. Legs in a swoop
+
+- When he swoops, can we see his legs dangling down from his body at 30 degrees and flapping around
+
+## 27. Calmer legs
+
+- Make the legs flap less, and only at an angle of 15 degrees
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 90 min so far | Prompts 1–25: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints |
+| 1 | 2026-10-21 | about 95 min so far | Prompts 1–27: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop |
