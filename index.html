@@ -132,7 +132,8 @@ const FONT = {
   Q: '25563', R: '65655', S: '34216', T: '72222', U: '55557', V: '55552', W: '55775', X: '55255',
   Y: '55222', Z: '71247', 0: '75557', 1: '26227', 2: '61247', 3: '61216', 4: '55711', 5: '74616',
   6: '34757', 7: '71222', 8: '75757', 9: '75716', ' ': '00000', '-': '00700', '.': '00002',
-  '!': '22202', ':': '02020', '/': '11244'
+  '!': '22202', ':': '02020', '/': '11244',
+  '#': '57575', '$': '36236', '?': '61202', '@': '75747', '%': '51245', '&': '25253', '*': '52725'   // for cartoon swearing
 };
 function glyphs(str, x, y, s, plot) {
   for (const ch of str) {
@@ -1404,17 +1405,17 @@ const Sound = (() => {
   }
   // Hot plate: a fierce sizzle that dies away, with a few spits
   // The magpie screaming: a harsh, shrill squawk sliding down, with a rasp in it
-  function scream() {
-    const t = now(), len = 0.75;
+  function scream(pitch = 1, level = 1, delay = 0) {
+    const t = now() + delay, len = 0.75;
     const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 1.2; bp.connect(master);
     for (const [type, mul, peak] of [['sawtooth', 1, 0.16], ['square', 1.5, 0.06]]) {
       const o = ac.createOscillator(), g = ac.createGain(), vib = ac.createOscillator(), vg = ac.createGain();
-      o.type = type; o.frequency.setValueAtTime(1500 * mul, t); o.frequency.exponentialRampToValueAtTime(650 * mul, t + len);
+      o.type = type; o.frequency.setValueAtTime(1500 * mul * pitch, t); o.frequency.exponentialRampToValueAtTime(650 * mul * pitch, t + len);
       vib.frequency.value = 22; vg.gain.value = 60 * mul; vib.connect(vg); vg.connect(o.frequency);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak * level, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
       o.connect(g); g.connect(bp); o.start(t); vib.start(t); o.stop(t + len + 0.05); vib.stop(t + len + 0.05);
     }
-    burst(t, len * 0.8, 'bandpass', 3000, 1, 0.08);
+    burst(t, len * 0.8, 'bandpass', 3000, 1, 0.08 * level);
   }
   function sizzle() {
     const t = now();
@@ -1705,7 +1706,8 @@ const KOOKA_SCALE = 0.6;          // a big kookaburra (twice the size he was)
 const BBQ_SCALE = 0.48;
 const BBQ_WIDE = 1.6;              // twice as wide as it was
 const BBQ = { x: 800, top: Math.round(166 - 32 * BBQ_SCALE), half: 17 * BBQ_SCALE * BBQ_WIDE, flipT: 0, flipIn: 2 };
-const POSTIE = { x: 40, dir: 1, stop: 0, last: -1, wheel: 0 };
+const POSTIE = { x: 40, dir: 1, stop: 0, last: -1, wheel: 0, down: 0 };   // down: knocked off, then picking his bike up
+const POSTIE_DOWN = 2.6, POSTIE_LIFT = 0.9;
 const SHARK = { in: 20, t: 0, x: 0, dir: 1 };
 const smoke = [];
 const bbqDx = x => mod(x - BBQ.x + LEVEL_W / 2, LEVEL_W) - LEVEL_W / 2;
@@ -1736,6 +1738,7 @@ function setUpCast() {
 
 function updateCast(dt) {
   updateFerry(dt);
+  updateClimbers(dt);
   updateMore(dt);
   // Koala: climbs a little way up or down the trunk, has a rest, climbs again
   if (KOALA.wait > 0) KOALA.wait -= dt;
@@ -1768,8 +1771,12 @@ function updateCast(dt) {
   if (Math.random() < dt * 6) smoke.push({ x: BBQ.x + (Math.random() - 0.5) * 2 * BBQ.half, y: BBQ.top - 1, life: 1.6, r: 1 + Math.random() * 1.5, bbq: true });
   for (const p of smoke) { p.life -= dt; p.y -= 12 * dt; p.x += Math.sin(time * 2 + p.y) * 3 * dt; p.r += dt * 1.5; }
   for (let i = smoke.length - 1; i >= 0; i--) if (smoke[i].life <= 0) smoke.splice(i, 1);
-  // Postie: rides along the front street, stopping briefly at some letterboxes
-  if (POSTIE.stop > 0) POSTIE.stop -= dt;
+  // Postie: rides along the front street, stopping briefly at some letterboxes. Poop on him and
+  // he's knocked off sideways; he gets up, picks up his bike and rides off the other way.
+  if (POSTIE.down > 0) {
+    POSTIE.down = Math.max(0, POSTIE.down - dt);
+    if (POSTIE.down === 0) POSTIE.dir *= -1;
+  } else if (POSTIE.stop > 0) POSTIE.stop -= dt;
   else {
     POSTIE.x = mod(POSTIE.x + POSTIE.dir * 32 * dt, suburb.P); POSTIE.wheel += dt * 12;
     const box = LETTERBOXES.findIndex(b => Math.abs(b - POSTIE.x) < 0.6);
@@ -1895,12 +1902,39 @@ function drawSmoke(g) {
 }
 
 // Postie: red motorbike, hi-vis vest, white helmet, letters in the box on the back (pixel art)
+// Knocked off by a poop
+function postieHitBy(sx, y) {
+  if (POSTIE.down > 0) return false;
+  const dx = mod(sx - mod(POSTIE.x - Math.round(cam * PARALLAX.suburb), suburb.P) + suburb.P / 2, suburb.P) - suburb.P / 2;
+  return Math.abs(dx) < 6 && y >= 139 && y <= 152;
+}
+function knockPostie() {
+  POSTIE.down = POSTIE_DOWN; POSTIE.stop = 0;
+  Sound.can(0.8); Sound.oi();
+  if (bird.onCarrier === 'postie') { bird.onCarrier = null; bird.grounded = false; bird.vy = -50; }
+  award(80, cam + mod(POSTIE.x - Math.round(cam * PARALLAX.suburb), suburb.P), 130);
+}
 function drawPostie(g) {
   const P = suburb.P, base = 152;
-  const sx0 = mod(POSTIE.x - Math.round(cam * PARALLAX.suburb), P);
+  const sx0 = mod(POSTIE.x - Math.round(cam * PARALLAX.suburb), P), d = POSTIE.dir;
   for (let sx = sx0 - P; sx < W + P; sx += P) {
     if (sx < -14 || sx > W + 14) continue;
-    const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(sx + x), base + y, w, h); };
+    const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(sx + (d > 0 ? x : -x - w + 1)), base + y, w, h); };   // faces the way he's going
+    if (POSTIE.down > POSTIE_LIFT) {                                   // knocked off: bike on its side, him sprawled beside it
+      px(-6, -2, 3, 2, '#1b1b1b'); px(3, -2, 3, 2, '#1b1b1b');         // wheels, flat
+      px(-5, -3, 10, 2, '#d0101c'); px(-8, -4, 4, 3, '#d0101c');       // frame, box
+      px(7, -2, 5, 2, '#ff8c1a'); px(12, -2, 2, 2, '#1d3a6b'); px(5, -3, 3, 3, '#f4f4f4');   // him, lying there
+      if (Math.floor(time * 3) % 2) px(8, -6, 1, 2, '#ffffff');        // dazed
+      continue;
+    }
+    if (POSTIE.down > 0) {                                             // getting up, hauling the bike upright
+      const k = 1 - POSTIE.down / POSTIE_LIFT;
+      for (const wx of [-5, 4]) px(wx - 1, -3, 3, 3, '#1b1b1b');
+      px(-5, -5 + Math.round((1 - k) * 2), 10, 2, '#d0101c');
+      px(-7, -9 + Math.round((1 - k) * 3), 4, 4, '#d0101c');
+      px(7, -10, 3, 5, '#ff8c1a'); px(7, -5, 2, 5, '#1d3a6b'); px(7, -13, 3, 3, '#f4f4f4');   // standing beside it
+      continue;
+    }
     const spin = Math.floor(POSTIE.wheel) % 2;
     for (const wx of [-5, 4]) { px(wx - 1, -3, 3, 3, '#1b1b1b'); px(wx, -2, 1, 1, spin ? '#888' : '#444'); }   // wheels
     px(-5, -5, 10, 2, '#d0101c');                                   // frame
@@ -1983,7 +2017,7 @@ function wireY(x) {                                                  // the sag 
   return Math.round(WIRE.top + 1 + 3 * 4 * t * (1 - t));
 }
 const POSSUM = { in: 8, x: 0, dir: 1, visit: 0, pause: 0 };   // out on the wire about a third of the time
-const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, ties: 0, ground: 170, crank: 0 };
+const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, sting: 0, ties: 7, ground: 170, crank: 0 };   // ties: always on his helmet
 const CYCLIST_SCALE = 0.6;        // a bit taller than the kangaroo
 const DROPBEAR = { state: 'hidden', x: 0, y: 0, vy: 0, t: 0, under: 0 };
 const COCKIES = { in: 18, t: 0, dir: 1, y: 50, len: 0, screechIn: 0 };
@@ -2001,12 +2035,18 @@ function award(base, x = bird.x, y = bird.y) {
   if (SCORE.pts > SCORE.hi) { SCORE.hi = SCORE.pts; try { localStorage.setItem('swoopHi', SCORE.hi); } catch (e) { /* not saved */ } }
   SCORE.pops.push({ text: '+' + pts, x, y: y - 14, life: 1.2 });
 }
+// Losing points (swooping the cyclist, the barbecue, the drop bear): shown in red, and the score can go below zero
+function penalty(base, x = bird.x, y = bird.y) {
+  SCORE.combo = 1; SCORE.comboT = 0;
+  SCORE.pts -= base;
+  SCORE.pops.push({ text: '-' + base, x, y: y - 14, life: 1.4, bad: true });
+}
 
 const stormDark = () => STORM.t > 0 ? clamp(Math.min((STORM.len - STORM.t) / 4, STORM.t / 4), 0, 1) : 0;
 const cyclistDx = x => mod(x - CYCLIST.x + LEVEL_W / 2, LEVEL_W) - LEVEL_W / 2;
-function hitCyclist() {
+function hitCyclist() {                                               // pooped on: he wobbles, shakes his fist, rings his bell
   if (CYCLIST.wobble > 0) return;
-  CYCLIST.wobble = 1.6; CYCLIST.ties = Math.min(12, CYCLIST.ties + 3);   // he sticks more cable ties on his helmet
+  CYCLIST.wobble = 1.6;
   Sound.bell(); Sound.oi(); award(100, CYCLIST.x, CYCLIST.ground - 30);
 }
 const CYCLIST_TARGET = { get x() { return CYCLIST.x - 10; }, get y() { return CYCLIST.ground - 28; }, w: 20, h: 22, hit: hitCyclist };   // from his helmet down to the frame
@@ -2033,10 +2073,14 @@ function updateMore(dt) {
     POSSUM.visit = 10 + Math.random() * 5; POSSUM.pause = 0; POSSUM.dir = Math.random() < 0.5 ? -1 : 1;
     POSSUM.x = POSSUM.dir > 0 ? WIRE.x0 + 2 : WIRE.x1 - 2;
   }
-  // Cyclist: pedals along the front of the lawn; swoop him and he wobbles
-  CYCLIST.wobble = Math.max(0, CYCLIST.wobble - dt);
+  // Cyclist: pedals along the front of the lawn. Poop him and he wobbles; swoop him and the
+  // cable ties on his helmet spike the magpie, who bounces off squawking and loses points
+  CYCLIST.wobble = Math.max(0, CYCLIST.wobble - dt); CYCLIST.sting = Math.max(0, CYCLIST.sting - dt);
   CYCLIST.x = mod(CYCLIST.x + CYCLIST.dir * CYCLIST.speed * dt, LEVEL_W); CYCLIST.crank += dt * 7;
-  if (bird.swooping && Math.abs(cyclistDx(bird.x)) < 12 && bird.y > CYCLIST.ground - 30 && bird.y < CYCLIST.ground) hitCyclist();   // only if he actually reaches him
+  if (bird.swooping && CYCLIST.sting <= 0 && Math.abs(cyclistDx(bird.x)) < 12 && bird.y > CYCLIST.ground - 30 && bird.y < CYCLIST.ground) {   // only if he actually reaches him
+    CYCLIST.sting = 1.5; bird.swooping = false; bird.vy = -90; bird.vx = -bird.face * 40;
+    Sound.scream(1.2, 0.6); penalty(100, CYCLIST.x, CYCLIST.ground - 30);
+  }
   // Drop bear: hang about under the big gum for 3 seconds and it drops on you, then climbs back up into the leaves
   const under = Math.abs(mod(bird.x - BIG_GUM_X + LEVEL_W / 2, LEVEL_W) - LEVEL_W / 2) < 26 && bird.y > 100;
   DROPBEAR.under = under ? DROPBEAR.under + dt : Math.min(0, DROPBEAR.under);
@@ -2046,7 +2090,7 @@ function updateMore(dt) {
   } else if (DROPBEAR.state === 'drop') {
     DROPBEAR.vy += 420 * dt; DROPBEAR.y += DROPBEAR.vy * dt; DROPBEAR.x += (bird.x - DROPBEAR.x) * Math.min(1, 4 * dt);
     const hit = Math.abs(bird.x - DROPBEAR.x) < 8 && DROPBEAR.y >= bird.y - 8;
-    if (hit) { bird.flung = true; bird.dazed = true; bird.grounded = false; bird.onHoist = bird.onRoo = false; bird.vy = 60; bird.vx = 0; }
+    if (hit) { bird.flung = true; bird.dazed = true; bird.grounded = false; bird.onHoist = bird.onRoo = false; bird.vy = 60; bird.vx = 0; penalty(100); }
     if (hit || DROPBEAR.y >= LAND_Y) { DROPBEAR.state = 'climb'; DROPBEAR.t = 0; DROPBEAR.from = DROPBEAR.y; DROPBEAR.under = -6; }
   } else if (DROPBEAR.state === 'climb') {
     DROPBEAR.t += dt;
@@ -2098,19 +2142,59 @@ function carrierUnder() {                                            // a carrie
 }
 
 // Bridge climbers: a few tiny figures walking slowly up and over the Harbour Bridge arch
+// Poop on them (they're one group) and they scream, a word bubble pops up, and they jump up and
+// down for 3 seconds.
 const CLIMBERS = [0, 4, 8, 12].map(k => ({ along: k, dir: 1 }));
-function drawClimbers(g) {
-  const mid = 165, half = 43, P = hills.P;
+const CLIMB = { hit: 0, word: '' }, CLIMB_MID = 165, CLIMB_HALF = 43;
+function climberPos(c) {                                             // where a climber is on screen (feet), allowing for the loop
+  const hx = CLIMB_MID - CLIMB_HALF + c.along, hy = 99 + 21 * ((hx - CLIMB_MID) / CLIMB_HALF) ** 2 - HILLS_LIFT;
+  const jump = CLIMB.hit > 0 ? -Math.round(Math.abs(Math.sin(time * 12 + c.along)) * 3) : 0;
+  return { x: mod(Math.round(hx) - Math.round(cam * PARALLAX.hills), hills.P), y: Math.round(hy) + jump };
+}
+function updateClimbers(dt) {
+  CLIMB.hit = Math.max(0, CLIMB.hit - dt);
+  if (CLIMB.hit > 0) return;                                          // too busy jumping about to walk
   for (const c of CLIMBERS) {
-    c.along += c.dir * 2.5 * (1 / 60);
-    if (c.along > 2 * half - 2 || c.along < 0) c.dir *= -1;
-    const hx = mid - half + c.along, hy = 99 + 21 * ((hx - mid) / half) ** 2 - HILLS_LIFT;
-    const sx = mod(Math.round(hx) - Math.round(cam * PARALLAX.hills), P);
-    for (let x0 = sx - P; x0 < W + P; x0 += P) {
+    c.along += c.dir * 2.5 * dt;
+    if (c.along > 2 * CLIMB_HALF - 2 || c.along < 0) c.dir *= -1;
+  }
+}
+function climbersHitBy(sx, y) {                                      // does a drop at screen x, height y land on them?
+  return CLIMB.hit <= 0 && CLIMBERS.some(c => {
+    const p = climberPos(c), dx = mod(sx - p.x + hills.P / 2, hills.P) - hills.P / 2;
+    return Math.abs(dx) < 5 && y >= p.y - 6 && y <= p.y + 2;
+  });
+}
+function hitClimbers() {
+  CLIMB.hit = 3; CLIMB.word = pick(Math.random, ['#!$?', '@#%!', '$%&!', '#@*!', '%$#!']);   // cartoon swearing
+  [1.5, 1.8, 1.65].forEach((pch, i) => Sound.scream(pch, 0.4, i * 0.12));   // little screams, far off
+  const p = climberPos(CLIMBERS[1]);
+  award(60, cam + p.x, p.y - 22);                                    // above the bubble
+}
+function drawClimbers(g) {
+  for (const c of CLIMBERS) {
+    const p = climberPos(c);
+    for (let x0 = p.x - hills.P; x0 < W + hills.P; x0 += hills.P) {
       if (x0 < 0 || x0 > W) continue;
-      g.fillStyle = '#5b6470'; g.fillRect(x0, Math.round(hy) - 2, 1, 2);   // grey climbing suit
-      g.fillStyle = '#e8b48a'; g.fillRect(x0, Math.round(hy) - 3, 1, 1);   // head
+      g.fillStyle = '#5b6470'; g.fillRect(x0, p.y - 2, 1, 2);        // grey climbing suit
+      g.fillStyle = '#e8b48a'; g.fillRect(x0, p.y - 3, 1, 1);        // head
+      if (CLIMB.hit > 0 && Math.sin(time * 12 + c.along) > 0) g.fillRect(x0 + (c.along % 2 ? 1 : -1), p.y - 3, 1, 1);   // arms flung up
     }
+  }
+}
+// The word bubble over the group: a white speech bubble with a tail, black pixel lettering
+function drawClimberBubble() {
+  if (CLIMB.hit <= 0) return;
+  const xs = CLIMBERS.map(c => climberPos(c)), cx0 = xs.reduce((a, p) => a + p.x, 0) / xs.length, top = Math.min(...xs.map(p => p.y));
+  const w = textWidth(CLIMB.word) + 4, h = 9;
+  for (let cx = cx0 - hills.P; cx < W + hills.P; cx += hills.P) {
+    if (cx < -w || cx > W + w) continue;
+    const bx = Math.round(cx - w / 2), by = top - 18;
+    ctx.fillStyle = '#18222e'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = '#18222e'; ctx.fillRect(Math.round(cx) - 1, by + h + 1, 3, 1); ctx.fillRect(Math.round(cx), by + h + 2, 2, 1); ctx.fillRect(Math.round(cx) + 1, by + h + 3, 1, 1);   // tail
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(cx), by + h, 2, 1); ctx.fillRect(Math.round(cx) + 1, by + h + 1, 1, 1);
+    glyphs(CLIMB.word, bx + 2, by + 2, 1, (x, y) => { ctx.fillStyle = '#18222e'; ctx.fillRect(x, y, 1, 1); });
   }
 }
 
@@ -2185,13 +2269,13 @@ function drawScore() {
   if (SCORE.combo > 1 && SCORE.comboT > 0) { const cb = 'COMBO X' + SCORE.combo; drawText(cb, right(cb), 20, '#ffe066'); }
   for (const p of SCORE.pops) {
     ctx.globalAlpha = Math.min(1, p.life * 2);
-    drawText(p.text, Math.round(loopX(p.x) - textWidth(p.text) / 2), Math.round(p.y), '#ffe066');
+    drawText(p.text, Math.round(loopX(p.x) - textWidth(p.text) / 2), Math.round(p.y), p.bad ? '#ff4a3d' : '#ffe066');
   }
   ctx.globalAlpha = 1;
 }
 
 // Cyclist: a chunky, blocky bloke in lycra on a road bike, his helmet bristling with cable
-// ties (more each time he's swooped). Units: about 44 high, origin on the ground, facing right.
+// ties (they spike any magpie that swoops him). Units: about 44 high, origin on the ground, facing right.
 function drawCyclist(g) {
   const fill = (col, fn) => { g.beginPath(); fn(); g.fillStyle = col; g.fill(); };
   const line = (col, w, pts) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'square'; g.lineJoin = 'miter'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
@@ -2351,6 +2435,8 @@ function updateDrops(dt) {
     d.x += d.vx * dt; d.y += d.vy * dt;
     const target = TARGETS.find(t => mod(d.x - t.x, LEVEL_W) < t.w && d.y > t.y && d.y < t.y + t.h);   // allowing for the loop
     if (target) { d.done = true; target.hit(d); splosh(d.x, d.y); }
+    else if (climbersHitBy(loopX(d.x), d.y)) { d.done = true; hitClimbers(); }   // splat on the bridge climbers
+    else if (postieHitBy(loopX(d.x), d.y)) { d.done = true; knockPostie(); }       // splat on the postie
     else if (d.y >= LAND_Y + 1) { d.done = true; splosh(d.x, LAND_Y + 1); }
   }
   for (let i = drops.length - 1; i >= 0; i--) if (drops[i].done) drops.splice(i, 1);
@@ -2528,7 +2614,7 @@ function update(dt) {
     bird.hot = Math.min(1, bird.hot + dt / 1.1);
     if (bird.hot >= 1) {
       bird.onBbq = false; bird.grounded = false; bird.vy = -150; bird.vx = (Math.random() < 0.5 ? -1 : 1) * 90; bird.hotFade = 2.5;
-      Sound.sizzle(); Sound.scream();
+      Sound.sizzle(); Sound.scream(); penalty(100);
       bird.flung = true;                                              // he'll land on his back
     }
   } else if (bird.hotFade > 0) { bird.hotFade = Math.max(0, bird.hotFade - dt); bird.hot = bird.hotFade / 2.5; }
@@ -2705,6 +2791,7 @@ function draw() {
   }
   ctx.globalAlpha = 1;
   drawStorm(ctx);
+  drawClimberBubble();
   drawScore();
 
   const pad = PAD.connected;                                        // with a controller, show its buttons instead

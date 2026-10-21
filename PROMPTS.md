@@ -445,8 +445,25 @@
 - The cyclist's collision detection is far too high, well above his head
 - Try a different, blockier, slightly larger cyclist: I don't like him
 
+## 91. Poopable bridge climbers
+
+- Make the bridge climbers poopable as a group: if they're hit, they scream a word bubble and jump up and down for 3 seconds
+
+## 92. Cartoon swearing
+
+- The word bubble has a cartoon profanity like "#!$?", or whatever the stereotype is
+
+## 93. Poopable postie
+
+- Make the postie poopable too: he gets knocked off sideways, picks up his bike and heads off the opposite way
+
+## 94. Cable ties and losing points
+
+- The cyclist always has cable ties on his helmet; he can't be swooped, only pooped
+- If you swoop him, land on the barbecue or get drop-beared, you lose points: show a minus. The total score can go below zero
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 350 min so far | Prompts 1–90: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score |
+| 1 | 2026-10-21 | about 370 min so far | Prompts 1–94: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points |

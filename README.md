@@ -12,13 +12,13 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - A kangaroo in a cork hat hops along the lawn: land on his back to ride him; swoop into him or poop on him and he falls over (doiiinggg!) and sees stars for 5 seconds
 - A big gum tree to perch on, with a koala climbing the trunk and central branch up into the canopy and a kookaburra on top: swoop into the kookaburra or poop on him and he tumbles down, sees stars, then flies back up laughing (he also laughs now and then while you can see him)
 - A bloke at his barbie flipping burgers (poop on the hot plate and it sizzles): land on the hot plate and you smoke, go red and get flung off with a sizzle and a scream, tumbling over and over to land on your back with your legs waving
-- The postie rides his motorbike along the front street, stopping at letterboxes; an Aussie flag flaps in one front yard; a green-and-cream ferry crosses the harbour back and forth, and now and then a shark fin cruises past
-- A cyclist rides along the lawn: swoop or poop him and he wobbles, shakes his fist, rings his bell, shouts "Oi!" and sticks more cable ties on his helmet
+- The postie rides his motorbike along the front street, stopping at letterboxes: poop on him and he's knocked off sideways, picks his bike up and rides off the other way; an Aussie flag flaps in one front yard; a green-and-cream ferry crosses the harbour back and forth, and now and then a shark fin cruises past
+- A cyclist rides along the lawn with cable ties on his helmet: poop him and he wobbles, shakes his fist, rings his bell and shouts "Oi!"; swoop him and the cable ties spike you
 - Hang about under the big gum for 3 seconds and a drop bear drops on you, then climbs back into the leaves
 - Land on the postie or the ferry and ride along with them
-- A possum is out on the power line between two houses about a third of the time, scurrying back and forth and stopping for a rest; a screeching flock of cockatoos wheels across the sky; tiny bridge climbers cross the Harbour Bridge
+- A possum is out on the power line between two houses about a third of the time, scurrying back and forth and stopping for a rest; a screeching flock of cockatoos wheels across the sky; tiny bridge climbers cross the Harbour Bridge (poop on them and they jump up and down swearing: #!$?)
 - Every few minutes a summer storm rolls in: dark sky, rain, lightning and thunder, then a rainbow
-- Score points for knocking things over, poops on target, stunts and rides; quick ones in a row build a combo (up to x5); your high score is remembered
+- Score points for knocking things over, poops on target, stunts and rides; quick ones in a row build a combo (up to x5); your high score is remembered. You lose 100 points (a red minus) for swooping the cyclist, landing on the barbecue or getting drop-beared, and the score can go below zero
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
 - B for a corkscrew barrel roll, L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
