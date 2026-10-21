@@ -1529,7 +1529,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, onRoo: false, rooAt: 0 };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0 };
 
 // Stunts: B for a barrel roll (a full turn about his body), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
@@ -1685,7 +1685,9 @@ function update(dt) {
       if (overRoo && floorTop === rooTop()) { bird.onRoo = true; bird.rooAt = clamp(rooDx(bird.x), -6, 6); }   // landed on the kangaroo
       else if (floorTop === HOIST.top) {                               // landed on the Hills Hoist: hop on for a ride
         const dx = clamp(hoistDx(bird.x), -HOIST.r, HOIST.r);
-        bird.onHoist = true; bird.hoistR = Math.abs(dx); bird.hoistAt = (bird.face > 0 ? 0 : Math.PI) - HOIST.angle;   // starts facing the way he landed
+        bird.onHoist = true; bird.hoistR = Math.abs(dx);
+        bird.hoistAt = (dx >= 0 ? 0 : Math.PI) - HOIST.angle;          // where round the hoist he is (left or right of the mast)
+        bird.hoistFaceAt = (bird.face > 0 ? 0 : Math.PI) - HOIST.angle; // and which way he's facing
       }
     }
   }
@@ -1710,10 +1712,11 @@ function update(dt) {
     bird.y = rooTop() - FEET; bird.vx = 0; bird.face = ROO.dir;
   }
   updateHoist(dt);
-  if (bird.onHoist) {                                                // on the hoist: he stays put and turns round with it
+  if (bird.onHoist) {                                                // on the hoist: carried round with it, turning as it turns
+    bird.x = HOIST.x + Math.round((bird.x - HOIST.x) / LEVEL_W) * LEVEL_W + Math.cos(HOIST.angle + bird.hoistAt) * bird.hoistR;
     bird.y = HOIST.top - FEET;
     bird.vx = 0;
-    bird.hoistTurn = Math.cos(HOIST.angle + bird.hoistAt);             // 1 facing right, -1 facing left, between = turning
+    bird.hoistTurn = Math.cos(HOIST.angle + bird.hoistFaceAt);         // 1 facing right, -1 facing left, between = turning
     bird.face = bird.hoistTurn >= 0 ? 1 : -1;
   }
 
