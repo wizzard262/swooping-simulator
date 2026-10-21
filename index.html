@@ -669,17 +669,17 @@ function buildBackStreet({ f, base, scale, haze, seed }) {
 // leaves are perches the magpie can land on.
 const BIG_GUM_X = 560;
 const PERCHES = [];                 // { x0, x1, y } in level pixels: flat tops to land on
-const TRUNK = [];                   // points up the trunk, from the ground
+const TRUNK = [];                   // points up the trunk and the central branch, from the ground to the canopy
 function bigGum(p, r0) {
   const r = rng(77), x0 = BIG_GUM_X, base = 166, bark = ['#f1ebdc', '#ddd3bd', '#b4a78e', '#c99a5e'];
   const pal = ['#9bb162', '#73924a', '#526e36'], clumps = [];
   // A gnarly gum: the trunk leans and bends, then forks again and again into crooked limbs
   // that wander as they go; leaves gather in clumps at the ends and along the way
-  function limb(x, y, ang, len, w, depth) {
+  function limb(x, y, ang, len, w, depth, main) {
     for (let i = 0; i < len; i++) {
       ang += (r() - 0.5) * 0.18 + Math.sin(i * 0.25 + depth) * 0.02;   // wandering, not straight
       x += Math.cos(ang); y += Math.sin(ang);
-      if (depth === 0) TRUNK.push([x, y]);                             // the koala climbs this line
+      if (main) TRUNK.push([x, y]);                                     // the koala climbs this line: trunk, then the central branch
       const ww = Math.max(1, Math.round(w * (1 - 0.45 * i / len)));
       for (let k = 0; k < ww; k++) p.px(x - ww / 2 + k, y, k === 0 ? bark[0] : k === ww - 1 ? bark[2] : (i * 7 + k * 3) % 11 === 0 ? bark[3] : bark[1]);
       if (depth >= 2 && i > len * 0.5 && r() < 0.06) clumps.push([x, y, 5 + r() * 4, 3 + r() * 2]);   // leaves along the way
@@ -688,12 +688,12 @@ function bigGum(p, r0) {
       const n = depth === 0 ? 3 : 2 + (r() < 0.35 ? 1 : 0);
       for (let k = 0; k < n; k++) {
         const spread = (k - (n - 1) / 2) * (0.55 + r() * 0.35);
-        limb(x, y, ang + spread + (r() - 0.5) * 0.3, len * (0.55 + r() * 0.2), w * 0.62, depth + 1);
+        limb(x, y, ang + spread + (r() - 0.5) * 0.3, len * (0.55 + r() * 0.2), w * 0.62, depth + 1, main && k === (n >> 1));
       }
     } else clumps.push([x, y, 7 + r() * 5, 4 + r() * 2.5]);
   }
   for (let k = 0; k < 4; k++) p.px(x0 - 5 - k, base - k, bark[2], 2, 1), p.px(x0 + 4 + k, base - k, bark[2], 2, 1);   // roots flaring out
-  limb(x0, base, -Math.PI / 2 - 0.12, 34, 9, 0);
+  limb(x0, base, -Math.PI / 2 - 0.12, 34, 9, 0, true);
   for (const [cx, cy, rx, ry] of clumps) leafClump(p, r, cx, cy, rx, ry, pal);
   // Perches: the tops of the clumps that nothing covers, so the magpie stands on the outside of the tree
   const inside = (x, y) => clumps.some(([cx, cy, rx, ry]) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1);
@@ -1669,7 +1669,7 @@ function updateCast(dt) {
   if (KOALA.wait > 0) KOALA.wait -= dt;
   else {
     const d = KOALA.target - KOALA.u, sp = 0.07 * dt;
-    if (Math.abs(d) <= sp) { KOALA.u = KOALA.target; KOALA.wait = 1.5 + Math.random() * 3; KOALA.target = 0.08 + Math.random() * 0.62; }
+    if (Math.abs(d) <= sp) { KOALA.u = KOALA.target; KOALA.wait = 1.5 + Math.random() * 3; KOALA.target = 0.05 + Math.random() * 0.9; }
     else { KOALA.u += Math.sign(d) * sp; KOALA.step += dt * 6; }
   }
   // Kookaburra: knocked off, he tumbles to the ground spinning, sees stars, then flies back up

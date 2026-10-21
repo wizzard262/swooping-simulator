@@ -10,7 +10,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - Hold Space to swoop: very fast flight with afterburner flames and a motion blur, steered 30 degrees up or down with the arrows. The charge bar empties in 3 seconds and refills in 10
 - Land on the Hills Hoist (half a lap from the BOTTLE-O) and it spins, carrying you round and turning you with it; press up to fly off
 - A kangaroo in a cork hat hops along the lawn: land on his back to ride him; swoop into him or poop on him and he falls over (doiiinggg!) and sees stars for 5 seconds
-- A big gum tree to perch on, with a koala climbing the trunk and a kookaburra on top: swoop into the kookaburra or poop on him and he tumbles down, sees stars, then flies back up laughing (he also laughs now and then while you can see him)
+- A big gum tree to perch on, with a koala climbing the trunk and central branch up into the canopy and a kookaburra on top: swoop into the kookaburra or poop on him and he tumbles down, sees stars, then flies back up laughing (he also laughs now and then while you can see him)
 - A bloke at his barbie flipping burgers (poop on the hot plate and it sizzles): land on the hot plate and you smoke, go red and get flung off with a sizzle and a scream, tumbling over and over to land on your back with your legs waving
 - The postie rides his motorbike along the front street, stopping at letterboxes; an Aussie flag flaps in one front yard; a green-and-cream ferry crosses the harbour back and forth, and now and then a shark fin cruises past
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
