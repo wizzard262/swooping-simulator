@@ -16,6 +16,6 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 
 - One HTML page, plain JavaScript and the 2D canvas (no WebGL)
 - The scenery is pixel art drawn in code at 180 pixels high and scaled up; the magpie and the Sun King sun are drawn smoothly at full screen resolution
-- The level is 6 screens wide and loops round, with 4 parallax layers: lawn, suburb, hills (Sydney Harbour Bridge, Opera House, Uluru). Billowy clouds are pinned to the sky, and the sun moves slowest of all
+- The level is 6 screens wide and loops round, with 7 parallax layers: lawn, the front street, 3 back streets that tier off into the distance, and hills (Sydney Harbour Bridge, Opera House, Uluru). Billowy clouds are pinned to the sky, and the sun moves slowest of all
 - [screenshots/](screenshots/): numbered screenshots of the game as it was built
 - [PROMPTS.md](PROMPTS.md): every prompt used to make the game (also linked in the game, top right)

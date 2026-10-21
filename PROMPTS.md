@@ -94,8 +94,16 @@
 
 - The background hills that aren't Uluru need to be smaller and greyed out a bit, to show they're in the distance
 
+## 15. A deep suburb
+
+- Make the houses tier off a little, 3–4 rows deep into the distance, like a very deep suburb
+
+## 16. No purple trees
+
+- I don't like the purple trees: make them a lighter green
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 50 min so far | Prompts 1–14: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills |
+| 1 | 2026-10-21 | about 55 min so far | Prompts 1–16: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb |

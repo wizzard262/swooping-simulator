@@ -42,6 +42,14 @@ const FEET = 30 * BIRD_SCALE;     // body centre to feet
 // Each layer repeats every LEVEL_W * factor pixels, so the whole scene loops with the level.
 // The clouds are pinned to the sky and don't scroll.
 const PARALLAX = { hills: 0.35, suburb: 0.5, ground: 1 };
+// Rows of houses behind the front street, nearest first: each smaller, higher up, hazier and
+// slower, so the suburb tiers off into the distance. The hills sit up behind the last row.
+const BACK_STREETS = [
+  { f: 0.45, base: 143, scale: 0.78, haze: 0.18, seed: 11 },
+  { f: 0.4, base: 134, scale: 0.6, haze: 0.32, seed: 12 },
+  { f: 0.375, base: 126, scale: 0.45, haze: 0.46, seed: 13 }
+];
+const HILLS_LIFT = 18;
 const SUN_SIZE = 38;
 const SUN_LOOPS = 3;              // fly the level this many times to push the sun off one side and back on the other
 
@@ -497,7 +505,7 @@ function buildHills() {
 // gum trees, jacarandas, bottlebrush, hedges, Hills Hoists and TV aerials
 // ---------------------------------------------------------------------------
 const GUM_LEAF = ['#93a95c', '#6c8a42', '#4e6a33'];
-const JACARANDA = ['#bba5ea', '#9277cf', '#6a53a6'];
+const JACARANDA = ['#b4d878', '#92c05a', '#70a244'];   // light green (they were purple)
 const LEAFY = ['#7caa4c', '#5a8a38', '#3f6a2c'];
 const BUSH = ['#6f9a45', '#4f7b35', '#3a5e29'];
 const BRICKS = [
@@ -526,7 +534,7 @@ function leafClump(p, r, cx, cy, rx, ry, pal, flatBase) {
   }
 }
 
-function tree(p, r, x0, base, height, kind) {
+function tree(p, r, x0, base, height, kind, scale = 1) {
   const clumps = [];
   const bark = kind === 'gum' ? ['#efe8d8', '#d9cfb9', '#b0a38a'] : ['#7a6250', '#5f4a3b', '#46362a'];
   const spread = kind === 'jacaranda' ? 0.95 : 0.7;
@@ -549,9 +557,9 @@ function tree(p, r, x0, base, height, kind) {
     }
     if (depth >= 2) clumps.push([x, y]);
   }
-  branch(x0, base, -Math.PI / 2 + (r() - 0.5) * 0.25, height * 0.4, kind === 'gum' ? 4 : 3, 0);
+  branch(x0, base, -Math.PI / 2 + (r() - 0.5) * 0.25, height * 0.4, (kind === 'gum' ? 4 : 3) * scale, 0);
   const pal = kind === 'gum' ? GUM_LEAF : kind === 'jacaranda' ? JACARANDA : LEAFY;
-  const size = kind === 'gum' ? 1 : 1.35;
+  const size = (kind === 'gum' ? 1 : 1.35) * scale;
   for (const [cx, cy] of clumps) leafClump(p, r, cx, cy, (5 + r() * 4) * size, (3 + r() * 2) * size, pal);
 }
 
@@ -687,6 +695,58 @@ function buildSuburb() {
       bush(p, r, hx + 6 + r() * (w - 12), SUBURB_BASE, pick(r, ['bush', 'bottlebrush', 'hedge', 'agapanthus']));
   }
   return { P, c: p.c };
+}
+
+// The back streets: smaller, simpler houses (flat brick, no fine detail) in rows that
+// tier off into the distance, with fences, trees and a haze over everything
+function farHouse(p, r, x, s, base) {
+  const S = n => Math.max(1, Math.round(n * s));
+  const w = Math.round((56 + r() * 18) * s), wallH = S(15 + r() * 3), top = base - wallH;
+  const [bc, bc2, mortar] = pick(r, BRICKS);
+  for (let y = top; y < base; y++) p.px(x, y, s > 0.6 && (y - top) % 3 === 2 ? mortar : bc, w, 1);
+  p.px(x, top, bc2, w, 1);                                           // shadow under the eaves
+  const garageLeft = r() < 0.5, gw = S(16), gx = garageLeft ? x + S(3) : x + w - S(3) - gw;
+  p.px(gx, base - S(11), '#cfc9bb', gw, S(11));
+  const ww = S(12), wh = S(6), wy = top + S(4);
+  let wx = garageLeft ? gx + gw + S(4) : x + S(4);
+  const wEnd = garageLeft ? x + w - S(3) : gx - S(3);
+  while (wx + ww <= wEnd) {
+    p.px(wx, wy, '#dfe3e5', ww, wh);
+    if (ww > 2 && wh > 2) p.px(wx + 1, wy + 1, '#7f9fb5', ww - 2, wh - 2);
+    wx += ww + S(6);
+  }
+  const dx = garageLeft ? gx + gw + S(2) : gx - S(8);
+  p.px(dx, base - S(11), pick(r, ['#5a3a24', '#2f4a3a', '#7a2c26']), S(5), S(11));
+  const roof = pick(r, ROOFS), rh = S(5 + r() * 2), eave = S(3);
+  for (let j = 0; j < rh; j++) {
+    const y = top - 1 - j, xl = x - eave + Math.round(j * 2.6), xr = x + w - 1 + eave - Math.round(j * 2.6);
+    for (let xx = xl; xx <= xr; xx++)
+      p.px(xx, y, j === 0 ? roof.fascia : j === rh - 1 ? roof.cap : roof.steel ? (xx & 1 ? roof.c1 : roof.c2) : (j % 2 ? roof.c1 : roof.c2));
+  }
+  if (r() < 0.4) {                                                   // TV aerial
+    const ax = x + Math.round(w * (0.3 + r() * 0.4)), ah = S(8);
+    p.px(ax, top - rh - ah, '#9aa0a5', 1, ah);
+    p.px(ax - S(3), top - rh - ah, '#9aa0a5', S(7), 1);
+  }
+  return w;
+}
+
+function buildBackStreet({ f, base, scale, haze, seed }) {
+  const P = LEVEL_W * f, canvasP = painter(P, H, true), r = rng(seed);
+  const p = { px: (x, y, col, w, h) => canvasP.px(x, y, col[0] === '#' ? mix(col, HILL_HAZE, haze) : col, w, h) };
+  for (let x = 0; x < P; x++) for (let y = base; y < H; y++)             // back yards, hiding the rows behind
+    p.px(x, y, dither(x, y, 0.5) ? '#78a648' : '#6c9a40');
+  const fh = Math.max(2, Math.round(10 * scale));                     // a long run of back fences
+  for (let x = 0; x < P; x++) p.px(x, base - fh, scale > 0.6 && x % 3 === 0 ? '#5c6264' : '#6c7476', 1, fh);
+  for (let k = 0, n = Math.round(P / 110); k < n; k++)
+    tree(p, r, r() * P, base - 1, (32 + r() * 22) * scale, pick(r, ['gum', 'gum', 'leafy', 'jacaranda']), scale);
+  let x = r() * 20;
+  while (x < P - 80 * scale) {
+    const w = farHouse(p, r, Math.round(x), scale, base);
+    for (let k = 0; k < 2; k++) if (r() < 0.6) leafClump(p, r, x + r() * w, base, (2 + r() * 3) * scale + 1, (2 + r() * 2) * scale + 1, BUSH, true);
+    x += w + (6 + r() * 18) * scale;
+  }
+  return { P, c: canvasP.c, f };
 }
 
 // ---------------------------------------------------------------------------
@@ -924,7 +984,7 @@ function updateDrops(dt) {
 let cam = bird.x - SCREEN * 0.42, time = 0, distance = 0, lap = 1, lapFlash = 0;
 const trail = [];
 let blur = 0;                     // 0 to 1: how much the screen is smeared by a swoop
-let sunHi, clouds, hills, suburb, ground;
+let sunHi, clouds, hills, backStreets, suburb, ground;
 
 function controls() {
   const c = { ...keys };
@@ -1019,8 +1079,8 @@ function magpiePose() {
 // Drawing
 // ---------------------------------------------------------------------------
 const scene = makeCanvas(SCREEN, H), sctx = scene.getContext('2d');   // the scenery, before any swoop blur
-function drawTiled(img, P, offset) {
-  for (let x = -mod(Math.round(offset), P); x < W; x += P) sctx.drawImage(img, x, 0);
+function drawTiled(img, P, offset, y = 0) {
+  for (let x = -mod(Math.round(offset), P); x < W; x += P) sctx.drawImage(img, x, y);
 }
 
 // A charge bar under the lap counter (swoop, then poop); it flashes when full
@@ -1085,7 +1145,8 @@ function draw() {
   // Pixel canvas: clouds, hills, suburb, lawn
   sctx.clearRect(0, 0, W, H);
   for (const cl of clouds) sctx.drawImage(cl.img, Math.round(cl.u * W - cl.img.width / 2), cl.y);
-  drawTiled(hills.c, hills.P, cam * PARALLAX.hills);
+  drawTiled(hills.c, hills.P, cam * PARALLAX.hills, -HILLS_LIFT);
+  for (let i = backStreets.length - 1; i >= 0; i--) drawTiled(backStreets[i].c, backStreets[i].P, cam * backStreets[i].f);
   drawTiled(suburb.c, suburb.P, cam * PARALLAX.suburb);
   drawTiled(ground.c, ground.P, cam * PARALLAX.ground);
   ctx.clearRect(0, 0, W, H);
@@ -1144,6 +1205,7 @@ function resize() {
 sunHi = buildSunHi(512);
 clouds = buildClouds();
 hills = buildHills();
+backStreets = BACK_STREETS.map(buildBackStreet);
 suburb = buildSuburb();
 ground = buildGround();
 resize();
