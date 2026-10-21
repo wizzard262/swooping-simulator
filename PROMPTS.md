@@ -41,3 +41,4 @@
 ## 5. Screenshots as we go
 
 - Keep a series of numbered screenshots in a local folder as the game develops (`screenshots/`), and take one now
+- Decision: the screenshots go on GitHub too, beside this file
