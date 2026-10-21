@@ -161,8 +161,18 @@
 
 - If he swoops and poops at the same time, flash "SWOOP-AND-POOP!" in Roy Lichtenstein pop-art lettering for 1 second, fading out
 
+## 29. Stunts
+
+- Under the poop bar add "BARREL ROLL - B KEY", then "LOOP-DE-LOOP - L KEY"
+- Line up the "- X KEY" texts with the "- P KEY" text
+- Pressing B or L does a barrel roll or a loop-the-loop
+
+## 30. Sound
+
+- Can we add sound?
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 100 min so far | Prompts 1–28: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP! |
+| 1 | 2026-10-21 | about 105 min so far | Prompts 1–30: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops |
