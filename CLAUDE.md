@@ -7,3 +7,4 @@
 - Sound is synthesised in the `Sound` module (Web Audio); no sound files
 - The game is one page: `index.html` (plain JavaScript, 2D canvas, no WebGL). `prompts.html` renders `PROMPTS.md`
 - Test locally with `python -m http.server 8765` in this folder, then open http://localhost:8765/
+- The version number (`#ver` in `index.html`, under the screenshots link) goes up by 1 with every commit to the game: it's the count of commits (`git rev-list --count HEAD` + 1 for the commit being made)

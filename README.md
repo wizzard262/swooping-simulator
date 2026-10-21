@@ -24,7 +24,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - M (or the speaker icon) turns the sound on and off
 - Poops fade away after 10 seconds
 - The game fills the browser's width (a black bar below it in tall windows)
-- Poop during a swoop for a pop-art SWOOP-AND-POOP! above the magpie, or loop during one for SWOOP-AND-LOOP!
+- Poop during a swoop for a pop-art SWOOP-AND-POOP! above the magpie, loop during one for SWOOP-AND-LOOP!, or barrel roll during one for BARREL SWOOP!
 - Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 5 seconds
 - Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out, he does a barrel roll, and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery
 - The magpie drifts down slowly under gravity, lands softly on the lawn and walks along it
@@ -52,3 +52,5 @@ Standard layout (Xbox, PlayStation and similar). Press any button once after plu
 - The level is 6 screens wide and loops round, with 8 parallax layers: lawn, the front street, 3 back streets that tier off into the distance, hills (Sydney Harbour Bridge, Opera House, Uluru) and billowy clouds. The sun moves slowest of all
 - [screenshots/](screenshots/): numbered screenshots of the game as it was built, shown in order on `screenshots.html` (linked in the game, top right)
 - [PROMPTS.md](PROMPTS.md): every prompt used to make the game (also linked in the game, top right)
+- The version number under the links (top right) counts the updates published, one per commit
+- Performance: about 2 to 3 ms a frame (of the 16.7 ms a 60 fps frame allows), even with a storm, cockatoos and a blurred swoop; still about 56 to 60 fps with the CPU slowed 4 times
