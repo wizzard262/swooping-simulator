@@ -988,6 +988,21 @@ function buildShelfStock() {
 }
 
 // Draw a picture on the smooth canvas, smeared along the flight in a swoop like the scenery
+// Crisp pixels: no soft, see-through edge pixels, so the pixelated magpie has a sharp outline
+// rather than a fuzzy one. Works on a box of +-r pixels round (cx, cy).
+function crispen(g, cx, cy, r) {
+  const x0 = Math.max(0, Math.round(cx - r)), y0 = Math.max(0, Math.round(cy - r));
+  const w = Math.min(g.canvas.width - x0, 2 * r), h = Math.min(g.canvas.height - y0, 2 * r);
+  if (w <= 0 || h <= 0) return;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const img = g.getImageData(x0, y0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 110) { d[i + 3] = 0; continue; }
+    d[i + 3] = 255;
+  }
+  g.putImageData(img, x0, y0);
+}
+
 function drawSmeared(g, img, x, y, w, h) {
   g.imageSmoothingEnabled = false;
   g.setTransform(1, 0, 0, 1, 0, 0);
@@ -1523,7 +1538,7 @@ function basePose() {
 // Drawing
 // ---------------------------------------------------------------------------
 const scene = makeCanvas(SCREEN, H), sctx = scene.getContext('2d');
-const birdBuf = makeCanvas(1, 1), bbctx = birdBuf.getContext('2d');   // the magpie, drawn at a lower resolution
+const birdBuf = makeCanvas(1, 1), bbctx = birdBuf.getContext('2d', { willReadFrequently: true });   // the magpie, drawn at a lower resolution
 let BIRD_PIX = 2;   // the scenery, before any swoop blur
 function drawTiled(img, P, offset, y = 0) {
   for (let x = -mod(Math.round(offset), P); x < W; x += P) sctx.drawImage(img, x, y);
@@ -1650,6 +1665,7 @@ function draw() {
   bbctx.clearRect(0, 0, birdBuf.width, birdBuf.height);
   bbctx.setTransform(sc * bird.face, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.3) * K / BIRD_PIX, (bird.y - cork + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
   drawMagpie(bbctx, pose);
+  crispen(bbctx, (bird.x - cam) * K / BIRD_PIX, bird.y * K / BIRD_PIX, Math.ceil(80 * K / BIRD_PIX / 4) * 2);
   fctx.setTransform(1, 0, 0, 1, 0, 0);
   fctx.imageSmoothingEnabled = false;
   fctx.drawImage(birdBuf, 0, 0, birdBuf.width * BIRD_PIX, birdBuf.height * BIRD_PIX);
