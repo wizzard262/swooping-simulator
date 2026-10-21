@@ -793,7 +793,6 @@ function head(g, drunk, beak = 0) {
   const bg = g.createLinearGradient(0, -5, 0, 5);
   bg.addColorStop(0, '#eef0f4'); bg.addColorStop(0.5, '#c9cdd6'); bg.addColorStop(1, '#9196a2');
   if (beak > 0.05) {                                                 // beak open: upper and lower halves hinge apart
-    blob(g, '#6a1f22', () => { g.moveTo(7, -1); g.lineTo(24, -1 - beak * 9); g.lineTo(23, 1 + beak * 7); g.lineTo(7, 1.5); });   // inside the mouth
     const half = (sign, ang) => {
       g.save(); g.translate(7, 0); g.rotate(ang); g.translate(-7, 0);
       const path = () => { g.moveTo(7, sign * 4.6); g.quadraticCurveTo(17, sign * (sign < 0 ? 5.2 : 3.3), 26, 0.6); g.lineTo(7, 0.4); };
@@ -806,8 +805,10 @@ function head(g, drunk, beak = 0) {
   blob(g, bg, bill);
   g.save(); g.beginPath(); bill(); g.clip(); g.fillStyle = '#25262c'; g.fillRect(20, -8, 10, 16); g.restore();   // dark tip
   }
-  g.beginPath(); g.moveTo(8, 0.8); g.quadraticCurveTo(16, 1.1, 24.5, 0.7);
-  g.strokeStyle = '#555a66'; g.lineWidth = 0.6; g.stroke();
+  if (beak <= 0.05) {                                                 // the line where the beak closes
+    g.beginPath(); g.moveTo(8, 0.8); g.quadraticCurveTo(16, 1.1, 24.5, 0.7);
+    g.strokeStyle = '#555a66'; g.lineWidth = 0.6; g.stroke();
+  }
   blob(g, '#a3301c', () => g.arc(3, -3, 2.4, 0, Math.PI * 2));                      // eye
   blob(g, '#130808', () => g.arc(3.3, -3, 1.2, 0, Math.PI * 2));
   blob(g, '#ffffff', () => g.arc(2.6, -3.8, 0.6, 0, Math.PI * 2));
@@ -1778,7 +1779,6 @@ function drawKookaburra(g, flap) {
   fill('#4a3220', () => g.ellipse(4, -16, 4.5, 1.2, 0, 0, Math.PI * 2)); // eye stripe
   fill('#111', () => g.arc(6, -16.4, 0.9, 0, Math.PI * 2));
   const open = KOOKA.calling > 0 && KOOKA.state === 'perched' ? Math.abs(Math.sin((KOOKA_CALL_TIME - KOOKA.calling) * Math.PI * 7)) : 0;   // beak working as he laughs
-  if (open > 0.05) fill('#6a1f22', () => { g.moveTo(9, -15); g.lineTo(17, -16 - open * 4); g.lineTo(17, -14 + open * 3); });
   g.save(); g.translate(9, -15); g.rotate(-open * 0.35); g.translate(-9, 15);
   fill('#2b2520', () => { g.moveTo(9, -17.5); g.lineTo(18, -15.5); g.lineTo(9, -14.5); });   // bill (top)
   g.restore();
