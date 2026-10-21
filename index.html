@@ -1306,15 +1306,25 @@ function toggleFullScreen() {
 }
 document.getElementById('full').addEventListener('click', e => { e.currentTarget.blur(); toggleFullScreen(); begin(); });
 document.getElementById('sound').addEventListener('click', e => { e.currentTarget.blur(); Sound.toggle(); begin(); });
+// Touch controls are for fingers and pens only: a mouse click (say, to focus the window)
+// just starts the game and the sound, and never steers or swoops
 let fingers = 0;
+const isFinger = e => e.pointerType !== 'mouse';
 front.addEventListener('pointerdown', e => {
-  isTouch = e.pointerType !== 'mouse';
+  begin();
+  if (!isFinger(e)) return;
+  isTouch = true;
   if (++fingers > 1) { poop(); return; }                          // a second finger poops
-  touch = toInternal(e); touchAt = performance.now(); front.setPointerCapture(e.pointerId); begin();
+  touch = toInternal(e); touchAt = performance.now(); front.setPointerCapture(e.pointerId);
 });
-front.addEventListener('pointermove', e => { if (touch) touch = toInternal(e); });
-front.addEventListener('pointerup', () => { fingers = Math.max(0, fingers - 1); if (fingers) return; if (performance.now() - touchAt < 180) touchSwoop = !touchSwoop; touch = null; });
-front.addEventListener('pointercancel', () => { fingers = Math.max(0, fingers - 1); if (!fingers) touch = null; });
+front.addEventListener('pointermove', e => { if (touch && isFinger(e)) touch = toInternal(e); });
+front.addEventListener('pointerup', e => {
+  if (!isFinger(e)) return;
+  fingers = Math.max(0, fingers - 1); if (fingers) return;
+  if (performance.now() - touchAt < 180) touchSwoop = !touchSwoop;  // a quick tap starts or stops a swoop
+  touch = null;
+});
+front.addEventListener('pointercancel', e => { if (!isFinger(e)) return; fingers = Math.max(0, fingers - 1); if (!fingers) touch = null; });
 function begin() { Sound.start(); if (!started) { started = true; startedAt = time; } }
 
 // ---------------------------------------------------------------------------
