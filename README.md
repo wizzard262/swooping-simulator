@@ -8,6 +8,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 
 - Arrow keys or W A S D: up to flap, down to dive, left and right to fly; up and down tilt the magpie 30 degrees
 - Hold Space to swoop: very fast flight with afterburner flames and a motion blur, steered 30 degrees up or down with the arrows. The charge bar empties in 3 seconds and refills in 10
+- Land on the Hills Hoist next to the BOTTLE-O and it spins you round; press up to fly off
 - B for a corkscrew barrel roll, L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
 - The game fills the browser's width (a black bar below it in tall windows)

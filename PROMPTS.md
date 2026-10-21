@@ -254,8 +254,12 @@
 - Remove the bottle sound and make it just cans clanging; the didgeridoo needs to sound more like a real one
   - Decision: keep the didgeridoo made in code (rather than a recording)
 
+## 51. A Hills Hoist to ride
+
+- Put a Hills Hoist up front on the ground by the shop, with some clothes on it; if the bird lands on it, it spins with him on it
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 170 min so far | Prompts 1–50: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP! |
+| 1 | 2026-10-21 | about 175 min so far | Prompts 1–51: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride |
