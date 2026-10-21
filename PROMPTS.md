@@ -428,8 +428,16 @@
 
 - Move the background Hills Hoist (not the foreground one) to another position, as it now clashes with the power line: move it to the next house
 
+## 87. Move the front hoist
+
+- Move the front Hills Hoist about three times its width to the left
+
+## 88. Keep going
+
+- Keep committing and publishing
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 335 min so far | Prompts 1–86: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score |
+| 1 | 2026-10-21 | about 340 min so far | Prompts 1–88: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score |

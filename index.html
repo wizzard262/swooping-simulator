@@ -1538,12 +1538,12 @@ const Sound = (() => {
 })();
 
 // ---------------------------------------------------------------------------
-// The Hills Hoist on the lawn, as far from the shop as the looping level allows (half a lap
-// away): a rotary clothesline with washing on it. The
+// The Hills Hoist on the lawn, well away from the shop: a rotary clothesline with washing on it. The
 // magpie can land on top; then it spins round with him riding on it. Drawn as pixel art each
 // frame (it turns), seen from the side: four arms on a mast, lines strung between them.
 // ---------------------------------------------------------------------------
-const HOIST = { x: 90, r: 30, mastTop: 113, top: 115, spin: 0, angle: 0.4 };
+const HOIST = { x: 90 - 3 * 60 + LEVEL_W, r: 30,   // three of its widths left of where it was (the level loops)
+  mastTop: 113, top: 115, spin: 0, angle: 0.4 };
 const HOIST_LINES = [0.45, 0.75, 1];
 const WASHING = [                                                    // [side 0-3, line, along 0-1, kind, colour]
   [0, 2, 0.3, 'shirt', '#d64534'], [0, 1, 0.7, 'sock', '#f2efe6'], [1, 2, 0.5, 'sheet', '#f4f1e8'],
