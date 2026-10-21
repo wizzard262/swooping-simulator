@@ -887,9 +887,6 @@ function buildShopFront() {
   for (let n = 0; n < 12; n++) p.px(3 + gr() * (w - 6), Y(ceil) + 6 + gr() * (floor - ceil - 9), 'rgba(235,250,255,0.7)');   // specks
   for (let i = 0; i <= w; i += 25) p.px(Math.min(i, w - 1), Y(ceil), '#e6e8e6', 1, floor - ceil);
   p.px(0, Y(ceil) + 5, '#e6e8e6', w, 1);                             // transom
-  const hx = Math.round(w / 2 - 17);
-  p.px(hx, Y(ceil) + 6, DM_GREEN, 34, 6);                             // the green header over the doors
-  glyphs('BOTTLE-O', hx + 2, Y(ceil) + 6, 1, (x, y) => p.px(x, y, '#f4f6f1'));
   for (const px0 of [3, w - 15]) {                                    // lime "direct to boot" posters
     p.px(px0, Y(ceil) + 14, LIME, 12, 23);
     p.px(px0 + 2, Y(ceil) + 18, DM_DARK, 6, 2); p.px(px0 + 2, Y(ceil) + 22, DM_DARK, 8, 2); p.px(px0 + 2, Y(ceil) + 26, DM_DARK, 5, 2);
@@ -922,10 +919,12 @@ const DRUNK_TIME = 10, ROLL_TIME = 0.55, LOOT_TIME = 4;
 // Out the other side: bottles and cans tumble out of the door, and the magpie does a barrel roll and goes wobbly
 function leaveShop(exitRight) {
   const ex = SHOP.x + (exitRight ? SHOP.w + 2 : -2), dir = exitRight ? 1 : -1;
-  for (let i = 0; i < 9; i++)
-    loot.push({ type: i % 3 ? 'can' : 'bottle', x: ex, y: 146 + Math.random() * 10, vx: dir * (30 + Math.random() * 70), vy: -40 - Math.random() * 60,
+  for (let i = 0; i < 9; i++) {
+    const type = i % 3 ? 'can' : 'bottle';
+    setTimeout(() => Sound[type === 'can' ? 'can' : 'glass'](), i * 70 + Math.random() * 40);   // knocking together on the way out
+    loot.push({ type, x: ex, y: 146 + Math.random() * 10, vx: dir * (30 + Math.random() * 70), vy: -40 - Math.random() * 60,
       rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, rest: 162 + Math.random() * 6, life: LOOT_TIME });
-  for (let i = 0; i < 9; i++) setTimeout(() => Sound.clink(), i * 70 + Math.random() * 40);
+  }
   bird.drunk = DRUNK_TIME;
   bird.roll = ROLL_TIME;
 }
@@ -935,7 +934,7 @@ function updateShopAndDrunk(dt) {
     l.life -= dt;
     if (l.y < l.rest || l.vy < 0) {
       l.vy += 320 * dt; l.x += l.vx * dt; l.y += l.vy * dt; l.rot += l.vr * dt;
-      if (l.y >= l.rest && l.vy > 0) { if (!l.landed) { l.landed = true; Sound.clink(0.5); } l.y = l.rest; l.vy = Math.abs(l.vy) > 40 ? -l.vy * 0.3 : 0; l.vx *= 0.5; l.vr *= 0.5; }
+      if (l.y >= l.rest && l.vy > 0) { if (!l.landed) { l.landed = true; Sound[l.type === 'can' ? 'can' : 'glass'](0.5); } l.y = l.rest; l.vy = Math.abs(l.vy) > 40 ? -l.vy * 0.3 : 0; l.vx *= 0.5; l.vr *= 0.5; }
     }
   }
   for (let i = loot.length - 1; i >= 0; i--) if (loot[i].life <= 0) loot.splice(i, 1);
@@ -1155,31 +1154,59 @@ const Sound = (() => {
     }
   }
 
-  // A didgeridoo, far off: a low buzzing drone with its 'wah' formants swaying and a breathing
-  // pulse, fading in, playing a while and fading out
+  // A didgeridoo, far off, played like a real one: buzzing lips (a pulse rich in harmonics)
+  // through a tube, with the player's mouth shaping vowels in a rhythm ("woo-wah-dee-doo"),
+  // accents on the beat, a breath snatched now and then (circular breathing), the odd
+  // overtone toot and a little wobble in pitch. It fades in, plays a phrase or two, fades out.
+  const VOWELS = { oo: [300, 850], oh: [480, 900], ah: [720, 1150], eh: [550, 1700], ee: [320, 2100] };
+  let lipWave = null;
   function didgeridoo() {
-    const t = now(), len = 9 + Math.random() * 6, f = 62 + Math.random() * 10, fade = 3;
-    const out = ac.createGain();
-    out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(0.16, t + fade);
-    out.gain.setValueAtTime(0.16, t + len - fade); out.gain.exponentialRampToValueAtTime(0.0001, t + len);
-    out.connect(master);
-    const pulse = ac.createGain(); pulse.gain.value = 0.7; pulse.connect(out);
-    const breath = ac.createOscillator(), bg = ac.createGain();
-    breath.frequency.value = 1.8 + Math.random() * 0.8; bg.gain.value = 0.3; breath.connect(bg); bg.connect(pulse.gain);
-    const body = ac.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 320; body.connect(pulse);
-    const formants = [[420, 5, 240, 0.55], [1150, 7, 420, 0.8]].map(([freq, q, sway, rate]) => {
-      const b = ac.createBiquadFilter(); b.type = 'bandpass'; b.frequency.value = freq; b.Q.value = q;
-      const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = rate; lg.gain.value = sway;
-      lfo.connect(lg); lg.connect(b.frequency); lfo.start(t); lfo.stop(t + len + 0.1);
-      const g = ac.createGain(); g.gain.value = 0.8; b.connect(g); g.connect(pulse);
-      return b;
-    });
-    for (const detune of [1, 1.006]) {
-      const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f * detune;
-      o.connect(body); formants.forEach(b => o.connect(b));
-      o.start(t); o.stop(t + len + 0.1);
+    const t0 = now(), f = 60 + Math.random() * 12, step = 0.11 + Math.random() * 0.03;
+    const steps = 80 + Math.floor(Math.random() * 40), len = steps * step, fade = 2.5;
+    if (!lipWave) {                                                   // the lip buzz: a pulse with slowly falling harmonics
+      const n = 48, re = new Float32Array(n), im = new Float32Array(n);
+      for (let k = 1; k < n; k++) im[k] = 1 / Math.pow(k, 0.75);
+      lipWave = ac.createPeriodicWave(re, im);
     }
-    breath.start(t); breath.stop(t + len + 0.1);
+    const out = ac.createGain();
+    out.gain.setValueAtTime(0.0001, t0); out.gain.exponentialRampToValueAtTime(0.2, t0 + fade);
+    out.gain.setValueAtTime(0.2, t0 + len - fade); out.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+    const distance = ac.createBiquadFilter(); distance.type = 'lowpass'; distance.frequency.value = 2600;
+    distance.connect(out); out.connect(master);
+    const accent = ac.createGain(); accent.gain.value = 0.6; accent.connect(distance);
+
+    const lips = ac.createOscillator(); lips.setPeriodicWave(lipWave); lips.frequency.value = f;
+    const vib = ac.createOscillator(), vg = ac.createGain(); vib.frequency.value = 4.5; vg.gain.value = f * 0.006;
+    vib.connect(vg); vg.connect(lips.frequency);
+    const body = ac.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 260; body.Q.value = 2;
+    const bodyG = ac.createGain(); bodyG.gain.value = 0.9;
+    lips.connect(body); body.connect(bodyG); bodyG.connect(accent);
+    const formants = [[5, 0.9], [8, 0.55]].map(([q, level]) => {
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
+      const g = ac.createGain(); g.gain.value = level;
+      lips.connect(bp); bp.connect(g); g.connect(accent);
+      return bp;
+    });
+
+    // The rhythm: a short pattern of vowels and accents, repeated with small changes
+    const names = Object.keys(VOWELS), pattern = [];
+    for (let i = 0; i < 8; i++) pattern.push({ v: pick(Math.random, i % 4 === 0 ? ['oo', 'oh'] : names), hit: i % 4 === 0 ? 1 : i % 2 ? 0.55 : 0.75 });
+    for (let i = 0; i < steps; i++) {
+      const t = t0 + i * step, p = pattern[i % 8], v = VOWELS[Math.random() < 0.15 ? pick(Math.random, names) : p.v];
+      formants[0].frequency.setTargetAtTime(v[0], t, 0.025);
+      formants[1].frequency.setTargetAtTime(v[1], t, 0.03);
+      accent.gain.setTargetAtTime(p.hit, t, 0.012);
+      accent.gain.setTargetAtTime(p.hit * 0.6, t + step * 0.45, 0.04);
+      if (i % 24 === 23) {                                           // a quick breath in through the nose
+        accent.gain.setTargetAtTime(0.15, t, 0.01);
+        burst(t, 0.12, 'lowpass', 700, 0.7, 0.05, distance);
+      }
+      if (Math.random() < 0.05 && i > 8 && i < steps - 8) {          // an overtone toot
+        lips.frequency.setTargetAtTime(f * 2.6, t, 0.02);
+        lips.frequency.setTargetAtTime(f, t + step * 2.5, 0.03);
+      }
+    }
+    lips.start(t0); vib.start(t0); lips.stop(t0 + len + 0.1); vib.stop(t0 + len + 0.1);
   }
 
   // Effects
@@ -1190,10 +1217,27 @@ const Sound = (() => {
     tone('sine', 140, 60, t, 0.12, 0.35);
     burst(t + 0.03, 0.12, 'bandpass', 2500, 2, 0.1);
   }
-  // A can or bottle: a few bright, inharmonic partials, quickly gone
-  function clink(level = 1) {
-    const t = now() + Math.random() * 0.02, f = 1800 + Math.random() * 2200;
-    for (const [mul, peak] of [[1, 0.12], [2.76, 0.06], [5.4, 0.03]]) tone('triangle', f * mul, f * mul * 0.98, t, 0.12 + Math.random() * 0.1, peak * level);
+  // A ringing partial: a sine that starts at once and dies away exponentially
+  function ring(f, t, decay, peak, dest = master) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + decay + 0.05);
+  }
+  // A glass bottle knocking: a hard tick, then the glass rings with a few inharmonic
+  // partials (low ones ring longest), two of them a hair apart so they shimmer
+  function glass(level = 1) {
+    const t = now() + Math.random() * 0.015, f = 1400 + Math.random() * 1400;
+    burst(t, 0.012, 'highpass', 4000, 0.7, 0.25 * level);
+    for (const [mul, decay, peak] of [[1, 0.55, 0.09], [1.004, 0.5, 0.06], [2.32, 0.3, 0.05], [4.25, 0.16, 0.03], [6.63, 0.09, 0.02]])
+      ring(f * mul, t, decay * (0.8 + Math.random() * 0.4), peak * level);
+  }
+  // An aluminium can: a thin, papery tink with a short hollow tonk under it
+  function can(level = 1) {
+    const t = now() + Math.random() * 0.015, f = 2600 + Math.random() * 1600;
+    burst(t, 0.05, 'bandpass', 3200 + Math.random() * 1500, 2.5, 0.3 * level);
+    ring(450 + Math.random() * 250, t, 0.08, 0.12 * level);
+    for (const [mul, decay, peak] of [[1, 0.12, 0.05], [1.58, 0.08, 0.035], [2.71, 0.05, 0.025]]) ring(f * mul, t, decay, peak * level);
   }
   function hic() {
     const t = now();
@@ -1230,7 +1274,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
-  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), clink: safe(clink) };
+  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), glass: safe(glass), can: safe(can) };
 })();
 
 // ---------------------------------------------------------------------------
@@ -1468,7 +1512,9 @@ function basePose() {
 // ---------------------------------------------------------------------------
 // Drawing
 // ---------------------------------------------------------------------------
-const scene = makeCanvas(SCREEN, H), sctx = scene.getContext('2d');   // the scenery, before any swoop blur
+const scene = makeCanvas(SCREEN, H), sctx = scene.getContext('2d');
+const birdBuf = makeCanvas(1, 1), bbctx = birdBuf.getContext('2d');   // the magpie, drawn at a lower resolution
+let BIRD_PIX = 2;   // the scenery, before any swoop blur
 function drawTiled(img, P, offset, y = 0) {
   for (let x = -mod(Math.round(offset), P); x < W; x += P) sctx.drawImage(img, x, y);
 }
@@ -1588,9 +1634,15 @@ function draw() {
   const pose = magpiePose();
   // A barrel roll corkscrews: he swings up and round the line of flight, smaller on the far side
   const ra = pose.roll || 0, cork = Math.sin(ra) * 8, depth = 1 - 0.18 * (1 - Math.cos(ra)) / 2;
-  const sc = K * BIRD_SCALE * depth;
-  fctx.setTransform(sc * bird.face, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.3) * K, (bird.y - cork + pose.bob * BIRD_SCALE) * K);
-  drawMagpie(fctx, pose);
+  // Slightly pixelated: he's drawn at 1/BIRD_PIX of the screen's resolution, then scaled up
+  const sc = K * BIRD_SCALE * depth / BIRD_PIX;
+  bbctx.setTransform(1, 0, 0, 1, 0, 0);
+  bbctx.clearRect(0, 0, birdBuf.width, birdBuf.height);
+  bbctx.setTransform(sc * bird.face, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.3) * K / BIRD_PIX, (bird.y - cork + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
+  drawMagpie(bbctx, pose);
+  fctx.setTransform(1, 0, 0, 1, 0, 0);
+  fctx.imageSmoothingEnabled = false;
+  fctx.drawImage(birdBuf, 0, 0, birdBuf.width * BIRD_PIX, birdBuf.height * BIRD_PIX);
   if (bird.inside) drawShopFront(fctx);                          // inside: we see him through the glass
   drawLootAndBubbles(fctx);
   drawCombo(fctx);
@@ -1605,7 +1657,10 @@ function resize() {
   ctx.imageSmoothingEnabled = false;
   K = Math.max(1, Math.min(innerWidth / W, innerHeight / H) * (devicePixelRatio || 1));
   back.width = front.width = Math.round(W * K);
+  BIRD_PIX = Math.max(2, Math.round(K / 2));                         // magpie pixels: about half a scenery pixel
+  birdBuf.width = Math.ceil(front.width / BIRD_PIX) + 1;
   back.height = front.height = Math.round(H * K);
+  birdBuf.height = Math.ceil(front.height / BIRD_PIX) + 1;
   buildSky();
 }
 
