@@ -593,7 +593,7 @@ function flagColour(x, y) {
 function drawFlag(g) {
   const P = suburb.P, top = SUBURB_BASE - FLAG.pole + 1;
   let sx = mod(FLAG.x + 2 - Math.round(cam * PARALLAX.suburb), P);
-  for (const x0 of [sx, sx - P]) {
+  for (let x0 = sx - P; x0 < W + P; x0 += P) {                        // every copy across even a very wide screen
     if (x0 < -FLAG.w || x0 > W) continue;
     for (let x = 0; x < FLAG.w; x++) {
       const k = x / FLAG.w, wave = Math.sin(time * 7 - x * 0.55), dy = Math.round(wave * 1.6 * k);
@@ -1595,7 +1595,8 @@ function drawRooBody(g, crouch, ext, swing) {
 // ---------------------------------------------------------------------------
 const KOALA = { u: 0.3, target: 0.6, wait: 0, step: 0 };
 const KOOKA = { x: 0, y: 0, state: 'perched', t: 0, fx: 0, fy: 0, vy: 0, rot: 0 };
-const BBQ = { x: 800, top: 156, flipT: 0, flipIn: 2 };
+const BBQ_SCALE = 0.48;
+const BBQ = { x: 800, top: Math.round(166 - 32 * BBQ_SCALE), half: 17 * BBQ_SCALE * 0.8, flipT: 0, flipIn: 2 };
 const POSTIE = { x: 40, dir: 1, stop: 0, last: -1, wheel: 0 };
 const SHARK = { in: 20, t: 0, x: 0, dir: 1 };
 const smoke = [];
@@ -1640,7 +1641,7 @@ function updateCast(dt) {
   BBQ.flipIn -= dt;
   if (BBQ.flipIn <= 0 && BBQ.flipT <= 0) { BBQ.flipT = 0.7; BBQ.flipIn = 2 + Math.random() * 2; }
   BBQ.flipT = Math.max(0, BBQ.flipT - dt);
-  if (Math.random() < dt * 6) smoke.push({ x: BBQ.x + (Math.random() - 0.5) * 8, y: BBQ.top - 1, life: 1.6, r: 1 + Math.random() * 1.5, bbq: true });
+  if (Math.random() < dt * 6) smoke.push({ x: BBQ.x + (Math.random() - 0.5) * 2 * BBQ.half, y: BBQ.top - 1, life: 1.6, r: 1 + Math.random() * 1.5, bbq: true });
   for (const p of smoke) { p.life -= dt; p.y -= 12 * dt; p.x += Math.sin(time * 2 + p.y) * 3 * dt; p.r += dt * 1.5; }
   for (let i = smoke.length - 1; i >= 0; i--) if (smoke[i].life <= 0) smoke.splice(i, 1);
   // Postie: rides along the front street, stopping briefly at some letterboxes
@@ -1659,7 +1660,7 @@ function updateCast(dt) {
 }
 const SHARK_TIME = 7;
 
-// The bloke at his barbecue, which stands on its own to his right
+// The barbecue (the bloke stands to its left: drawBloke)
 function drawBbq(g) {
   const fill = (col, fn) => { g.beginPath(); fn(); g.fillStyle = col; g.fill(); };
   const line = (col, w, pts) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
@@ -1675,9 +1676,13 @@ function drawBbq(g) {
   g.save(); g.translate(0, -33 - Math.sin(k * Math.PI) * 16); g.rotate(k * Math.PI * 2);
   fill(k > 0.25 && k < 0.75 ? '#8a4a24' : '#6b3a1e', () => g.ellipse(0, 0, 4.5, 1.8, 0, 0, Math.PI * 2));
   g.restore();
-  // the bloke, to the left, facing his barbie
-  g.save(); g.translate(-30, 0);
-  const lift = Math.sin(k * Math.PI) * 6;
+}
+
+// The bloke at his barbie, facing it, flipping a burger now and then
+function drawBloke(g) {
+  const fill = (col, fn) => { g.beginPath(); fn(); g.fillStyle = col; g.fill(); };
+  const line = (col, w, pts) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
+  const k = BBQ.flipT > 0 ? 1 - BBQ.flipT / 0.7 : 0, lift = Math.sin(k * Math.PI) * 6;
   line('#d9a07a', 3, [[-3, -1], [-3, -18]]); line('#d9a07a', 3, [[3, -1], [3, -18]]);              // legs
   fill('#1d4a8a', () => g.rect(-6, 0, 5, 1.6)); fill('#1d4a8a', () => g.rect(1, 0, 5, 1.6));      // thongs
   fill('#b9a26a', () => g.rect(-6.5, -27, 13, 10));                    // shorts
@@ -1691,7 +1696,6 @@ function drawBbq(g) {
   fill('#111', () => g.rect(0, -53, 7, 2));                            // sunnies
   fill('#e8e0c8', () => g.ellipse(0, -56, 10, 2.4, 0, 0, Math.PI * 2)); // bucket hat
   fill('#e8e0c8', () => { g.moveTo(-6, -56); g.quadraticCurveTo(-6, -63, 0, -63); g.quadraticCurveTo(6, -63, 6, -56); });
-  g.restore();
 }
 
 // Koala hugging the trunk, arms and legs taking turns as he climbs
@@ -1729,17 +1733,18 @@ function drawKookaburra(g, flap) {
 }
 
 // All the cast drawn the slightly pixelated way, into the magpie's low-resolution buffer
-function drawCharacter(xWorld, yFeet, scale, dir, draw, rot = 0) {
+function drawCharacter(xWorld, yFeet, scale, dir, draw, rot = 0, wide = 1) {
   const sx = loopX(xWorld);
   if (sx < -50 || sx > W + 50) return;
   const s = K * scale / BIRD_PIX;
-  bbctx.setTransform(s * dir, 0, 0, s, sx * K / BIRD_PIX, yFeet * K / BIRD_PIX);
+  bbctx.setTransform(s * dir * wide, 0, 0, s, sx * K / BIRD_PIX, yFeet * K / BIRD_PIX);
   if (rot) bbctx.rotate(rot);
   draw(bbctx);
   crispen(bbctx, sx * K / BIRD_PIX, (yFeet - 10) * K / BIRD_PIX, Math.ceil(26 * K / BIRD_PIX));
 }
 function drawCast() {
-  drawCharacter(BBQ.x, 166, 0.32, 1, drawBbq);
+  drawCharacter(BBQ.x, 166, BBQ_SCALE, 1, drawBbq, 0, 0.8);             // 50% taller than before, and a little wider
+  drawCharacter(BBQ.x - 15, 166, BBQ_SCALE, 1, drawBloke);
   if (TRUNK.length) {
     const i = Math.floor(KOALA.u * (TRUNK.length - 1)), [tx, ty] = TRUNK[i];
     drawCharacter(tx, ty + 6, 0.36, 1, drawKoala);
@@ -1764,7 +1769,7 @@ function drawSmoke(g) {
 function drawPostie(g) {
   const P = suburb.P, base = 152;
   const sx0 = mod(POSTIE.x - Math.round(cam * PARALLAX.suburb), P);
-  for (const sx of [sx0, sx0 - P]) {
+  for (let sx = sx0 - P; sx < W + P; sx += P) {
     if (sx < -14 || sx > W + 14) continue;
     const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(sx + x), base + y, w, h); };
     const spin = Math.floor(POSTIE.wheel) % 2;
@@ -1785,7 +1790,7 @@ function drawShark(g) {
   const P = hills.P, k = 1 - SHARK.t / SHARK_TIME, water = 138 - HILLS_LIFT + 7;   // out in the harbour, not at the shore
   const rise = Math.min(1, k / 0.12, (1 - k) / 0.12), hx = SHARK.x + SHARK.dir * k * 50;
   const sx = mod(hx - Math.round(cam * PARALLAX.hills), P);
-  for (const x0 of [sx, sx - P]) {
+  for (let x0 = sx - P; x0 < W + P; x0 += P) {                        // every copy across even a very wide screen
     if (x0 < -8 || x0 > W + 8) continue;
     const h = Math.round(7 * rise);
     for (let j = 0; j < h; j++) {                                    // a swept-back fin
@@ -1971,7 +1976,7 @@ function update(dt) {
   // What's under him: the shop roof, the top of the Hills Hoist (only from above), or the lawn
   const overHoist = Math.abs(hoistDx(bird.x)) < HOIST.r && bird.y <= HOIST.top - FEET + 3;
   const overRoo = ROO.dizzy <= 0 && Math.abs(rooDx(bird.x)) < 9 && bird.y <= rooTop() - FEET + 3;
-  const overBbq = Math.abs(bbqDx(bird.x)) < 7 && bird.y <= BBQ.top - FEET + 3;
+  const overBbq = Math.abs(bbqDx(bird.x)) < BBQ.half && bird.y <= BBQ.top - FEET + 3;
   const perch = PERCHES.reduce((top, pc) => mod(bird.x - pc.x0, LEVEL_W) < pc.x1 - pc.x0 && bird.y <= pc.y - FEET + 3 ? Math.min(top, pc.y) : top, Infinity);   // the tree's perches
   const floorTop = shopSpan(bird.x) && !bird.inside ? SHOP.roof : overHoist || bird.onHoist ? HOIST.top : overRoo || bird.onRoo ? rooTop() : overBbq || bird.onBbq ? BBQ.top : perch < Infinity ? perch : LAND_Y;
   const floor = floorTop - FEET;
@@ -2121,7 +2126,8 @@ function basePose() {
 // Drawing
 // ---------------------------------------------------------------------------
 const scene = makeCanvas(SCREEN, H), sctx = scene.getContext('2d');
-const birdBuf = makeCanvas(1, 1), bbctx = birdBuf.getContext('2d', { willReadFrequently: true });   // the magpie, drawn at a lower resolution
+const birdBuf = makeCanvas(1, 1), bbctx = birdBuf.getContext('2d', { willReadFrequently: true });
+const poopBuf = makeCanvas(1, 1), poopCtx = poopBuf.getContext('2d');   // the poop, drawn at the same low resolution   // the magpie, drawn at a lower resolution
 let BIRD_PIX = 2;   // the scenery, before any swoop blur
 function drawTiled(img, P, offset, y = 0) {
   for (let x = -mod(Math.round(offset), P); x < W; x += P) sctx.drawImage(img, x, y);
@@ -2142,12 +2148,16 @@ function drawBar(label, x, y, value, colour, fullColour, active, hint) {
 // Screen x of a world position, allowing for the level looping round
 const loopX = x => { let sx = mod(x - cam, LEVEL_W); if (sx > W + 40) sx -= LEVEL_W; return sx; };
 
-// Falling drops (white teardrops, pointing back along their fall), sploshes and splashes, on the smooth canvas
-function drawPoop(g) {
+// Falling drops (white teardrops, pointing back along their fall), sploshes and splashes. Drawn at
+// the magpie's low resolution into their own buffer, then scaled up, so they're pixelated like him.
+function drawPoop(out) {
+  const g = poopCtx, PK = K / BIRD_PIX;                              // buffer pixels per game pixel
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, poopBuf.width, poopBuf.height);
   for (const s of sploshes) {
     const sx = loopX(s.x), grow = Math.min(1, (time - s.born) / 0.08);
     g.globalAlpha = clamp(1 - (time - s.born) / SPLOSH_TIME, 0, 1);   // fades away over 10 seconds
-    g.setTransform(K * 1.5, 0, 0, K * 1.5, sx * K, s.y * K);
+    g.setTransform(PK * 1.5, 0, 0, PK * 1.5, sx * PK, s.y * PK);
     for (const b of s.blobs) {
       g.beginPath(); g.ellipse(b.dx * grow, b.dy, b.rx * grow, b.ry, 0, 0, Math.PI * 2);
       g.fillStyle = '#f6f6f2'; g.fill();
@@ -2158,13 +2168,13 @@ function drawPoop(g) {
   g.globalAlpha = 1;
   g.fillStyle = '#f6f6f2';
   for (const sp of splashes) {
-    g.setTransform(K, 0, 0, K, loopX(sp.x) * K, sp.y * K);
+    g.setTransform(PK, 0, 0, PK, loopX(sp.x) * PK, sp.y * PK);
     g.globalAlpha = Math.min(1, sp.life / 0.2);
     g.beginPath(); g.arc(0, 0, 0.6, 0, Math.PI * 2); g.fill();
   }
   g.globalAlpha = 1;
   for (const d of drops) {
-    g.setTransform(K * 1.4, 0, 0, K * 1.4, loopX(d.x) * K, d.y * K);
+    g.setTransform(PK * 1.4, 0, 0, PK * 1.4, loopX(d.x) * PK, d.y * PK);
     g.rotate(Math.atan2(d.vy, d.vx) - Math.PI / 2);
     g.beginPath();
     g.moveTo(0, -3.4); g.bezierCurveTo(1.1, -1.7, 1.8, -0.2, 1.8, 0.8);
@@ -2175,6 +2185,9 @@ function drawPoop(g) {
     g.strokeStyle = 'rgba(60,70,80,0.35)'; g.lineWidth = 0.25; g.stroke();
   }
   g.setTransform(1, 0, 0, 1, 0, 0);
+  out.setTransform(1, 0, 0, 1, 0, 0);
+  out.imageSmoothingEnabled = false;
+  out.drawImage(poopBuf, 0, 0, poopBuf.width * BIRD_PIX, poopBuf.height * BIRD_PIX);
 }
 
 function draw() {
@@ -2282,8 +2295,8 @@ function draw() {
 // ---------------------------------------------------------------------------
 function resize() {
   // Fill the browser's width: the game is never narrower than 16:9, so in a tall window it sits
-  // at the top with a black bar below; wide windows (up to 4:1) get a wider view
-  W = clamp(Math.round(H * innerWidth / innerHeight), SCREEN, 720);
+  // at the top with a black strip below; wider windows (up to about 9:1) get a wider view
+  W = clamp(Math.round(H * innerWidth / innerHeight), SCREEN, 1600);
   canvas.width = scene.width = W; canvas.height = H;
   ctx.imageSmoothingEnabled = false;
   K = Math.max(1, Math.min(innerWidth / W, innerHeight / H) * (devicePixelRatio || 1));
@@ -2292,6 +2305,7 @@ function resize() {
   birdBuf.width = Math.ceil(front.width / BIRD_PIX) + 1;
   back.height = front.height = Math.round(H * K);
   birdBuf.height = Math.ceil(front.height / BIRD_PIX) + 1;
+  poopBuf.width = birdBuf.width; poopBuf.height = birdBuf.height;
   buildSky();
 }
 
