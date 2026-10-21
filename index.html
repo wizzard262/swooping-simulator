@@ -1128,12 +1128,12 @@ function drawShelfStock(g) {
 // over 1 second, and stays put on the screen where the magpie was when it appeared.
 function drawCombo(g) {
   if (comboT <= 0) return;
-  const age = COMBO_TIME - comboT, pop = 1.2 * Math.sqrt(age / COMBO_TIME) * 0.5;
-  const cx = comboAt.x, cy = comboAt.y;
+  const age = comboLen - comboT, pop = 1.2 * Math.sqrt(Math.min(1, age / COMBO_TIME)) * 0.5;
+  const { x: cx, y: cy } = comboFollow ? comboSpot() : comboAt, flash = comboFollow && Math.floor(time * 10) % 2;
   g.save();
   g.setTransform(K * pop, 0, 0, K * pop, cx * K, cy * K);
   g.rotate(-0.12);
-  g.globalAlpha = Math.max(0, 1 - (age / COMBO_TIME) ** 2);
+  g.globalAlpha = Math.max(0, 1 - (age / comboLen) ** 2);
   // starburst
   const burst = () => {
     g.beginPath();
@@ -1143,7 +1143,7 @@ function drawCombo(g) {
     }
     g.closePath();
   };
-  burst(); g.fillStyle = '#ffe414'; g.fill();
+  burst(); g.fillStyle = flash ? '#3ee0ff' : '#ffe414'; g.fill();
   g.save(); burst(); g.clip();                                     // Ben-Day dots
   g.fillStyle = '#ff4a3d';
   for (let y = -44; y <= 44; y += 4) for (let x = -96; x <= 96; x += 4) {
@@ -1159,7 +1159,7 @@ function drawCombo(g) {
   g.lineWidth = 5; g.strokeStyle = '#111';
   g.fillStyle = '#111'; g.fillText(text, 2.2, 2.6);                // offset shadow
   g.strokeText(text, 0, 0);
-  g.fillStyle = '#e8232a'; g.fillText(text, 0, 0);
+  g.fillStyle = flash ? '#ffffff' : '#e8232a'; g.fillText(text, 0, 0);
   g.lineWidth = 0.8; g.strokeStyle = '#fff4a0'; g.strokeText(text, -0.6, -0.6);   // a thin light edge on the letters
   g.restore();
 }
@@ -2036,7 +2036,7 @@ function wireY(x) {                                                  // the sag 
   return Math.round(WIRE.top + 1 + 3 * 4 * t * (1 - t));
 }
 const POSSUM = { in: 8, x: 0, dir: 1, visit: 0, pause: 0 };   // out on the wire about a third of the time
-const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, sting: 0, ties: 7, ground: 170, crank: 0 };   // ties: always on his helmet
+const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, sting: 0, ties: 4, ground: 170, crank: 0 };   // ties: always on his helmet
 const CYCLIST_SCALE = 0.6;        // a bit taller than the kangaroo
 const DROPBEAR = { state: 'hidden', x: 0, y: 0, vy: 0, t: 0, under: 0 };
 const COCKIES = { in: 18, t: 0, dir: 1, y: 50, len: 0, screechIn: 0 };
@@ -2109,7 +2109,7 @@ function updateMore(dt) {
   } else if (DROPBEAR.state === 'drop') {
     DROPBEAR.vy += 420 * dt; DROPBEAR.y += DROPBEAR.vy * dt; DROPBEAR.x += (bird.x - DROPBEAR.x) * Math.min(1, 4 * dt);
     const hit = Math.abs(bird.x - DROPBEAR.x) < 8 && DROPBEAR.y >= bird.y - 8;
-    if (hit) { bird.flung = true; bird.dazed = true; bird.grounded = false; bird.onHoist = bird.onRoo = false; bird.hanging = null; bird.vy = 60; bird.vx = 0; penalty(100); }
+    if (hit) { bird.flung = true; bird.whipped = false; bird.dazed = true; bird.grounded = false; bird.onHoist = bird.onRoo = false; bird.hanging = null; bird.vy = 60; bird.vx = 0; penalty(100); }
     if (hit || DROPBEAR.y >= LAND_Y) { DROPBEAR.state = 'climb'; DROPBEAR.t = 0; DROPBEAR.from = DROPBEAR.y; DROPBEAR.under = -6; }
   } else if (DROPBEAR.state === 'climb') {
     DROPBEAR.t += dt;
@@ -2393,7 +2393,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0, turnDir: 0, turnRate: 0, callIn: 12, calling: 0, onBbq: false, hot: 0, hotFade: 0, flung: false, onBack: 0, dazed: false, onCarrier: null, carrierAt: 0, hanging: null };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0, turnDir: 0, turnRate: 0, callIn: 12, calling: 0, onBbq: false, hot: 0, hotFade: 0, flung: false, onBack: 0, dazed: false, onCarrier: null, carrierAt: 0, hanging: null, whipped: false };
 const ON_BACK_TIME = 2.2, GET_UP_TIME = 0.4;   // after the barbecue: on his back waving his legs, then he rolls back up
 const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 20 seconds on the ground
 
@@ -2424,10 +2424,12 @@ const drops = [], sploshes = [], splashes = [], SPLOSH_TIME = 10;
 let comboT = 0, comboText = '';   // seconds left on the SWOOP-AND-POOP! (or LOOP!) flash, and which
 const COMBO_TIME = 1;
 let comboAt = { x: 0, y: 0 };      // where on the screen it shows: just above the magpie (below him if he's at the top)
-const showCombo = text => {
-  comboText = text; comboT = COMBO_TIME;
+let comboFollow = false, comboLen = 1;           // true: it travels along above him, flashing (WHIPPER SNIPPER!)
+const comboSpot = () => ({ x: clamp(bird.x - cam, 50, W - 50), y: bird.y - 26 >= 18 ? bird.y - 26 : bird.y + 26 });
+const showCombo = (text, follow = false) => {
+  comboText = text; comboLen = comboT = COMBO_TIME * (follow ? 1.6 : 1); comboFollow = follow;
   award(200);
-  comboAt = { x: clamp(bird.x - cam, 50, W - 50), y: bird.y - 26 >= 18 ? bird.y - 26 : bird.y + 26 };
+  comboAt = comboSpot();
 };
 
 function poop() {
@@ -2512,7 +2514,10 @@ function update(dt) {
   // Start a swoop with a little charge in the bar; keep going until let go or empty
   const wantSwoop = keys.swoop || touchSwoop || PAD.swoop;
   if (!wantSwoop) bird.spent = false;                               // after running dry, let go of Space before the next swoop
-  if (wantSwoop && !bird.swooping && !bird.spent && bird.loopT <= 0 && bird.onBack <= 0 && bird.charge > 0.05) { bird.swooping = true; bird.grounded = false; }
+  if (wantSwoop && !bird.swooping && !bird.spent && bird.loopT <= 0 && bird.onBack <= 0 && bird.charge > 0.05) {
+    bird.swooping = true; bird.grounded = false;
+    if (bird.flung && !bird.whipped) { bird.whipped = true; showCombo('WHIPPER SNIPPER!', true); }   // swooping while tumbling: spinning like a whipper snipper
+  }
   if (bird.swooping && bird.charge <= 0) { bird.spent = true; touchSwoop = false; }
   if (!wantSwoop || bird.spent) bird.swooping = false;
   bird.charge = clamp(bird.charge + (bird.swooping ? -SWOOP_DRAIN : SWOOP_RECHARGE) * dt, 0, 1);
@@ -2644,7 +2649,7 @@ function update(dt) {
     if (bird.hot >= 1) {
       bird.onBbq = false; bird.grounded = false; bird.vy = -150; bird.vx = (Math.random() < 0.5 ? -1 : 1) * 90; bird.hotFade = 2.5;
       Sound.sizzle(); Sound.scream(); penalty(100);
-      bird.flung = true;                                              // he'll land on his back
+      bird.flung = true; bird.whipped = false;                        // he'll land on his back
     }
   } else if (bird.hotFade > 0) { bird.hotFade = Math.max(0, bird.hotFade - dt); bird.hot = bird.hotFade / 2.5; }
   else bird.hot = 0;

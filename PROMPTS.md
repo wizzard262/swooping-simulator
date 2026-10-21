@@ -475,8 +475,13 @@
 - If the magpie flies up under the Hills Hoist, he can hold on and ride it round
 - Half the time he looks up and holds on with his wings, legs waggling; the other half he hangs upside down by his feet as it turns
 
+## 98. WHIPPER SNIPPER!
+
+- If the magpie swoops while he's spinning after the barbecue, he scores, and the words "WHIPPER SNIPPER!" travel along above him, flashing
+- The cyclist has too many cable ties: just 4
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 390 min so far | Prompts 1–97: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under |
+| 1 | 2026-10-21 | about 400 min so far | Prompts 1–98: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER! |
