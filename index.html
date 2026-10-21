@@ -1020,17 +1020,16 @@ function drawShelfStock(g) {
 
 // SWOOP-AND-POOP! and SWOOP-AND-LOOP!: pop-art comic lettering in the Roy Lichtenstein style.
 // A yellow starburst with red Ben-Day dots and a thick black outline, tilted red lettering with
-// a black outline and offset shadow, just above the magpie at half size. SWOOP-AND-POOP! pops in,
-// holds and fades; SWOOP-AND-LOOP! grows from nothing while it fades. Each lasts 1 second.
+// a black outline and offset shadow, at half size. Each grows from nothing while it fades out,
+// over 1 second, and stays put on the screen where the magpie was when it appeared.
 function drawCombo(g) {
   if (comboT <= 0) return;
-  const age = COMBO_TIME - comboT, grow = comboText === 'SWOOP-AND-LOOP!';
-  const pop = (grow ? 1.2 * Math.sqrt(age / COMBO_TIME) : age < 0.12 ? 0.3 + 0.85 * age / 0.12 : age < 0.2 ? 1.15 - (age - 0.12) / 0.08 * 0.15 : 1) * 0.5;
-  const cx = clamp(bird.x - cam, 50, W - 50), cy = bird.y - 26 >= 18 ? bird.y - 26 : bird.y + 26;   // below him if he's at the top
+  const age = COMBO_TIME - comboT, pop = 1.2 * Math.sqrt(age / COMBO_TIME) * 0.5;
+  const cx = comboAt.x, cy = comboAt.y;
   g.save();
   g.setTransform(K * pop, 0, 0, K * pop, cx * K, cy * K);
   g.rotate(-0.12);
-  g.globalAlpha = grow ? Math.max(0, 1 - (age / COMBO_TIME) ** 2) : Math.min(1, comboT / 0.4);
+  g.globalAlpha = Math.max(0, 1 - (age / COMBO_TIME) ** 2);
   // starburst
   const burst = () => {
     g.beginPath();
@@ -1445,7 +1444,11 @@ const drops = [], sploshes = [], splashes = [];
 
 let comboT = 0, comboText = '';   // seconds left on the SWOOP-AND-POOP! (or LOOP!) flash, and which
 const COMBO_TIME = 1;
-const showCombo = text => { comboText = text; comboT = COMBO_TIME; };
+let comboAt = { x: 0, y: 0 };      // where on the screen it shows: just above the magpie (below him if he's at the top)
+const showCombo = text => {
+  comboText = text; comboT = COMBO_TIME;
+  comboAt = { x: clamp(bird.x - cam, 50, W - 50), y: bird.y - 26 >= 18 ? bird.y - 26 : bird.y + 26 };
+};
 
 function poop() {
   if (bird.poop < 1) return;

@@ -258,8 +258,13 @@
 
 - Put a Hills Hoist up front on the ground by the shop, with some clothes on it; if the bird lands on it, it spins with him on it
 
+## 52. Both texts the same
+
+- SWOOP-AND-POOP! and SWOOP-AND-LOOP! should both grow from nothing and fade out; the loop one moves around, which I don't want
+  - Both now stay put on the screen where the magpie was when they appeared
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 175 min so far | Prompts 1–51: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride |
+| 1 | 2026-10-21 | about 180 min so far | Prompts 1–52: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride |
