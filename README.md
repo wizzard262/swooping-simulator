@@ -10,8 +10,13 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - Hold Space to swoop: very fast flight with afterburner flames and a motion blur, steered 30 degrees up or down with the arrows. The charge bar empties in 3 seconds and refills in 10
 - Land on the Hills Hoist (half a lap from the BOTTLE-O) and it spins, carrying you round and turning you with it; press up to fly off
 - A kangaroo in a cork hat hops along the lawn: land on his back to ride him; swoop into him or poop on him and he falls over (doiiinggg!) and sees stars for 5 seconds
+- A big gum tree to perch on, with a koala climbing the trunk and a kookaburra on top: swoop into the kookaburra or poop on him and he tumbles down, sees stars, then flies back up laughing
+- A bloke at his barbie flipping burgers: land on the hot plate and you smoke, go red and get flung off with a sizzle
+- The postie rides his motorbike along the front street, stopping at letterboxes; an Aussie flag flaps in one front yard; now and then a shark fin cruises across the harbour
+- On the ground the magpie carols every 10 to 20 seconds, head up and beak working
 - B for a corkscrew barrel roll, L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
+- Poops fade away after 10 seconds
 - The game fills the browser's width (a black bar below it in tall windows)
 - Poop during a swoop for a pop-art SWOOP-AND-POOP! above the magpie, or loop during one for SWOOP-AND-LOOP!
 - Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 5 seconds
@@ -36,8 +41,8 @@ Standard layout (Xbox, PlayStation and similar). Press any button once after plu
 ## How it's made
 
 - One HTML page, plain JavaScript and the 2D canvas (no WebGL)
-- Sound made in code with Web Audio: the swoop's afterburner roar, poop plop and splosh, clanging cans, hiccups, and a background of breeze, cicadas, distant birds and a didgeridoo
+- Sound made in code with Web Audio: the swoop's afterburner roar, poop plop and splosh, clanging cans, hiccups, the magpie's carol, a sizzle, a kookaburra laugh, doiiinggg, and a background of breeze, cicadas and a didgeridoo
 - The scenery is pixel art drawn in code at 180 pixels high and scaled up; the magpie is drawn smoothly at about 3/4 of a scenery pixel (a little pixelated), and the sun is a photo of the Sun King emblem (supplied with the prompts), cut out of its background and embedded in the page
-- The level is 6 screens wide and loops round, with 7 parallax layers: lawn, the front street, 3 back streets that tier off into the distance, and hills (Sydney Harbour Bridge, Opera House, Uluru). Billowy clouds are pinned to the sky, and the sun moves slowest of all
+- The level is 6 screens wide and loops round, with 8 parallax layers: lawn, the front street, 3 back streets that tier off into the distance, hills (Sydney Harbour Bridge, Opera House, Uluru) and billowy clouds. The sun moves slowest of all
 - [screenshots/](screenshots/): numbered screenshots of the game as it was built, shown in order on `screenshots.html` (linked in the game, top right)
 - [PROMPTS.md](PROMPTS.md): every prompt used to make the game (also linked in the game, top right)

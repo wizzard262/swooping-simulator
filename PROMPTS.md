@@ -316,8 +316,42 @@
 - How did we do with resizing to fit the browser, and the controller support? My controller is a standard USB Xbox one on a PC. Also resize the width to fit when the browser is resized
   - Both were already in; checked again on the live site: the game refits the width every time the window is resized, and a standard Xbox controller is the layout it's mapped for
 
+## 65. A tree to land on
+
+- Put a tree in the same style as the background ones in the foreground, which the bird can land on; space it away from the Hills Hoist and the BOTTLE-O
+
+## 66. An Aussie flag
+
+- Give one of the front row of houses a flapping Australian flag on a pole
+
+## 67. A more natural tree
+
+- Make the tree more organically shaped
+
+## 68. Controller check
+
+- The controller works. (Asked for the button that flies up to do the swoop, then decided the right trigger for the swoop is fine: kept as it is)
+
+## 69. A big batch
+
+- When the bird is on the ground, every 10 to 20 seconds (at random) he does a magpie call: he raises his head and opens and shuts his beak for 2 seconds, with a magpie call sound
+- Make poops fade away over 10 seconds
+- Make the barrel roll more of a corkscrew, with a wider circle round the corkscrew's centre line
+- Remove the lap counter
+- Halve the size of the BOTTLE-O sign
+- Remove the SWOOPING MAGPIES sign
+- Put a koala in the tree, climbing up and down the trunk
+- Separate the clouds from the background and make them parallax again
+- There's a little sound like chirps or water drops: remove it (it was the distant birds)
+- Put a small shark fin in the sea in front of the bridge: it appears at random but rarely (about every 30 seconds), rises, moves along, then sinks back down
+- Put a man using a barbecue between the Hills Hoist and the BOTTLE-O, flipping burgers. If the bird lands on the barbecue he starts to smoke, goes red, and gets thrown off with a sizzle
+- Put a kookaburra on top of the tree. If the bird swoops or poops him, he topples and spins down to the ground, stunned like the kangaroo, then flies back up after a few seconds
+- Put a typical Australian postie on his motorbike riding along the front row of houses, stopping briefly at random houses
+- Then check it in and publish it; don't take a screenshot for every change, just one at the end
+- If you don't know what the "water drip" sound is, list the sounds we've got for me to pick from
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 220 min so far | Prompts 1–64: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat |
+| 1 | 2026-10-21 | about 245 min so far | Prompts 1–69: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark |
