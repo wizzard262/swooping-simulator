@@ -629,7 +629,7 @@ function buildBackStreet({ f, base, scale, haze, seed }) {
 }
 
 // ---------------------------------------------------------------------------
-// Ground: mown lawn with stripes, clover and dandelions, a lap flag and a warning sign
+// Ground: mown lawn with stripes, clover and dandelions, and a warning sign
 // ---------------------------------------------------------------------------
 function buildGround() {
   const P = LEVEL_W, p = painter(P, H, true), r = rng(99);
@@ -651,9 +651,6 @@ function buildGround() {
     const x = r() * P, y = GRASS_TOP + 3 + r() * (H - GRASS_TOP - 4);
     p.px(x, y, r() < 0.7 ? '#f4f4ee' : '#f2d43a');
   }
-  // Lap flag (the start of each loop)
-  p.px(20, 132, '#d8d8d8', 1, 44);
-  for (let j = 0; j < 6; j++) for (let i = 0; i < 10; i++) p.px(21 + i, 132 + j, (Math.floor(i / 2) + Math.floor(j / 2)) % 2 ? '#1c1c1c' : '#f6f6f6');
   // Warning sign
   const sx = 70, sy = 128;
   p.px(sx + 6, sy + 16, '#8a8f94', 2, 30); p.px(sx + 27, sy + 16, '#8a8f94', 2, 30);

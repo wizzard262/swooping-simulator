@@ -224,8 +224,12 @@
 
 - Pixelate the magpie slightly more
 
+## 44. No flag
+
+- Remove the chequered flag
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 145 min so far | Prompts 1–43: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, full screen, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP! |
+| 1 | 2026-10-21 | about 145 min so far | Prompts 1–44: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, full screen, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP! |
