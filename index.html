@@ -1009,18 +1009,19 @@ function drawShelfStock(g) {
   drawSmeared(g, shelfStock, loopX(SHOP.x), SHOP.ceil, SHOP.w, SHOP.floor - SHOP.ceil);
 }
 
-// SWOOP-AND-POOP!: pop-art comic lettering in the Roy Lichtenstein style. A yellow starburst
-// with red Ben-Day dots and a thick black outline, tilted red lettering with a black outline
-// and offset shadow. It sits just above the magpie at half size, pops in, holds, then fades
-// over its 1 second.
+// SWOOP-AND-POOP! and SWOOP-AND-LOOP!: pop-art comic lettering in the Roy Lichtenstein style.
+// A yellow starburst with red Ben-Day dots and a thick black outline, tilted red lettering with
+// a black outline and offset shadow, just above the magpie at half size. SWOOP-AND-POOP! pops in,
+// holds and fades; SWOOP-AND-LOOP! grows from nothing while it fades. Each lasts 1 second.
 function drawCombo(g) {
   if (comboT <= 0) return;
-  const age = COMBO_TIME - comboT, pop = (age < 0.12 ? 0.3 + 0.85 * age / 0.12 : age < 0.2 ? 1.15 - (age - 0.12) / 0.08 * 0.15 : 1) * 0.5;
+  const age = COMBO_TIME - comboT, grow = comboText === 'SWOOP-AND-LOOP!';
+  const pop = (grow ? 1.2 * Math.sqrt(age / COMBO_TIME) : age < 0.12 ? 0.3 + 0.85 * age / 0.12 : age < 0.2 ? 1.15 - (age - 0.12) / 0.08 * 0.15 : 1) * 0.5;
   const cx = clamp(bird.x - cam, 50, W - 50), cy = bird.y - 26 >= 18 ? bird.y - 26 : bird.y + 26;   // below him if he's at the top
   g.save();
   g.setTransform(K * pop, 0, 0, K * pop, cx * K, cy * K);
   g.rotate(-0.12);
-  g.globalAlpha = Math.min(1, comboT / 0.4);
+  g.globalAlpha = grow ? Math.max(0, 1 - (age / COMBO_TIME) ** 2) : Math.min(1, comboT / 0.4);
   // starburst
   const burst = () => {
     g.beginPath();
@@ -1042,7 +1043,7 @@ function drawCombo(g) {
   // lettering
   g.font = 'italic 900 19px Impact, "Arial Black", sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  const text = 'SWOOP-AND-POOP!';
+  const text = comboText;
   g.lineWidth = 5; g.strokeStyle = '#111';
   g.fillStyle = '#111'; g.fillText(text, 2.2, 2.6);                // offset shadow
   g.strokeText(text, 0, 0);
@@ -1335,6 +1336,7 @@ function barrelRoll() {
 }
 function loopTheLoop() {
   if (bird.loopT > 0 || bird.inside) return;                      // no room under the shop ceiling
+  if (bird.swooping) showCombo('SWOOP-AND-LOOP!');
   bird.swooping = false;
   bird.grounded = false;
   const y0 = Math.max(bird.y, TOP_Y + 2 * LOOP_R);                  // keep the top of the loop on screen
@@ -1349,14 +1351,15 @@ const POOP_RECHARGE = SWOOP_RECHARGE / 2, DROP_GRAVITY = 320;
 const TARGETS = [];               // { x, y, w, h, hit(drop) } in world pixels
 const drops = [], sploshes = [], splashes = [];
 
-let comboT = 0;                   // seconds left on the SWOOP-AND-POOP! flash
+let comboT = 0, comboText = '';   // seconds left on the SWOOP-AND-POOP! (or LOOP!) flash, and which
 const COMBO_TIME = 1;
+const showCombo = text => { comboText = text; comboT = COMBO_TIME; };
 
 function poop() {
   if (bird.poop < 1) return;
   bird.poop = 0;
   Sound.plop();
-  if (bird.swooping) comboT = COMBO_TIME;
+  if (bird.swooping) showCombo('SWOOP-AND-POOP!');
   drops.push({ x: bird.x - bird.face * 10, y: bird.y + 3, vx: bird.vx * 0.7, vy: Math.max(bird.vy, 0) * 0.7 + 15 });
 }
 
