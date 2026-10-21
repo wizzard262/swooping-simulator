@@ -1197,8 +1197,9 @@ function drawTiled(img, P, offset, y = 0) {
 }
 
 // A charge bar under the lap counter (swoop, then poop); it flashes when full
-function drawBar(label, x, y, value, colour, fullColour, active) {
+function drawBar(label, x, y, value, colour, fullColour, active, hint) {
   const full = value >= 1, bw = 40, bx = x + textWidth('SWOOP') + 4;
+  drawText('- ' + hint, bx + bw + 4, y, '#ffffff');                // which key to press
   drawText(label, x, y, full || active ? fullColour : '#ffffff');
   ctx.fillStyle = '#18222e'; ctx.fillRect(bx - 1, y - 1, bw + 2, 7);
   ctx.fillStyle = '#3c4a5a'; ctx.fillRect(bx, y, bw, 5);
@@ -1284,8 +1285,8 @@ function draw() {
   ctx.globalAlpha = 1;
 
   drawText('LAP ' + lap + '   ' + Math.floor(distance / 4) + ' M', 4, 4, '#ffffff');
-  drawBar('SWOOP', 4, 12, bird.charge, '#ffd23f', '#fff3a0', bird.swooping);
-  drawBar('POOP', 4, 20, bird.poop, '#e9ece6', '#ffffff', false);
+  drawBar('SWOOP', 4, 12, bird.charge, '#ffd23f', '#fff3a0', bird.swooping, isTouch ? 'QUICK TAP' : 'SPACE BAR');
+  drawBar('POOP', 4, 20, bird.poop, '#e9ece6', '#ffffff', false, isTouch ? 'SECOND FINGER' : 'P KEY');
   if (lapFlash > 0 && Math.floor(lapFlash * 6) % 2 === 0) drawTextCentred('LAP ' + lap + '!', 60, '#ffe066', 3);
   const titleAlpha = started ? clamp(1 - (time - startedAt - 2), 0, 1) : 1;
   if (titleAlpha > 0) {

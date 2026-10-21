@@ -144,8 +144,13 @@
 
 - Use `C:\Users\jones\Desktop\sun.png` for the sun, cut out from its background
 
+## 25. Key hints
+
+- After the poop bar put the text "- P KEY", and after the swoop bar "- SPACE BAR"
+  - On touch screens they read "- SECOND FINGER" and "- QUICK TAP" instead
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 85 min so far | Prompts 1–24: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun |
+| 1 | 2026-10-21 | about 90 min so far | Prompts 1–25: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints |
