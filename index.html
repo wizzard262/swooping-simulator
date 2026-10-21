@@ -1664,6 +1664,7 @@ function setUpCast() {
 }
 
 function updateCast(dt) {
+  updateFerry(dt);
   // Koala: climbs a little way up or down the trunk, has a rest, climbs again
   if (KOALA.wait > 0) KOALA.wait -= dt;
   else {
@@ -1840,6 +1841,41 @@ function drawPostie(g) {
   }
 }
 
+// A green-and-cream Sydney ferry crossing the harbour and back. It's double-ended, with a
+// wheelhouse at each end, so it never turns round: it just reverses. Pixel art on the hills layer.
+const FERRY = { x: 140, dir: 1, speed: 5, from: 112, to: 284 };
+const FERRY_ROWS = [
+  '.GGG..........GGG.',
+  '.CWC....Y.....CWC.',
+  '..GGGGGGGGGGGGGG..',
+  '..CWCWCWCWCWCWCC..',
+  'CCCCCCCCCCCCCCCCCC',
+  'GGGGGGGGGGGGGGGGGG',
+  '.GGGGGGGGGGGGGGGG.',
+  '..DDDDDDDDDDDDDD..'
+];
+const FERRY_COLOURS = { G: '#1f6b3a', C: '#efe6c8', W: '#3a4a5a', Y: '#f2c230', D: '#164d2a' };
+function updateFerry(dt) {
+  FERRY.x += FERRY.dir * FERRY.speed * dt;
+  if (FERRY.x > FERRY.to) { FERRY.x = FERRY.to; FERRY.dir = -1; }
+  if (FERRY.x < FERRY.from) { FERRY.x = FERRY.from; FERRY.dir = 1; }
+}
+function drawFerry(g) {
+  const P = hills.P, w = FERRY_ROWS[0].length, h = FERRY_ROWS.length;
+  const top = 138 - HILLS_LIFT + 8 - h + Math.round(Math.sin(time * 1.8) * 0.5);   // sits in the water, bobbing a little
+  const sx = mod(Math.round(FERRY.x) - Math.round(cam * PARALLAX.hills), P);
+  for (let x0 = sx - P; x0 < W + P; x0 += P) {
+    if (x0 < -w || x0 > W) continue;
+    FERRY_ROWS.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === '.') return;
+      g.fillStyle = FERRY_COLOURS[ch]; g.fillRect(x0 - (w >> 1) + x, top + y, 1, 1);
+    }));
+    g.fillStyle = '#e8f6ff';                                        // wake behind it
+    const back = FERRY.dir > 0 ? x0 - (w >> 1) - 4 : x0 + (w >> 1) + 1;
+    g.fillRect(back, top + h - 1, 3, 1); g.fillRect(back + (FERRY.dir > 0 ? -3 : 3), top + h, 2, 1);
+  }
+}
+
 // Shark fin cruising in the harbour (on the hills layer, in front of the bridge)
 function drawShark(g) {
   if (SHARK.t <= 0) return;
@@ -1848,13 +1884,19 @@ function drawShark(g) {
   const sx = mod(hx - Math.round(cam * PARALLAX.hills), P);
   for (let x0 = sx - P; x0 < W + P; x0 += P) {                        // every copy across even a very wide screen
     if (x0 < -8 || x0 > W + 8) continue;
-    const h = Math.round(7 * rise);
-    for (let j = 0; j < h; j++) {                                    // a swept-back fin
-      const w = Math.max(1, Math.round((h - j) * 0.7));
-      g.fillStyle = j === 0 ? '#7d8a96' : '#55606b';
-      g.fillRect(Math.round(x0) - (SHARK.dir > 0 ? w - 1 : 0), water - j - 1, w, 1);
+    // A dorsal fin: a curved, sloping front edge and a hollowed-out back edge, its tip
+    // sweeping back, away from the way it's going
+    const fh = 9, h = Math.round(fh * rise), d = SHARK.dir;
+    for (let j = 0; j < h; j++) {
+      const t = j / (fh - 1);
+      const front = -4.5 * Math.pow(t, 1.6), back = -7 + 1.8 * t + 1.4 * Math.sin(Math.PI * t);
+      const xa = Math.round(x0 + d * back), xb = Math.round(x0 + d * front), lo = Math.min(xa, xb), hi = Math.max(xa, xb);
+      for (let x = lo; x <= hi; x++) {
+        g.fillStyle = x === (d > 0 ? hi : lo) || j === h - 1 ? '#8d9aa6' : '#55606b';   // lit along the front edge
+        g.fillRect(x, water - j - 1, 1, 1);
+      }
     }
-    if (h > 0) { g.fillStyle = '#e8f6ff'; g.fillRect(Math.round(x0) + (SHARK.dir > 0 ? 1 : -3), water, 3, 1); }   // wake
+    if (h > 0) { g.fillStyle = '#e8f6ff'; g.fillRect(Math.round(x0) + (d > 0 ? 1 : -3), water, 3, 1); g.fillRect(Math.round(x0) - d * 9, water, 2, 1); }   // bow wave and wake
   }
 }
 
@@ -2282,6 +2324,7 @@ function draw() {
     for (let x = mod(Math.round(cl.x - cOff), clouds.P) - clouds.P; x < W; x += clouds.P)
       if (x + cl.img.width > 0) sctx.drawImage(cl.img, x, cl.y);
   drawTiled(hills.c, hills.P, cam * PARALLAX.hills, -HILLS_LIFT);
+  drawFerry(sctx);
   drawShark(sctx);
   for (let i = backStreets.length - 1; i >= 0; i--) drawTiled(backStreets[i].c, backStreets[i].P, cam * backStreets[i].f);
   drawTiled(suburb.c, suburb.P, cam * PARALLAX.suburb);

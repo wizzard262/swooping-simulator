@@ -12,7 +12,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - A kangaroo in a cork hat hops along the lawn: land on his back to ride him; swoop into him or poop on him and he falls over (doiiinggg!) and sees stars for 5 seconds
 - A big gum tree to perch on, with a koala climbing the trunk and a kookaburra on top: swoop into the kookaburra or poop on him and he tumbles down, sees stars, then flies back up laughing (he also laughs now and then while you can see him)
 - A bloke at his barbie flipping burgers (poop on the hot plate and it sizzles): land on the hot plate and you smoke, go red and get flung off with a sizzle and a scream, tumbling over and over to land on your back with your legs waving
-- The postie rides his motorbike along the front street, stopping at letterboxes; an Aussie flag flaps in one front yard; now and then a shark fin cruises across the harbour
+- The postie rides his motorbike along the front street, stopping at letterboxes; an Aussie flag flaps in one front yard; a green-and-cream ferry crosses the harbour back and forth, and now and then a shark fin cruises past
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
 - B for a corkscrew barrel roll, L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
