@@ -1984,7 +1984,7 @@ function wireY(x) {                                                  // the sag 
 }
 const POSSUM = { in: 8, x: 0, dir: 1, visit: 0, pause: 0 };   // out on the wire about a third of the time
 const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, ties: 0, ground: 170, crank: 0 };
-const CYCLIST_SCALE = 0.58;       // as tall as the kangaroo
+const CYCLIST_SCALE = 0.6;        // a bit taller than the kangaroo
 const DROPBEAR = { state: 'hidden', x: 0, y: 0, vy: 0, t: 0, under: 0 };
 const COCKIES = { in: 18, t: 0, dir: 1, y: 50, len: 0, screechIn: 0 };
 const STORM = { in: 100, t: 0, len: 30, flash: 0, nextBolt: 0, bolt: null, rainbow: 0 };
@@ -2009,7 +2009,7 @@ function hitCyclist() {
   CYCLIST.wobble = 1.6; CYCLIST.ties = Math.min(12, CYCLIST.ties + 3);   // he sticks more cable ties on his helmet
   Sound.bell(); Sound.oi(); award(100, CYCLIST.x, CYCLIST.ground - 30);
 }
-const CYCLIST_TARGET = { get x() { return CYCLIST.x - 11; }, get y() { return CYCLIST.ground - 44; }, w: 22, h: 26, hit: hitCyclist };
+const CYCLIST_TARGET = { get x() { return CYCLIST.x - 10; }, get y() { return CYCLIST.ground - 28; }, w: 20, h: 22, hit: hitCyclist };   // from his helmet down to the frame
 
 function updateMore(dt) {
   // Score
@@ -2036,7 +2036,7 @@ function updateMore(dt) {
   // Cyclist: pedals along the front of the lawn; swoop him and he wobbles
   CYCLIST.wobble = Math.max(0, CYCLIST.wobble - dt);
   CYCLIST.x = mod(CYCLIST.x + CYCLIST.dir * CYCLIST.speed * dt, LEVEL_W); CYCLIST.crank += dt * 7;
-  if (bird.swooping && Math.abs(cyclistDx(bird.x)) < 14 && bird.y > CYCLIST.ground - 48 && bird.y < CYCLIST.ground) hitCyclist();
+  if (bird.swooping && Math.abs(cyclistDx(bird.x)) < 12 && bird.y > CYCLIST.ground - 30 && bird.y < CYCLIST.ground) hitCyclist();   // only if he actually reaches him
   // Drop bear: hang about under the big gum for 3 seconds and it drops on you, then climbs back up into the leaves
   const under = Math.abs(mod(bird.x - BIG_GUM_X + LEVEL_W / 2, LEVEL_W) - LEVEL_W / 2) < 26 && bird.y > 100;
   DROPBEAR.under = under ? DROPBEAR.under + dt : Math.min(0, DROPBEAR.under);
@@ -2190,30 +2190,38 @@ function drawScore() {
   ctx.globalAlpha = 1;
 }
 
-// Cyclist in lycra, his helmet bristling with cable ties (more each time he's swooped)
+// Cyclist: a chunky, blocky bloke in lycra on a road bike, his helmet bristling with cable
+// ties (more each time he's swooped). Units: about 44 high, origin on the ground, facing right.
 function drawCyclist(g) {
   const fill = (col, fn) => { g.beginPath(); fn(); g.fillStyle = col; g.fill(); };
-  const line = (col, w, pts) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
+  const line = (col, w, pts) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'square'; g.lineJoin = 'miter'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
+  const block = (col, x, y, w, h, a = 0) => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.fillRect(-w / 2, -h / 2, w, h); g.restore(); };
   const wob = CYCLIST.wobble > 0 ? Math.sin(time * 22) * 0.18 : 0, c = CYCLIST.crank;
   g.rotate(wob);
-  for (const wx of [-11, 11]) {                                        // wheels with turning spokes
-    g.strokeStyle = '#1b1b1b'; g.lineWidth = 1.8; g.beginPath(); g.arc(wx, -7, 7, 0, Math.PI * 2); g.stroke();
-    line('#9a9a9a', 0.6, [[wx + Math.cos(c) * 6, -7 + Math.sin(c) * 6], [wx - Math.cos(c) * 6, -7 - Math.sin(c) * 6]]);
+  for (const wx of [-13, 13]) {                                        // chunky wheels with a turning spoke
+    g.strokeStyle = '#151515'; g.lineWidth = 3.2; g.beginPath(); g.arc(wx, -8, 7.5, 0, Math.PI * 2); g.stroke();
+    line('#8a8f94', 1.4, [[wx + Math.cos(c) * 6, -8 + Math.sin(c) * 6], [wx - Math.cos(c) * 6, -8 - Math.sin(c) * 6]]);
+    block('#8a8f94', wx, -8, 2.5, 2.5);
   }
-  line('#d6322d', 1.8, [[-11, -7], [-2, -8], [8, -17], [-4, -18], [-2, -8]]);   // frame
-  line('#d6322d', 1.8, [[8, -17], [11, -7]]);
-  line('#333', 1.6, [[8, -17], [10, -21]]);                             // handlebars
-  const k1 = [-2 + Math.cos(c) * 3, -8 + Math.sin(c) * 3], k2 = [-2 - Math.cos(c) * 3, -8 - Math.sin(c) * 3];
-  line('#1b1b1b', 2.4, [[-4, -19], [1, -14 + Math.sin(c) * 2], k1]);    // legs pedalling
-  line('#2a2a2a', 2.4, [[-4, -19], [1, -14 - Math.sin(c) * 2], k2]);
-  fill('#ffd23f', () => { g.moveTo(-5, -19); g.lineTo(5, -29); g.lineTo(8, -26); g.lineTo(-2, -17); });   // lycra
-  if (CYCLIST.wobble > 0) line('#e8b48a', 1.6, [[5, -28], [3 + Math.sin(time * 18) * 2, -38]]);           // shaking his fist
-  else line('#e8b48a', 1.6, [[5, -28], [10, -21]]);
-  fill('#e8b48a', () => g.arc(8, -32, 3.4, 0, Math.PI * 2));            // head
-  fill('#2f7ad6', () => g.ellipse(7.5, -34, 4.4, 2.6, 0, Math.PI, Math.PI * 2));   // helmet
+  line('#d6322d', 3.2, [[-13, -8], [-2, -9], [9, -20], [-5, -21], [-2, -9]]);   // red frame
+  line('#d6322d', 3.2, [[9, -20], [13, -8]]);
+  block('#222', -5, -23, 6, 2);                                         // saddle
+  line('#333', 2.6, [[9, -20], [11, -26]]); block('#333', 12.5, -26, 4, 2); // bars
+  const k1 = [-2 + Math.cos(c) * 4, -9 + Math.sin(c) * 4], k2 = [-2 - Math.cos(c) * 4, -9 - Math.sin(c) * 4];
+  line('#2a2a2a', 4, [[-4, -24], [2, -17 - Math.sin(c) * 2], k2]);      // back leg
+  line('#e8b48a', 3.6, [[-4, -24], [2, -17 + Math.sin(c) * 2], k1]);    // front leg (bare calf)
+  block('#1b1b1b', -3, -25, 8, 6, -0.5);                                // black knicks
+  block('#ffd23f', 1.5, -31, 9, 13, 0.85);                              // yellow jersey, leaning over the bars
+  block('#2f7ad6', 1.5, -31, 9, 3, 0.85);                               // blue stripe
+  if (CYCLIST.wobble > 0) line('#e8b48a', 3, [[5, -35], [4 + Math.sin(time * 18) * 2, -45]]);   // shaking his fist
+  else line('#e8b48a', 3, [[5, -35], [12, -27]]);
+  block('#e8b48a', 9, -38, 7, 7);                                       // blocky head
+  block('#111', 11.5, -38.5, 3, 1.5);                                   // sunnies
+  block('#2f7ad6', 8.5, -42.5, 10, 4);                                  // helmet
+  block('#1d5aa8', 8.5, -42.5, 1.4, 4); block('#1d5aa8', 5.5, -42.5, 1.4, 4);   // vents
   for (let i = 0; i < CYCLIST.ties; i++) {                             // cable ties sticking up
-    const a = Math.PI + 0.25 + i / Math.max(1, CYCLIST.ties - 1) * (Math.PI - 0.5);
-    line('#111', 0.6, [[7.5 + Math.cos(a) * 4, -34 + Math.sin(a) * 2.4], [7.5 + Math.cos(a) * 8, -34 + Math.sin(a) * 6]]);
+    const x = 4 + i / Math.max(1, CYCLIST.ties - 1) * 9;
+    line('#111', 1, [[x, -44.5], [x + (x - 8.5) * 0.35, -50]]);
   }
 }
 
