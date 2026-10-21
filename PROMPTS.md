@@ -516,6 +516,7 @@
 ## 107. Barbecue swoop text
 
 - Give me some different, suitable text options in a radio select for when the magpie swoops after being thrown off the barbecue
+- Picked: SNAG ROCKET!
 
 ## Sessions
 

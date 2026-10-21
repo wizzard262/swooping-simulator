@@ -35,7 +35,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v58</div>
+<div id="ver" title="Version: one for each update published">v59</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -2451,7 +2451,7 @@ const drops = [], sploshes = [], splashes = [], SPLOSH_TIME = 10;
 let comboT = 0, comboText = '';   // seconds left on the SWOOP-AND-POOP! (or LOOP!) flash, and which
 const COMBO_TIME = 1;
 let comboAt = { x: 0, y: 0 };      // where on the screen it shows: just above the magpie (below him if he's at the top)
-let comboFollow = false, comboLen = 1;           // true: it travels along above him, flashing (WHIPPER SNIPPER!)
+let comboFollow = false, comboLen = 1;           // true: it travels along above him, flashing (SNAG ROCKET!, WHIPPER SNIPPER!)
 const comboSpot = () => ({ x: clamp(bird.x - cam, 50, W - 50), y: bird.y - 26 >= 18 ? bird.y - 26 : bird.y + 26 });
 const showCombo = (text, follow = false) => {
   comboText = text; comboLen = comboT = COMBO_TIME * (follow ? 1.6 : 1); comboFollow = follow;
@@ -2544,7 +2544,7 @@ function update(dt) {
   if (!wantSwoop) bird.spent = false;                               // after running dry, let go of Space before the next swoop
   if (wantSwoop && !bird.swooping && !bird.spent && bird.loopT <= 0 && bird.onBack <= 0 && bird.charge > 0.05) {
     bird.swooping = true; bird.grounded = false;
-    if (bird.flung && !bird.whipped) { bird.whipped = true; showCombo('WHIPPER SNIPPER!', true); }   // swooping while tumbling: spinning like a whipper snipper
+    if (bird.flung && !bird.whipped) { bird.whipped = true; showCombo('SNAG ROCKET!', true); }   // swooping while tumbling: off like a snag fired off the barbie
   }
   if (bird.swooping && bird.charge <= 0) { bird.spent = true; touchSwoop = false; }
   if (!wantSwoop || bird.spent) bird.swooping = false;
