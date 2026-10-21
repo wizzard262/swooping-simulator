@@ -16,7 +16,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - A cyclist rides along the lawn: swoop or poop him and he wobbles, shakes his fist, rings his bell, shouts "Oi!" and sticks more cable ties on his helmet
 - Hang about under the big gum for 3 seconds and a drop bear drops on you, then climbs back into the leaves
 - Land on the postie or the ferry and ride along with them
-- A possum scurries along the power line between two houses now and then; a screeching flock of cockatoos wheels across the sky; tiny bridge climbers cross the Harbour Bridge
+- A possum is out on the power line between two houses about a third of the time, scurrying back and forth and stopping for a rest; a screeching flock of cockatoos wheels across the sky; tiny bridge climbers cross the Harbour Bridge
 - Every few minutes a summer storm rolls in: dark sky, rain, lightning and thunder, then a rainbow
 - Score points for knocking things over, poops on target, stunts and rides; quick ones in a row build a combo (up to x5); your high score is remembered
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
