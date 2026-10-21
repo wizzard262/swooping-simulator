@@ -102,8 +102,12 @@
 
 - I don't like the purple trees: make them a lighter green
 
+## 17. A clear view of the harbour
+
+- Remove the suburb's back buildings when we get to the bridge and the Opera House
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 55 min so far | Prompts 1–16: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb |
+| 1 | 2026-10-21 | about 60 min so far | Prompts 1–17: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour |
