@@ -526,8 +526,20 @@
 
 - If the magpie swoops the cyclist, he's knocked back spinning and lands on his back with his legs wiggling, like after the barbecue
 
+## 110. Captions for everything
+
+- Which interactions have no text? List them with great Australian sayings and jokes, each as a radio option with a "none" option
+- Picked: kangaroo knocked over ROO-DY HELL!, riding the kangaroo ROO WRECKER!, kookaburra knocked off KOOKA-BOOM-A!, postie knocked off SPECIAL DELIVERY!, possum spun ROUND THE TWIST!, landing on the barbecue COOKED, MATE!, drop bear YEAH, NAH!
+- Pooping the cyclist: list some more, maybe CYCLO-something. Picked CYCLO-PATH!
+- Picked: hanging under the hoist DOWN UNDER!, riding the postie or ferry BLUDGER!, riding the hoist SPIN CYCLE!, spiked by the cyclist STREWTH!
+
+## 111. Bridge climbers and the barbie
+
+- And for the bridge walkers? Offer more; they've got to be shorter. Picked COAT-HANGER!
+- Give some for pooping on the barbecue, a pun on barbie. Picked BARBIE-POO!
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 450 min so far | Prompts 1–109: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, a performance check, a version number |
+| 1 | 2026-10-21 | about 465 min so far | Prompts 1–111: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
