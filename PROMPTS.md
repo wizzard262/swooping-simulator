@@ -62,3 +62,22 @@
 - If you press up or down while swooping, the bird dives or climbs at about 30 degrees, and is drawn tilted that way
 - In fact, up and down always tilt the bird 30 degrees up or down
 - Swooping has a charge bar that takes about 10 seconds to fill; holding Space empties it in about 3 seconds from full
+
+## 9. Photo-real sun and magpie, a faster swoop
+
+- Make the sun and the magpie much more like the art I gave: full photo-real, no pixelation at all
+  - Decision: the sun uses my Sun King picture, cut out of its white background
+  - Decision: the magpie uses my picture and keeps its look and feel, but flaps its wings, walks with its legs, and pulls its wings back to swoop
+- Make the swoop faster and blur the screen while he swoops
+- Give the swoop afterburner-style flames out the back
+- Clouds: decision to pin them to the sky (they don't scroll); it doesn't matter if the sun goes behind them
+
+## 10. Session log
+
+- Record the length of each session we spend on this at the bottom of this file
+
+## Sessions
+
+| # | Date | Length | What we did |
+|---|------|--------|-------------|
+| 1 | 2026-10-21 | about 35 min so far | Prompts 1–9: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner |
