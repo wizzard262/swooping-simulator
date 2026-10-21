@@ -76,8 +76,22 @@
 
 - Record the length of each session we spend on this at the bottom of this file
 
+## 11. Pooping
+
+- Under the swoop bar, add a poop bar; it also fills, but at half the speed
+- Pressing P drops a white teardrop that turns into a splosh when it hits the ground (or other things, like people, that we might add)
+  - Decision: one drop uses the whole bar, so one drop every 20 seconds
+
+## 12. The prompts page
+
+- Make sure the session table on the prompts page isn't squashed, and make the whole page about 50% wider
+
+## 13. The sun
+
+- I really want the sun to look exactly like the photo I gave you
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 35 min so far | Prompts 1–9: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner |
+| 1 | 2026-10-21 | about 45 min so far | Prompts 1–13: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar |
