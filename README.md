@@ -9,7 +9,8 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - Arrow keys or W A S D: up to flap, down to dive, left and right to fly; up and down tilt the magpie 30 degrees
 - Hold Space to swoop: very fast flight with afterburner flames and a motion blur, steered 30 degrees up or down with the arrows. The charge bar empties in 3 seconds and refills in 10
 - B for a corkscrew barrel roll, L for a loop-the-loop
-- M (or the speaker icon) turns the sound on and off; F (or the corners icon) goes full screen
+- M (or the speaker icon) turns the sound on and off
+- The game fills the browser's width (a black bar below it in tall windows)
 - Poop during a swoop for a pop-art SWOOP-AND-POOP! above the magpie, or loop during one for SWOOP-AND-LOOP!
 - Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 20 seconds
 - Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out, he does a barrel roll, and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery

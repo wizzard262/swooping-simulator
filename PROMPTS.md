@@ -241,8 +241,12 @@
 
 - More realistic bottle and can sounds, and a more realistic didgeridoo with more "wo-wow-wow", like a real one
 
+## 48. Browser width, not full screen
+
+- Remove F for full screen; just resize the game to the browser's width. A black bar at the bottom to keep the aspect ratio is fine
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 160 min so far | Prompts 1–47: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, full screen, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP! |
+| 1 | 2026-10-21 | about 165 min so far | Prompts 1–48: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP! |
