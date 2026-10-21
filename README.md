@@ -20,7 +20,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 
 - One HTML page, plain JavaScript and the 2D canvas (no WebGL)
 - Sound made in code with Web Audio: the swoop's afterburner roar, poop plop and splosh, clinking cans and bottles, hiccups, and a background of breeze, cicadas, distant birds and a didgeridoo
-- The scenery is pixel art drawn in code at 180 pixels high and scaled up; the magpie is drawn smoothly at half a scenery pixel (slightly pixelated), and the sun is a photo of the Sun King emblem (supplied with the prompts), cut out of its background and embedded in the page
+- The scenery is pixel art drawn in code at 180 pixels high and scaled up; the magpie is drawn smoothly at about 3/4 of a scenery pixel (a little pixelated), and the sun is a photo of the Sun King emblem (supplied with the prompts), cut out of its background and embedded in the page
 - The level is 6 screens wide and loops round, with 7 parallax layers: lawn, the front street, 3 back streets that tier off into the distance, and hills (Sydney Harbour Bridge, Opera House, Uluru). Billowy clouds are pinned to the sky, and the sun moves slowest of all
 - [screenshots/](screenshots/): numbered screenshots of the game as it was built, shown in order on `screenshots.html` (linked in the game, top right)
 - [PROMPTS.md](PROMPTS.md): every prompt used to make the game (also linked in the game, top right)

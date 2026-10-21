@@ -1660,7 +1660,7 @@ function resize() {
   ctx.imageSmoothingEnabled = false;
   K = Math.max(1, Math.min(innerWidth / W, innerHeight / H) * (devicePixelRatio || 1));
   back.width = front.width = Math.round(W * K);
-  BIRD_PIX = Math.max(2, Math.round(K / 2));                         // magpie pixels: about half a scenery pixel
+  BIRD_PIX = Math.max(3, Math.round(K * 0.7));                      // magpie pixels: about 3/4 of a scenery pixel
   birdBuf.width = Math.ceil(front.width / BIRD_PIX) + 1;
   back.height = front.height = Math.round(H * K);
   birdBuf.height = Math.ceil(front.height / BIRD_PIX) + 1;
