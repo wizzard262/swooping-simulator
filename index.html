@@ -71,7 +71,7 @@ const SUN_LOOPS = 3;              // fly the level this many times to push the s
 
 // Magpie flight
 const GRAVITY = 70, FLAP = 230, DIVE = 230, ACCEL_X = 230;
-const MAX_FALL = 45, MAX_DIVE = 170, MAX_CLIMB = 95, MAX_X = 115, MAX_X_DIVE = 150, WALK = 28;
+const MAX_FALL = 45, MAX_DIVE = 170, MAX_CLIMB = 95, MAX_X = 115, MAX_X_DIVE = 150, WALK = 56;
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -1525,7 +1525,7 @@ function basePose() {
   const c = controls();
   if (bird.grounded) {
     const walking = bird.vx !== 0;
-    return { pitch: -0.35, headPitch: 0.3, wings: 'folded', legs: walking ? bird.walkT * 14 : 0, bob: walking ? -Math.abs(Math.sin(bird.walkT * 14)) * 1.5 : 0 };
+    return { pitch: -0.35, headPitch: 0.3, wings: 'folded', legs: walking ? bird.walkT * 24 : 0, bob: walking ? -Math.abs(Math.sin(bird.walkT * 24)) * 1.5 : 0 };   // quicker steps to match the speed
   }
   const flapping = c.up || c.left || c.right || bird.loopT > 0;
   return {
