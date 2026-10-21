@@ -1274,6 +1274,18 @@ const Sound = (() => {
     let t = now() + Math.random() * 0.015, l = level;
     for (let k = 0, n = 2 + Math.floor(Math.random() * 2); k <= n; k++) { canHit(t, l); t += 0.07 + Math.random() * 0.07; l *= 0.45; }
   }
+  // The kangaroo knocked over: a cartoon "doiiinggg", a twangy note bending up with a spring wobble
+  function boing() {
+    const t = now(), len = 0.95;
+    for (const [type, mul, peak] of [['triangle', 1, 0.22], ['sine', 2, 0.08]]) {
+      const o = ac.createOscillator(), g = ac.createGain(), wob = ac.createOscillator(), wg = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(170 * mul, t); o.frequency.exponentialRampToValueAtTime(330 * mul, t + len);
+      wob.frequency.value = 13; wg.gain.setValueAtTime(90 * mul, t); wg.gain.exponentialRampToValueAtTime(2 * mul, t + len);
+      wob.connect(wg); wg.connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(g); g.connect(master); o.start(t); wob.start(t); o.stop(t + len + 0.05); wob.stop(t + len + 0.05);
+    }
+  }
   function hic() {
     const t = now();
     tone('square', 280, 720, t, 0.07, 0.07);
@@ -1309,7 +1321,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
-  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), can: safe(can), didgeridoo: safe(didgeridoo) };
+  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), can: safe(can), boing: safe(boing), didgeridoo: safe(didgeridoo) };
 })();
 
 // ---------------------------------------------------------------------------
@@ -1369,6 +1381,105 @@ function drawHoist(g) {
 }
 
 // ---------------------------------------------------------------------------
+// A kangaroo in a cork hat, hopping along the front of the lawn, drawn the same way as the
+// magpie (smooth, then slightly pixelated). Units: about 70 high; origin at his feet, facing
+// right, +y down. Swoop into him or poop on him and he falls over, dizzy, with stars going
+// round his head for 5 seconds. The magpie can land on his back and ride along.
+// ---------------------------------------------------------------------------
+const ROO = { x: 700, dir: -1, phase: 0, dizzy: 0, ground: 168, scale: 0.32, back: 20 };
+const ROO_HOP_TIME = 0.75, ROO_HOP_LEN = 34, ROO_DIZZY_TIME = 5;
+const rooDx = x => mod(x - ROO.x + LEVEL_W / 2, LEVEL_W) - LEVEL_W / 2;   // how far from him, allowing for the loop
+
+function updateRoo(dt) {
+  if (ROO.dizzy > 0) { ROO.dizzy = Math.max(0, ROO.dizzy - dt); ROO.phase = 0; return; }
+  ROO.phase = (ROO.phase + dt / ROO_HOP_TIME) % 1;
+  const air = ROO.phase > 0.15 && ROO.phase < 0.85;
+  if (air) ROO.x = mod(ROO.x + ROO.dir * ROO_HOP_LEN * dt / (ROO_HOP_TIME * 0.7), LEVEL_W);
+}
+function rooHeight() {                                               // how high off the ground he is, in internal pixels
+  const p = ROO.phase;
+  return ROO.dizzy > 0 ? 0 : p > 0.15 && p < 0.85 ? Math.sin(Math.PI * (p - 0.15) / 0.7) * 16 : 0;
+}
+const rooTop = () => ROO.ground - ROO.back - rooHeight();             // his back, where the magpie can sit
+function knockOver() {
+  if (ROO.dizzy > 0) return;
+  ROO.dizzy = ROO_DIZZY_TIME;
+  Sound.boing();
+  if (bird.onRoo) { bird.onRoo = false; bird.grounded = false; bird.vy = -40; }   // thrown off
+}
+const ROO_TARGET = {                                                 // a poop target (added to TARGETS at start-up)
+  get x() { return ROO.x - 8; }, get y() { return ROO.ground - 24 - rooHeight(); }, w: 16, h: 24,
+  hit: knockOver
+};
+
+// Dizzy stars: little yellow stars going round in a ring
+function dizzyStars(g, cx, cy) {
+  for (let k = 0; k < 4; k++) {
+    const a = time * 4 + k * Math.PI / 2, x = cx + Math.cos(a) * 14, y = cy + Math.sin(a) * 4.5;
+    g.beginPath();
+    for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 5, t = i * Math.PI / 5 - Math.PI / 2 + time * 3; g.lineTo(x + Math.cos(t) * r, y + Math.sin(t) * r); }
+    g.closePath(); g.fillStyle = Math.sin(a) > 0 ? '#ffe14a' : '#e8b820'; g.fill();
+  }
+}
+
+function drawKangaroo(g) {
+  if (ROO.dizzy > 0) {                                               // flat on his back, legs in the air, seeing stars
+    g.save(); g.translate(18, -4); g.rotate(-Math.PI / 2 * 0.92);
+    drawRooBody(g, 0, 0, 0.6);
+    g.restore();
+    dizzyStars(g, -32, -40);
+    return;
+  }
+  const p = ROO.phase, air = p > 0.15 && p < 0.85, crouch = air ? 0 : 1 - (p < 0.15 ? p : 1 - p) / 0.15;
+  const ext = air ? Math.sin(Math.PI * (p - 0.15) / 0.7) : 0;          // legs stretch out in the air
+  drawRooBody(g, crouch, ext, Math.sin(p * Math.PI * 2) * 0.5 + ext * 0.4);
+}
+
+function drawRooBody(g, crouch, ext, swing) {
+  const fur = '#b5653a', dark = '#8a4a28', belly = '#e6bd8e', black = '#1a1310';
+  const fill = (col, f) => { g.beginPath(); f(); g.fillStyle = col; g.fill(); };
+  g.save();
+  g.translate(0, crouch * 4);                                         // squats a little before and after each hop
+  // tail: thick at the hips, tapering back to the ground (lifted in the air)
+  fill(dark, () => {
+    g.moveTo(-6, -24); g.quadraticCurveTo(-30, -16 - ext * 6, -46, -3 - ext * 10);
+    g.lineTo(-44, 1 - ext * 10); g.quadraticCurveTo(-28, -8 - ext * 4, -4, -14);
+  });
+  // big hind leg: thigh, then the long foot (flat on the ground, pointing back and down in the air)
+  fill(fur, () => g.ellipse(-2, -18, 13, 9, -0.5, 0, Math.PI * 2));
+  g.save(); g.translate(-6, -6); g.rotate(ext * 0.9);
+  fill(dark, () => { g.moveTo(-4, -4); g.lineTo(18, 2); g.lineTo(18, 6); g.lineTo(-6, 4); });
+  g.restore();
+  // body leaning forward, pale belly, small arms
+  fill(fur, () => g.ellipse(6, -32, 11, 18, 0.4 - ext * 0.2, 0, Math.PI * 2));
+  fill(belly, () => g.ellipse(11, -30, 6, 13, 0.4 - ext * 0.2, 0, Math.PI * 2));
+  g.strokeStyle = dark; g.lineWidth = 3; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(14, -40); g.lineTo(19 + ext * 3, -33 + ext * 2); g.stroke();
+  // head, snout, nose, eye
+  fill(fur, () => g.ellipse(15, -51, 7.5, 6, 0.2, 0, Math.PI * 2));
+  fill(fur, () => { g.moveTo(17, -55); g.quadraticCurveTo(28, -52, 27, -47); g.quadraticCurveTo(22, -44, 14, -46); });
+  fill(black, () => g.ellipse(26.5, -48.5, 1.6, 1.3, 0, 0, Math.PI * 2));
+  fill(black, () => g.arc(18, -52.5, 1.3, 0, Math.PI * 2));
+  fill('#fff', () => g.arc(17.6, -53, 0.45, 0, Math.PI * 2));
+  // cork hat: brim and crown, corks dangling on strings and swinging as he hops
+  g.strokeStyle = '#3b2a1a'; g.lineWidth = 1.4;
+  for (const bx of [2, 8, 14, 20, 25]) {
+    const len = 5 + (bx % 2) * 2, cx = bx + Math.sin(swing + bx) * 2.5, cy = -57 + len;
+    g.beginPath(); g.moveTo(bx, -57); g.lineTo(cx, cy); g.stroke();
+    fill('#d8b57a', () => g.rect(cx - 2, cy, 4, 5.5));                 // a cork
+    fill('#a6834e', () => g.rect(cx - 2, cy + 4, 4, 1.5));
+  }
+  fill('#7a5530', () => g.ellipse(13, -57, 12, 2.4, 0, 0, Math.PI * 2));   // brim
+  fill('#8d643b', () => { g.moveTo(7, -57); g.quadraticCurveTo(7, -64, 13, -64.5); g.quadraticCurveTo(19, -64, 19, -57); });
+  fill('#5a3d22', () => g.rect(7, -59, 12, 1.6));                        // hat band
+  // ears poking up through the hat
+  fill(fur, () => g.ellipse(9.5, -66, 2.4, 6, -0.25, 0, Math.PI * 2));
+  fill(fur, () => g.ellipse(15.5, -67, 2.4, 6, 0.15, 0, Math.PI * 2));
+  fill(belly, () => g.ellipse(15.6, -67, 1.1, 4, 0.15, 0, Math.PI * 2));
+  g.restore();
+}
+
+// ---------------------------------------------------------------------------
 // Input: arrow keys or WASD, hold Space to swoop, P to poop; on touch screens, hold
 // where you want to fly, tap quickly to start or stop a swoop, tap with a second finger to poop
 // ---------------------------------------------------------------------------
@@ -1418,7 +1529,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
 const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
-const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistDepth: 0 };
+const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistDepth: 0, onRoo: false, rooAt: 0 };
 
 // Stunts: B for a barrel roll (a full turn about his body), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
@@ -1473,7 +1584,7 @@ function updateDrops(dt) {
   for (const d of drops) {
     d.vy += DROP_GRAVITY * dt;
     d.x += d.vx * dt; d.y += d.vy * dt;
-    const target = TARGETS.find(t => d.x > t.x && d.x < t.x + t.w && d.y > t.y && d.y < t.y + t.h);
+    const target = TARGETS.find(t => mod(d.x - t.x, LEVEL_W) < t.w && d.y > t.y && d.y < t.y + t.h);   // allowing for the loop
     if (target) { d.done = true; target.hit(d); splosh(d.x, d.y); }
     else if (d.y >= LAND_Y + 1) { d.done = true; splosh(d.x, LAND_Y + 1); }
   }
@@ -1540,7 +1651,8 @@ function update(dt) {
   updateShopAndDrunk(dt);
   // What's under him: the shop roof, the top of the Hills Hoist (only from above), or the lawn
   const overHoist = Math.abs(hoistDx(bird.x)) < HOIST.r && bird.y <= HOIST.top - FEET + 3;
-  const floorTop = shopSpan(bird.x) && !bird.inside ? SHOP.roof : overHoist || bird.onHoist ? HOIST.top : LAND_Y;
+  const overRoo = ROO.dizzy <= 0 && Math.abs(rooDx(bird.x)) < 9 && bird.y <= rooTop() - FEET + 3;
+  const floorTop = shopSpan(bird.x) && !bird.inside ? SHOP.roof : overHoist || bird.onHoist ? HOIST.top : overRoo || bird.onRoo ? rooTop() : LAND_Y;
   const floor = floorTop - FEET;
   if (bird.grounded && bird.y < floor - 0.5) bird.grounded = false;                // walked off the roof
 
@@ -1555,7 +1667,7 @@ function update(dt) {
   } else if (bird.grounded) {
     bird.vx = dirX * WALK;
     if (dirX) bird.walkT += dt;
-    if (c.up) { bird.grounded = false; bird.vy = -60; if (bird.onHoist) { bird.onHoist = false; bird.vx = HOIST.spin * bird.hoistR * -Math.sin(HOIST.angle + bird.hoistAt) * 0.8; } }
+    if (c.up) { bird.grounded = false; bird.vy = -60; bird.onRoo = false; if (bird.onHoist) { bird.onHoist = false; bird.vx = HOIST.spin * bird.hoistR * -Math.sin(HOIST.angle + bird.hoistAt) * 0.8; } }
   }
   if (!bird.grounded && !bird.swooping) {
     const maxX = c.down ? MAX_X_DIVE : MAX_X;
@@ -1570,7 +1682,8 @@ function update(dt) {
     if (bird.y < TOP_Y) { bird.y = TOP_Y; bird.vy = Math.max(0, bird.vy); }
     if (bird.y >= floor) {
       bird.y = floor; bird.vy = 0; bird.grounded = true; bird.walkT = 0;
-      if (floorTop === HOIST.top) {                                    // landed on the Hills Hoist: hop on for a ride
+      if (overRoo && floorTop === rooTop()) { bird.onRoo = true; bird.rooAt = clamp(rooDx(bird.x), -6, 6); }   // landed on the kangaroo
+      else if (floorTop === HOIST.top) {                               // landed on the Hills Hoist: hop on for a ride
         const dx = clamp(hoistDx(bird.x), -HOIST.r, HOIST.r);
         bird.onHoist = true; bird.hoistR = Math.abs(dx); bird.hoistAt = (dx >= 0 ? 0 : Math.PI) - HOIST.angle;
       }
@@ -1589,6 +1702,13 @@ function update(dt) {
   bird.wasIn = nowIn;
 
   if (bird.onHoist && !bird.grounded) bird.onHoist = false;          // swooped or looped off it
+  if (bird.onRoo && !bird.grounded) bird.onRoo = false;
+  updateRoo(dt);
+  if (bird.swooping && ROO.dizzy <= 0 && Math.abs(rooDx(bird.x)) < 10 && bird.y > rooTop() - 8 && bird.y < ROO.ground) knockOver();   // swooped him
+  if (bird.onRoo) {                                                  // riding along on his back
+    bird.x = bird.x - rooDx(bird.x) + bird.rooAt;
+    bird.y = rooTop() - FEET; bird.vx = 0; bird.face = ROO.dir;
+  }
   updateHoist(dt);
   if (bird.onHoist) {                                                // riding the hoist round
     const a = HOIST.angle + bird.hoistAt;
@@ -1785,6 +1905,13 @@ function draw() {
   const sc = K * BIRD_SCALE * depth / BIRD_PIX;
   bbctx.setTransform(1, 0, 0, 1, 0, 0);
   bbctx.clearRect(0, 0, birdBuf.width, birdBuf.height);
+  const rx = loopX(ROO.x);
+  if (rx > -40 && rx < W + 40) {                                    // the kangaroo, in the same low-res style, behind the magpie
+    const rs = K * ROO.scale / BIRD_PIX;
+    bbctx.setTransform(rs * ROO.dir, 0, 0, rs, rx * K / BIRD_PIX, (ROO.ground - rooHeight()) * K / BIRD_PIX);
+    drawKangaroo(bbctx);
+    crispen(bbctx, rx * K / BIRD_PIX, (ROO.ground - 14 - rooHeight()) * K / BIRD_PIX, Math.ceil(48 * K / BIRD_PIX / 2));
+  }
   bbctx.setTransform(sc * bird.face, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.3) * K / BIRD_PIX, (bird.y - cork + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
   drawMagpie(bbctx, pose);
   crispen(bbctx, (bird.x - cam) * K / BIRD_PIX, bird.y * K / BIRD_PIX, Math.ceil(80 * K / BIRD_PIX / 4) * 2);
@@ -1821,6 +1948,7 @@ backStreets = BACK_STREETS.map(buildBackStreet);
 suburb = buildSuburb();
 ground = buildGround();
 shopFront = buildShopFront();
+TARGETS.push(ROO_TARGET);
 shelfStock = buildShelfStock();
 resize();
 addEventListener('resize', resize);
