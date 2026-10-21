@@ -15,11 +15,12 @@
   }
   #prompts { top: 3px; }
   #shots { top: 16px; }
-  #sound {
+  #sound, #full {
     position: fixed; top: 30px; right: 5px; width: 22px; height: 22px; padding: 2px;
     border: 0; border-radius: 4px; background: rgba(0, 0, 0, .25); cursor: pointer;
   }
-  #sound:hover { background: rgba(0, 0, 0, .45); }
+  #full { right: 31px; }
+  #sound:hover, #full:hover { background: rgba(0, 0, 0, .45); }
   #sound .waves { stroke: #fff; }
   #sound.off .waves { display: none; }
   #sound .cross { display: none; stroke: #fff; }
@@ -34,6 +35,8 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
+<button id="full" title="Full screen (F)" aria-label="Full screen (F)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+  <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -830,8 +833,8 @@ function drawMagpie(g, pose) {
 }
 
 // ---------------------------------------------------------------------------
-// The bottle shop on the lawn: a BOTTLE-O in Dan Murphy's green. The face and name are on a
-// sign on posts above the roof (scenery only: the magpie flies past it).
+// The bottle shop on the lawn: a BOTTLE-O in Dan Murphy's green. The name is on a sign on
+// posts above the roof (scenery only: the magpie flies past it).
 // The interior (shelves of bottles) is part of the ground layer, behind the magpie; the
 // front (sign, glass, posters) is drawn on top of him, so we see him fly through the glass.
 // ---------------------------------------------------------------------------
@@ -854,57 +857,16 @@ function shopInterior(p, r) {
   for (let i = 0; i < w; i += 6) p.px(x + i, floor - 1, '#b9b3a6', 5, 1);   // floor tiles
 }
 
-// The Dan Murphy's style face: a grinning man with slicked-back hair, white on green, woodcut
-// style. Drawn smoothly at 4x, then turned into white pixels.
-const FACE_W = 22, FACE_H = 29;
-function signFace(p, ox, oy) {
-  const S = 4, c = makeCanvas(FACE_W * S, FACE_H * S), g = c.getContext('2d');
-  g.scale(S * FACE_W / 26, S * FACE_H / 32); g.lineCap = g.lineJoin = 'round';   // drawn in a 26 x 32 box
-  const white = '#fff', green = '#000';
-  const line = (w, pts) => { g.lineWidth = w; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
-  g.fillStyle = white;
-  g.beginPath(); g.ellipse(13, 17, 9.5, 12.5, 0, 0, Math.PI * 2); g.fill();                 // head
-  g.beginPath(); g.ellipse(22.6, 17.5, 2.2, 3.6, 0.1, 0, Math.PI * 2); g.fill();            // ear
-  g.beginPath(); g.moveTo(8, 27); g.lineTo(18, 27); g.lineTo(19, 32); g.lineTo(7, 32); g.fill();   // neck
-  g.beginPath(); g.moveTo(1, 32); g.lineTo(9, 28); g.lineTo(12, 32); g.fill();               // collar
-  g.beginPath(); g.moveTo(25, 32); g.lineTo(17, 28); g.lineTo(14, 32); g.fill();
-  g.strokeStyle = green;
-  for (let k = 0; k < 3; k++) line(0.8, [[6 + k, 7.6 - k * 1.6], [12 + k * 2, 4.4 + k * 0.7], [20.5, 7 + k * 1.3]]);   // hair swept back
-  line(1.3, [[4.5, 10.5], [12, 8.6], [21.5, 10]]);                                            // hairline
-  line(1.4, [[5.8, 12.6], [10.6, 11.6]]); line(1.4, [[14.8, 11.6], [19.5, 12.8]]);            // brows
-  g.fillStyle = green;
-  for (const ex of [8.4, 16.9]) { g.beginPath(); g.ellipse(ex, 14.6, 1.7, 1.05, 0, 0, Math.PI * 2); g.fill(); }   // eyes
-  line(1.1, [[13.6, 13.5], [14.8, 19.2], [13.2, 20.4], [11, 20]]);                           // nose
-  line(1.1, [[9, 19.5], [7, 24]]); line(1.1, [[17.4, 19.5], [19.4, 24]]);                    // laugh lines
-  g.fillStyle = green;
-  g.beginPath(); g.moveTo(7, 22); g.quadraticCurveTo(13, 23.6, 19.2, 22); g.quadraticCurveTo(13.2, 30, 7, 22); g.fill();   // big grin
-  g.fillStyle = white;
-  g.beginPath(); g.moveTo(8.8, 23.2); g.quadraticCurveTo(13, 24.4, 17.6, 23.2); g.lineTo(16.8, 24.9); g.quadraticCurveTo(13, 25.9, 9.6, 24.9); g.fill();   // teeth
-  line(1, [[11, 29], [15, 29]]);                                                              // chin
-  line(0.9, [[22.2, 16], [21.8, 18.6]]);                                                      // inside the ear
-  line(1, [[9, 28.4], [13, 31.5], [17, 28.4]]);                                               // shirt opening
-  const d = g.getImageData(0, 0, c.width, c.height).data;
-  for (let y = 0; y < FACE_H; y++) for (let x = 0; x < FACE_W; x++) {
-    let lit = 0;
-    for (let j = 1; j < S; j += 2) for (let i = 1; i < S; i += 2) {
-      const o = ((y * S + j) * c.width + x * S + i) * 4;
-      if (d[o + 3] > 128 && d[o] > 128) lit++;
-    }
-    if (lit >= 2) p.px(ox + x, oy + y, '#f4f6f1');
-  }
-}
-
-// The front: drawn over the magpie
-// The sign on posts above the roof: the face and BOTTLE-O. Part of the ground layer, behind the magpie.
+// The sign on posts above the roof: BOTTLE-O in white on Dan Murphy's green. Part of the
+// ground layer, behind the magpie.
 function shopSign(p) {
-  const bw = 94, bh = 33, bx = SHOP.x + Math.round(SHOP.w / 2 - bw / 2), by = SHOP.roof - 10 - bh;
+  const bw = 72, bh = 20, bx = SHOP.x + Math.round(SHOP.w / 2 - bw / 2), by = SHOP.roof - 10 - bh;
   for (const dx of [-14, 12]) { p.px(SHOP.x + SHOP.w / 2 + dx, by + bh, '#8a8f94', 2, 10); p.px(SHOP.x + SHOP.w / 2 + dx + 1, by + bh, '#6d7276', 1, 10); }
   p.px(bx - 1, by - 1, DM_DARK, bw + 2, bh + 2);
   p.px(bx, by, DM_GREEN, bw, bh);
   for (let i = 3; i < bw; i += 6) p.px(bx + i, by, DM_LINE, 1, bh);
   p.px(bx, by, '#2f7a42', bw, 1);
-  signFace(p, bx + 3, by + 3);
-  glyphs('BOTTLE-O', bx + 28, by + 12, 2, (x, y, s) => p.px(x, y, '#f4f6f1', s, s));
+  glyphs('BOTTLE-O', bx + 5, by + 5, 2, (x, y, s) => p.px(x, y, '#f4f6f1', s, s));
 }
 
 function buildShopFront() {
@@ -1050,12 +1012,14 @@ function drawShelfStock(g) {
 
 // SWOOP-AND-POOP!: pop-art comic lettering in the Roy Lichtenstein style. A yellow starburst
 // with red Ben-Day dots and a thick black outline, tilted red lettering with a black outline
-// and offset shadow. It pops in, holds, then fades over its 1 second.
+// and offset shadow. It sits just above the magpie at half size, pops in, holds, then fades
+// over its 1 second.
 function drawCombo(g) {
   if (comboT <= 0) return;
-  const age = COMBO_TIME - comboT, pop = age < 0.12 ? 0.3 + 0.85 * age / 0.12 : age < 0.2 ? 1.15 - (age - 0.12) / 0.08 * 0.15 : 1;
+  const age = COMBO_TIME - comboT, pop = (age < 0.12 ? 0.3 + 0.85 * age / 0.12 : age < 0.2 ? 1.15 - (age - 0.12) / 0.08 * 0.15 : 1) * 0.5;
+  const cx = clamp(bird.x - cam, 50, W - 50), cy = bird.y - 26 >= 18 ? bird.y - 26 : bird.y + 26;   // below him if he's at the top
   g.save();
-  g.setTransform(K * pop, 0, 0, K * pop, W / 2 * K, 52 * K);
+  g.setTransform(K * pop, 0, 0, K * pop, cx * K, cy * K);
   g.rotate(-0.12);
   g.globalAlpha = Math.min(1, comboT / 0.4);
   // starburst
@@ -1093,13 +1057,13 @@ function drawShopFront(g) {
 }
 
 // ---------------------------------------------------------------------------
-// Sound, all made in code with Web Audio (no files): poop plop and splosh, cans and bottles
-// clinking out of the BOTTLE-O, hiccups while drunk, a SWOOP-AND-POOP! sting, and a gentle
+// Sound, all made in code with Web Audio (no files): the swoop's afterburner roar, poop plop and splosh, cans and bottles
+// clinking out of the BOTTLE-O, hiccups while drunk, and a gentle
 // suburban background of breeze, cicadas, distant birds and now and then a didgeridoo. It starts on the first key press
 // or touch (browsers need that); M or the speaker icon mutes it, and the choice is remembered.
 // ---------------------------------------------------------------------------
 const Sound = (() => {
-  let ac = null, master = null, noise = null, muted = false, hicT = 1, birdT = 3, cicadaT = 6, didgT = 8;
+  let ac = null, master = null, noise = null, muted = false, hicT = 1, birdT = 3, cicadaT = 6, didgT = 8, burner = null, wasSwooping = false;
   try { muted = localStorage.getItem('swoopMuted') === '1'; } catch (e) { /* storage blocked: default on */ }
 
   function start() {
@@ -1112,7 +1076,31 @@ const Sound = (() => {
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     breeze();
+    burner = afterburnerRoar();
     updateIcon();
+  }
+
+  // The swoop's afterburner: a roaring rush of noise over a low rumble, flickering, always
+  // running and faded up and down with the swoop
+  function afterburnerRoar() {
+    const out = ac.createGain(); out.gain.value = 0; out.connect(master);
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter();
+    s.buffer = noise; s.loop = true; f.type = 'lowpass'; f.frequency.value = 900; f.Q.value = 0.8;
+    const crackle = ac.createGain(); crackle.gain.value = 0.8;
+    const fl = ac.createOscillator(), flg = ac.createGain(); fl.type = 'sawtooth'; fl.frequency.value = 17; flg.gain.value = 0.25;
+    fl.connect(flg); flg.connect(crackle.gain);
+    s.connect(f); f.connect(crackle); crackle.connect(out);
+    const rumble = ac.createOscillator(), rf = ac.createBiquadFilter(), rg = ac.createGain();
+    rumble.type = 'sawtooth'; rumble.frequency.value = 48; rf.type = 'lowpass'; rf.frequency.value = 160; rg.gain.value = 0.6;
+    rumble.connect(rf); rf.connect(rg); rg.connect(out);
+    s.start(); fl.start(); rumble.start();
+    return { out, filter: f };
+  }
+  // The burner lighting: a deep whoomp
+  function ignite() {
+    const t = now();
+    burst(t, 0.35, 'lowpass', 500, 1, 0.5);
+    tone('sine', 110, 38, t, 0.3, 0.45);
   }
 
   // Building blocks
@@ -1212,21 +1200,14 @@ const Sound = (() => {
     tone('square', 280, 720, t, 0.07, 0.07);
     burst(t, 0.06, 'bandpass', 1200, 3, 0.12);
   }
-  // SWOOP-AND-POOP!: a quick brassy two-chord stab
-  function sting() {
-    const t = now(), lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; lp.connect(master);
-    [[[392, 494, 587], 0, 0.14], [[523, 659, 784], 0.16, 0.38]].forEach(([chord, at, dur]) => {
-      for (const f of chord) {
-        const o = ac.createOscillator(), g = ac.createGain();
-        o.type = 'sawtooth'; o.frequency.value = f; env(g, t + at, 0.01, dur * 0.6, dur * 0.4, 0.06);
-        o.connect(g); g.connect(lp); o.start(t + at); o.stop(t + at + dur + 0.05);
-      }
-    });
-  }
-
   // Background events and hiccups, timed from the game loop
   function tick(dt) {
-    if (!ac || muted) return;
+    if (!ac) return;
+    burner.out.gain.setTargetAtTime(muted ? 0 : blur * 0.32, now(), 0.06);   // roar follows the swoop
+    burner.filter.frequency.setTargetAtTime(600 + blur * 900, now(), 0.1);
+    if (bird.swooping && !wasSwooping && !muted) ignite();
+    wasSwooping = bird.swooping;
+    if (muted) return;
     birdT -= dt; cicadaT -= dt;
     if (birdT <= 0) { distantBird(); birdT = 2 + Math.random() * 5; }
     if (cicadaT <= 0) { cicadas(); cicadaT = 9 + Math.random() * 8; }
@@ -1249,7 +1230,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
-  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), clink: safe(clink), sting: safe(sting) };
+  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), clink: safe(clink) };
 })();
 
 // ---------------------------------------------------------------------------
@@ -1265,6 +1246,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyB') { if (!e.repeat) barrelRoll(); begin(); return; }
   if (e.code === 'KeyL') { if (!e.repeat) loopTheLoop(); begin(); return; }
   if (e.code === 'KeyM') { if (!e.repeat) Sound.toggle(); begin(); return; }
+  if (e.code === 'KeyF') { if (!e.repeat) toggleFullScreen(); begin(); return; }
   const k = KEYMAP[e.code];
   if (k) { keys[k] = true; e.preventDefault(); begin(); }
 });
@@ -1274,6 +1256,13 @@ function toInternal(e) {
   const rect = canvas.getBoundingClientRect(), s = Math.min(rect.width / W, rect.height / H);
   return { x: (e.clientX - rect.left - (rect.width - W * s) / 2) / s, y: (e.clientY - rect.top - (rect.height - H * s) / 2) / s };
 }
+// Full screen: F or the button; the game then fills the whole screen with no browser bars
+function toggleFullScreen() {
+  const el = document.documentElement;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
+}
+document.getElementById('full').addEventListener('click', e => { e.currentTarget.blur(); toggleFullScreen(); begin(); });
 document.getElementById('sound').addEventListener('click', e => { e.currentTarget.blur(); Sound.toggle(); begin(); });
 let fingers = 0;
 front.addEventListener('pointerdown', e => {
@@ -1323,7 +1312,7 @@ function poop() {
   if (bird.poop < 1) return;
   bird.poop = 0;
   Sound.plop();
-  if (bird.swooping) { comboT = COMBO_TIME; Sound.sting(); }
+  if (bird.swooping) comboT = COMBO_TIME;
   drops.push({ x: bird.x - bird.face * 10, y: bird.y + 3, vx: bird.vx * 0.7, vy: Math.max(bird.vy, 0) * 0.7 + 15 });
 }
 
@@ -1579,13 +1568,14 @@ function draw() {
   drawText('BARREL ROLL', 4, 28, bird.roll > 0 ? '#ffe066' : '#ffffff'); drawText('- B KEY', hintX, 28, '#ffffff');
   drawText('LOOP-DE-LOOP', 4, 36, bird.loopT > 0 ? '#ffe066' : '#ffffff'); drawText('- L KEY', hintX, 36, '#ffffff');
   drawText(Sound.isMuted() ? 'SOUND OFF' : 'SOUND ON', 4, 44, '#ffffff'); drawText('- M KEY', hintX, 44, '#ffffff');
+  drawText('FULL SCREEN', 4, 52, document.fullscreenElement ? '#ffe066' : '#ffffff'); drawText('- F KEY', hintX, 52, '#ffffff');
   if (lapFlash > 0 && Math.floor(lapFlash * 6) % 2 === 0) drawTextCentred('LAP ' + lap + '!', 60, '#ffe066', 3);
   const titleAlpha = started ? clamp(1 - (time - startedAt - 2), 0, 1) : 1;
   if (titleAlpha > 0) {
     ctx.globalAlpha = titleAlpha;
-    drawTextCentred('SWOOPING SIMULATOR', 36, '#ffffff', 2);
-    drawTextCentred(isTouch ? 'HOLD WHERE TO FLY - TAP TO SWOOP' : 'ARROW KEYS OR WASD TO FLY', 56, '#ffe066');
-    drawTextCentred(isTouch ? 'SECOND FINGER TO POOP' : 'UP TO FLAP - HOLD SPACE TO SWOOP - P TO POOP', 64, '#ffe066');
+    drawTextCentred('SWOOPING SIMULATOR', 66, '#ffffff', 2);
+    drawTextCentred(isTouch ? 'HOLD WHERE TO FLY - TAP TO SWOOP' : 'ARROW KEYS OR WASD TO FLY', 86, '#ffe066');
+    drawTextCentred(isTouch ? 'SECOND FINGER TO POOP' : 'UP TO FLAP - HOLD SPACE TO SWOOP - P TO POOP', 94, '#ffe066');
     ctx.globalAlpha = 1;
   }
 
@@ -1610,7 +1600,7 @@ function draw() {
 // Setup and main loop
 // ---------------------------------------------------------------------------
 function resize() {
-  W = clamp(Math.round(H * innerWidth / innerHeight), 240, 480);
+  W = clamp(Math.round(H * innerWidth / innerHeight), 240, 720);   // as wide as the screen, even ultrawide
   canvas.width = scene.width = W; canvas.height = H;
   ctx.imageSmoothingEnabled = false;
   K = Math.max(1, Math.min(innerWidth / W, innerHeight / H) * (devicePixelRatio || 1));
