@@ -237,8 +237,12 @@
 
 - The magpie is too fuzzy: the pixelation is good, but make him not fuzzy
 
+## 47. More real sounds
+
+- More realistic bottle and can sounds, and a more realistic didgeridoo with more "wo-wow-wow", like a real one
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 155 min so far | Prompts 1–46: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, full screen, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP! |
+| 1 | 2026-10-21 | about 160 min so far | Prompts 1–47: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, full screen, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP! |

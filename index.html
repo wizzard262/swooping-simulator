@@ -1174,8 +1174,8 @@ const Sound = (() => {
   const VOWELS = { oo: [300, 850], oh: [480, 900], ah: [720, 1150], eh: [550, 1700], ee: [320, 2100] };
   let lipWave = null;
   function didgeridoo() {
-    const t0 = now(), f = 60 + Math.random() * 12, step = 0.11 + Math.random() * 0.03;
-    const steps = 80 + Math.floor(Math.random() * 40), len = steps * step, fade = 2.5;
+    const t0 = now(), f = 60 + Math.random() * 12, step = 0.15 + Math.random() * 0.04;
+    const steps = 60 + Math.floor(Math.random() * 30), len = steps * step, fade = 2.5;
     if (!lipWave) {                                                   // the lip buzz: a pulse with slowly falling harmonics
       const n = 48, re = new Float32Array(n), im = new Float32Array(n);
       for (let k = 1; k < n; k++) im[k] = 1 / Math.pow(k, 0.75);
@@ -1194,22 +1194,28 @@ const Sound = (() => {
     const body = ac.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 260; body.Q.value = 2;
     const bodyG = ac.createGain(); bodyG.gain.value = 0.9;
     lips.connect(body); body.connect(bodyG); bodyG.connect(accent);
-    const formants = [[5, 0.9], [8, 0.55]].map(([q, level]) => {
+    bodyG.gain.value = 0.55;                                         // less plain drone, more mouth
+    const formants = [[7, 1.4], [11, 1.1]].map(([q, level]) => {
       const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
       const g = ac.createGain(); g.gain.value = level;
       lips.connect(bp); bp.connect(g); g.connect(accent);
       return bp;
     });
 
-    // The rhythm: a short pattern of vowels and accents, repeated with small changes
-    const names = Object.keys(VOWELS), pattern = [];
-    for (let i = 0; i < 8; i++) pattern.push({ v: pick(Math.random, i % 4 === 0 ? ['oo', 'oh'] : names), hit: i % 4 === 0 ? 1 : i % 2 ? 0.55 : 0.75 });
+    // The rhythm: "wo-wow-wow". Each beat the mouth closes to "w" (oo) and then opens wide
+    // into "ow"/"ah", so the formants sweep right up and back: that's the wow. Some beats
+    // only half open, some stay shut, in a pattern repeated with small changes.
+    const pattern = [];
+    for (let i = 0; i < 8; i++) pattern.push({ open: i % 4 === 0 ? 1 : i % 2 ? 0.6 + Math.random() * 0.4 : Math.random() < 0.3 ? 0 : 0.85, hit: i % 4 === 0 ? 1 : i % 2 ? 0.6 : 0.8 });
     for (let i = 0; i < steps; i++) {
-      const t = t0 + i * step, p = pattern[i % 8], v = VOWELS[Math.random() < 0.15 ? pick(Math.random, names) : p.v];
-      formants[0].frequency.setTargetAtTime(v[0], t, 0.025);
-      formants[1].frequency.setTargetAtTime(v[1], t, 0.03);
+      const t = t0 + i * step, p = pattern[i % 8], open = Math.random() < 0.1 ? Math.random() : p.open;
+      const w = VOWELS.oo, wide = VOWELS[open > 0.8 ? 'ah' : 'oh'];
+      for (const [k, b] of formants.entries()) {
+        b.frequency.setTargetAtTime(w[k], t, 0.015);                   // "w": lips and tongue close
+        b.frequency.setTargetAtTime(w[k] + (wide[k] - w[k]) * open, t + step * 0.22, 0.045);   // "ow": open wide
+      }
       accent.gain.setTargetAtTime(p.hit, t, 0.012);
-      accent.gain.setTargetAtTime(p.hit * 0.6, t + step * 0.45, 0.04);
+      accent.gain.setTargetAtTime(p.hit * 0.65, t + step * 0.5, 0.05);
       if (i % 24 === 23) {                                           // a quick breath in through the nose
         accent.gain.setTargetAtTime(0.15, t, 0.01);
         burst(t, 0.12, 'lowpass', 700, 0.7, 0.05, distance);
@@ -1237,20 +1243,26 @@ const Sound = (() => {
     g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
     o.connect(g); g.connect(dest); o.start(t); o.stop(t + decay + 0.05);
   }
-  // A glass bottle knocking: a hard tick, then the glass rings with a few inharmonic
-  // partials (low ones ring longest), two of them a hair apart so they shimmer
+  // A glass bottle clinking: a sharp click, then a bright, quick ring in the high kilohertz
+  // (real bottle clinks are short and high), with a dull knock of the bottle's body under it
   function glass(level = 1) {
-    const t = now() + Math.random() * 0.015, f = 1400 + Math.random() * 1400;
-    burst(t, 0.012, 'highpass', 4000, 0.7, 0.25 * level);
-    for (const [mul, decay, peak] of [[1, 0.55, 0.09], [1.004, 0.5, 0.06], [2.32, 0.3, 0.05], [4.25, 0.16, 0.03], [6.63, 0.09, 0.02]])
-      ring(f * mul, t, decay * (0.8 + Math.random() * 0.4), peak * level);
+    const t = now() + Math.random() * 0.015, f = 2800 + Math.random() * 2400;
+    burst(t, 0.008, 'highpass', 6000, 0.7, 0.35 * level);
+    ring(600 + Math.random() * 300, t, 0.05, 0.07 * level);
+    for (const [mul, decay, peak] of [[1, 0.22, 0.08], [1.003, 0.2, 0.05], [1.53, 0.14, 0.04], [2.41, 0.08, 0.025]])
+      ring(f * mul, t, decay * (0.7 + Math.random() * 0.6), peak * level);
   }
-  // An aluminium can: a thin, papery tink with a short hollow tonk under it
+  // An aluminium can: a hollow, crinkly tonk (thin metal rattling) rather than a ring
+  function canHit(t, level) {
+    burst(t, 0.035, 'bandpass', 1800 + Math.random() * 1600, 1.2, 0.35 * level);     // crinkle
+    burst(t, 0.06, 'bandpass', 700 + Math.random() * 300, 4, 0.25 * level);          // hollow body
+    ring(350 + Math.random() * 200, t, 0.06, 0.08 * level);
+    ring(2400 + Math.random() * 1200, t, 0.03, 0.02 * level);
+  }
+  // ...and it bounces: two or three quick, quieter hits
   function can(level = 1) {
-    const t = now() + Math.random() * 0.015, f = 2600 + Math.random() * 1600;
-    burst(t, 0.05, 'bandpass', 3200 + Math.random() * 1500, 2.5, 0.3 * level);
-    ring(450 + Math.random() * 250, t, 0.08, 0.12 * level);
-    for (const [mul, decay, peak] of [[1, 0.12, 0.05], [1.58, 0.08, 0.035], [2.71, 0.05, 0.025]]) ring(f * mul, t, decay, peak * level);
+    let t = now() + Math.random() * 0.015, l = level;
+    for (let k = 0, n = 2 + Math.floor(Math.random() * 2); k <= n; k++) { canHit(t, l); t += 0.07 + Math.random() * 0.07; l *= 0.45; }
   }
   function hic() {
     const t = now();
@@ -1287,7 +1299,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
-  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), glass: safe(glass), can: safe(can) };
+  return { start, toggle, tick, updateIcon, isMuted: () => muted, plop: safe(plop), splosh: safe(splosh), glass: safe(glass), can: safe(can), didgeridoo: safe(didgeridoo) };
 })();
 
 // ---------------------------------------------------------------------------
