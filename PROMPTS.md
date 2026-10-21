@@ -170,9 +170,22 @@
 ## 30. Sound
 
 - Can we add sound?
+  - Decision: sounds made in code (no files); the poop and pub sounds plus a background; sound starts on the first key press, M or a speaker icon mutes it and it's remembered
+
+## 31. M in the key list
+
+- Add M to the key list under LOOP-DE-LOOP
+
+## 32. Didgeridoo
+
+- In the background, a didgeridoo fading in and out now and then
+
+## 33. A corkscrew barrel roll
+
+- Make the barrel roll faster, and more of a corkscrew than a clean roll about his own axis
 
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 105 min so far | Prompts 1–30: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops |
+| 1 | 2026-10-21 | about 115 min so far | Prompts 1–33: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo |
