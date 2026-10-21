@@ -35,7 +35,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v59</div>
+<div id="ver" title="Version: one for each update published">v60</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -1131,7 +1131,7 @@ function drawShelfStock(g) {
 // over 1 second, and stays put on the screen where the magpie was when it appeared.
 function drawCombo(g) {
   if (comboT <= 0) return;
-  const age = comboLen - comboT, pop = 1.2 * Math.sqrt(Math.min(1, age / COMBO_TIME)) * 0.5;
+  const age = comboLen - comboT, pop = 1.2 * Math.sqrt(Math.min(1, age / COMBO_TIME)) * 0.35;   // 30% smaller than it was
   const { x: cx, y: cy } = comboFollow ? comboSpot() : comboAt, flash = comboFollow && Math.floor(time * 10) % 2;
   g.save();
   g.setTransform(K * pop, 0, 0, K * pop, cx * K, cy * K);
@@ -2101,11 +2101,12 @@ function updateMore(dt) {
     POSSUM.x = POSSUM.dir > 0 ? WIRE.x0 + 2 : WIRE.x1 - 2;
   }
   // Cyclist: pedals along the front of the lawn. Poop him and he wobbles; swoop him and the
-  // cable ties on his helmet spike the magpie, who bounces off squawking and loses points
+  // cable ties on his helmet spike the magpie: knocked back spinning, squawking, to land on his back legs waving, and he loses points
   CYCLIST.wobble = Math.max(0, CYCLIST.wobble - dt); CYCLIST.sting = Math.max(0, CYCLIST.sting - dt);
   CYCLIST.x = mod(CYCLIST.x + CYCLIST.dir * CYCLIST.speed * dt, LEVEL_W); CYCLIST.crank += dt * 7;
   if (bird.swooping && CYCLIST.sting <= 0 && Math.abs(cyclistDx(bird.x)) < 12 && bird.y > CYCLIST.ground - 30 && bird.y < CYCLIST.ground) {   // only if he actually reaches him
-    CYCLIST.sting = 1.5; bird.swooping = false; bird.vy = -90; bird.vx = -bird.face * 40;
+    CYCLIST.sting = 1.5; bird.swooping = false; bird.spent = true; bird.vy = -120; bird.vx = -bird.face * 90;
+    bird.flung = true; bird.whipped = true;                          // tumbling back (no SNAG ROCKET! from this one)
     Sound.scream(1.2, 0.6); penalty(100, CYCLIST.x, CYCLIST.ground - 30);
   }
   // Drop bear: hang about under the big gum for 3 seconds and it drops on you, then climbs back up into the leaves
