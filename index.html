@@ -35,7 +35,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v55</div>
+<div id="ver" title="Version: one for each update published">v56</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -2324,9 +2324,9 @@ function drawCyclist(g) {
   block('#111', 11.5, -38.5, 3, 1.5);                                   // sunnies
   block('#2f7ad6', 8.5, -42.5, 10, 4);                                  // helmet
   block('#1d5aa8', 8.5, -42.5, 1.4, 4); block('#1d5aa8', 5.5, -42.5, 1.4, 4);   // vents
-  for (let i = 0; i < CYCLIST.ties; i++) {                             // cable ties sticking up
-    const x = 4 + i / Math.max(1, CYCLIST.ties - 1) * 9;
-    line('#111', 1, [[x, -44.5], [x + (x - 8.5) * 0.35, -50]]);
+  for (let i = 0; i < CYCLIST.ties; i++) {                             // short cable ties fanning out round the helmet, like spokes
+    const a = -Math.PI * (0.82 - 0.64 * i / Math.max(1, CYCLIST.ties - 1)), c = Math.cos(a), s = Math.sin(a);
+    line('#111', 1, [[8.5 + c * 5.5, -41 + s * 4], [8.5 + c * 8, -41 + s * 6.5]]);
   }
 }
 
