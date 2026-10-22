@@ -35,7 +35,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v61</div>
+<div id="ver" title="Version: one for each update published">v62</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -1137,25 +1137,7 @@ function drawCombo(g) {
   g.setTransform(K * pop, 0, 0, K * pop, cx * K, cy * K);
   g.rotate(-0.12);
   g.globalAlpha = Math.max(0, 1 - (age / comboLen) ** 2);
-  // starburst
-  const burst = () => {
-    g.beginPath();
-    for (let i = 0; i < 28; i++) {
-      const a = i / 28 * Math.PI * 2, r = i % 2 ? 40 : 58 + (i % 4 === 0 ? 8 : 0);
-      g.lineTo(Math.cos(a) * r * 1.55, Math.sin(a) * r * 0.62);
-    }
-    g.closePath();
-  };
-  burst(); g.fillStyle = flash ? '#3ee0ff' : '#ffe414'; g.fill();
-  g.save(); burst(); g.clip();                                     // Ben-Day dots
-  g.fillStyle = '#ff4a3d';
-  for (let y = -44; y <= 44; y += 4) for (let x = -96; x <= 96; x += 4) {
-    const off = (y / 4) % 2 ? 2 : 0;
-    g.beginPath(); g.arc(x + off, y, 0.95, 0, Math.PI * 2); g.fill();
-  }
-  g.restore();
-  burst(); g.lineJoin = 'round'; g.lineWidth = 2.6; g.strokeStyle = '#111'; g.stroke();
-  // lettering
+  // just the lettering (no starburst behind it)
   g.font = 'italic 900 19px Impact, "Arial Black", sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
   const text = comboText;
@@ -2611,7 +2593,8 @@ function update(dt) {
       else if (overRoo && floorTop === rooTop()) { bird.onRoo = true; bird.rooAt = clamp(rooDx(bird.x), -6, 6); award(50); say('ROO WRECKER!'); }   // landed on the kangaroo
       else if (overBbq && floorTop === BBQ.top) { bird.onBbq = true; say('COOKED, MATE!'); }   // landed on the barbecue: ouch
       else if (carrier && !bird.onCarrier) {                           // landed on the postie or the ferry: hitch a ride
-        bird.onCarrier = carrier; bird.carrierAt = clamp(bird.x - cam - CARRIERS[carrier].x(), -4, 4); award(50); say('BLUDGER!');
+        bird.onCarrier = carrier; bird.carrierAt = clamp(bird.x - cam - CARRIERS[carrier].x(), -4, 4); award(50);
+        say(carrier === 'postie' && bird.drunk > 0 ? 'RBT TIME!' : 'BLUDGER!');   // drunk on the postie's bike: random breath test
       }
       else if (floorTop === HOIST.top) {                               // landed on the Hills Hoist: hop on for a ride
         const dx = clamp(hoistDx(bird.x), -HOIST.r, HOIST.r);

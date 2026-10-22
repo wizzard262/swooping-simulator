@@ -24,8 +24,8 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - M (or the speaker icon) turns the sound on and off
 - Poops fade away after 10 seconds
 - The game fills the browser's width (a black bar below it in tall windows)
-- Everything you hit or ride gets a pop-art Aussie caption: ROO-DY HELL!, ROO WRECKER!, KOOKA-BOOM-A!, SPECIAL DELIVERY!, CYCLO-PATH!, STREWTH!, ROUND THE TWIST!, COAT-HANGER!, BARBIE-POO!, COOKED, MATE!, SNAG ROCKET!, YEAH, NAH!, DOWN UNDER!, BLUDGER!, SPIN CYCLE!, WHIPPER SNIPPER!
-- Poop during a swoop for a pop-art SWOOP-AND-POOP! above the magpie, loop during one for SWOOP-AND-LOOP!, or barrel roll during one for BARREL SWOOP!
+- Everything you hit or ride gets a pop-art Aussie caption: ROO-DY HELL!, ROO WRECKER!, KOOKA-BOOM-A!, SPECIAL DELIVERY!, CYCLO-PATH!, STREWTH!, ROUND THE TWIST!, COAT-HANGER!, BARBIE-POO!, COOKED, MATE!, SNAG ROCKET!, YEAH, NAH!, DOWN UNDER!, BLUDGER! (RBT TIME! if you land on the postie drunk), SPIN CYCLE!, WHIPPER SNIPPER!
+- Poop during a swoop for a pop-art SWOOP-AND-POOP! (red comic lettering) above the magpie, loop during one for SWOOP-AND-LOOP!, or barrel roll during one for BARREL SWOOP!
 - Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 5 seconds
 - Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out, he barrel-rolls out with a pop-art BEER-BARREL!, and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery
 - The magpie drifts down slowly under gravity, lands softly on the lawn and walks along it
