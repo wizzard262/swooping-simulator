@@ -35,7 +35,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v62</div>
+<div id="ver" title="Version: one for each update published">v63</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
@@ -1026,8 +1026,6 @@ function leaveShop(exitRight) {
       rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, rest: 162 + Math.random() * 6, life: LOOT_TIME });
   }
   bird.drunk = DRUNK_TIME;
-  bird.roll = ROLL_TIME;
-  showCombo('BEER-BARREL!');                                         // barrel-rolling out of the BOTTLE-O
 }
 
 function updateShopAndDrunk(dt) {
@@ -2410,7 +2408,8 @@ const LOOP_TIME = 1.1, LOOP_R = 22;
 function barrelRoll() {
   if (bird.roll > 0) return;
   bird.roll = ROLL_TIME;
-  if (bird.swooping) showCombo('BARREL SWOOP!');                    // rolling mid-swoop: pop art
+  if (bird.inside) showCombo('BEER-BARREL!');                       // barrel-rolling through the BOTTLE-O: pop art
+  else if (bird.swooping) showCombo('BARREL SWOOP!');               // rolling mid-swoop: pop art
   else if (!bird.grounded) award(10);
 }
 function loopTheLoop() {
