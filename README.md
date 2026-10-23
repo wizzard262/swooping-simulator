@@ -68,7 +68,7 @@ Do all 28 to complete the game (press O in the game for this list, with ticks). 
 | 11 | SNAG-A-SNAG! | Catch a flipped snag |
 | 12 | BREKKIE! | Feed a snag to the chicks |
 | 13 | BARBIE-POO! | Poop on the barbie |
-| 14 | COOKED, MATE! | Land on the hot barbie |
+| 14 | COOKED, MATE! | Get flung off the hot barbie |
 | 15 | SNAG-ROCKET! | Swoop tumbling off the barbie |
 | 16 | ROO THE DAY! | Knock the kangaroo over |
 | 17 | ROO WRECKER! | Ride the kangaroo |

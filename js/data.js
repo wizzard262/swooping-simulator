@@ -129,7 +129,7 @@ const OBJECTIVES = [
   ['SNAG-A-SNAG!', 'Catch a flipped snag'],
   ['BREKKIE!', 'Feed a snag to the chicks'],
   ['BARBIE-POO!', 'Poop on the barbie'],
-  ['COOKED, MATE!', 'Land on the hot barbie'],
+  ['COOKED, MATE!', 'Get flung off the hot barbie'],
   ['SNAG-ROCKET!', 'Swoop tumbling off the barbie'],
   ['ROO THE DAY!', 'Knock the kangaroo over'],
   ['ROO WRECKER!', 'Ride the kangaroo'],

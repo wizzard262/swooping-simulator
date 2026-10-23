@@ -266,7 +266,7 @@ function update(dt) {
       bird.y = floor; bird.vy = 0; bird.grounded = true; bird.walkT = 0;
       if (bird.flung) { bird.flung = false; bird.onBack = ON_BACK_TIME; bird.vx = 0; }   // came down from the barbecue: tumbles onto his back
       else if (overRoo && floorTop === rooTop()) { bird.onRoo = true; bird.rooAt = clamp(rooDx(bird.x), -6, 6); award(50); say('ROO WRECKER!'); }   // landed on the kangaroo
-      else if (overBbq && floorTop === BBQ.top) { bird.onBbq = true; say('COOKED, MATE!'); }   // landed on the barbecue: ouch
+      else if (overBbq && floorTop === BBQ.top) bird.onBbq = true;   // landed on the barbecue: ouch
       else if (carrier && !bird.onCarrier) {                           // landed on the postie or the ferry: hitch a ride
         bird.onCarrier = carrier; bird.carrierAt = clamp(bird.x - cam - CARRIERS[carrier].x(), -4, 4); award(50);
         say(carrier === 'ferry' ? 'BLUDGER!' : 'POSTIE-PILLION!');
@@ -337,7 +337,7 @@ function update(dt) {
     bird.hot = Math.min(1, bird.hot + dt / 1.1);
     if (bird.hot >= 1) {
       bird.onBbq = false; bird.grounded = false; bird.vy = -150; bird.vx = (Math.random() < 0.5 ? -1 : 1) * 90; bird.hotFade = 2.5;
-      Sound.sizzle(); Sound.scream(); penalty(100);
+      Sound.sizzle(); Sound.scream(); penalty(100); say('COOKED, MATE!');
       bird.flung = true; bird.whipped = false; bird.snag = false;     // he'll land on his back (and the snag's gone)
     }
   } else if (bird.hotFade > 0) { bird.hotFade = Math.max(0, bird.hotFade - dt); bird.hot = bird.hotFade / 2.5; }
