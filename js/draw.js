@@ -83,6 +83,7 @@ function drawCape(g, pose) {
   g.restore();
 }
 let shownZoom = 1;                // the zoom last set on the canvases
+let shownGlare = '';              // the overexposure last set on the background canvases
 // Drunk glitch: a few frames in every second, bands of the picture jump sideways, the same on all three canvases
 function drunkGlitch(drunk) {
   if (Math.random() > drunk * 0.35) return;
@@ -126,6 +127,22 @@ function drawEchoes(pose, sc, turn) {
     bbctx.drawImage(echoBuf, 0, 0);
   }
   bbctx.globalAlpha = 1;
+}
+// SOLAR-SLINGSHOT!!!!: the blur of him whipping round the sun. An arc trailing behind him round the
+// circle, growing with his speed until it's a whole blurred grey-white ring
+function drawSlingRing() {
+  const b = slingBlur(), s = sunCentre(), p = slingProgress();
+  const th = SLING.th0 + (SLING.th1 - SLING.th0) * p * p, phi = Math.PI / 2 - bird.face * th;   // where he is, as a canvas angle
+  const len = b >= 0.999 ? Math.PI * 2 : Math.PI * 2 * b;
+  fctx.save();
+  fctx.filter = `blur(${(K * (1.5 + 2.5 * b)).toFixed(1)}px)`;
+  fctx.strokeStyle = `rgba(236,238,242,${(0.25 + 0.65 * b).toFixed(2)})`;
+  fctx.lineWidth = K * 9; fctx.lineCap = 'round';
+  fctx.beginPath();
+  if (bird.face > 0) fctx.arc(s.x * K, s.y * K, SLING_R * K, phi, phi + len);
+  else fctx.arc(s.x * K, s.y * K, SLING_R * K, phi - len, phi);
+  fctx.stroke();
+  fctx.restore();
 }
 function draw() {
   const real = cam;
@@ -249,8 +266,11 @@ function drawScene() {
   }
   crispen(bbctx, (bird.x - cam) * K / BIRD_PIX, bird.y * K / BIRD_PIX, Math.ceil(80 * K / BIRD_PIX / 4) * 2);
   fctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (slingBlur() > 0) drawSlingRing();                              // SOLAR-SLINGSHOT!!!!: his blur round the sun, behind him
   fctx.imageSmoothingEnabled = false;
+  fctx.globalAlpha = 1 - 0.85 * clamp((slingProgress() - 0.7) / 0.15, 0, 1) * (SLING.t > 0 ? 1 : 0);   // fading into the ring on the last time round
   fctx.drawImage(birdBuf, 0, 0, birdBuf.width * BIRD_PIX, birdBuf.height * BIRD_PIX);
+  fctx.globalAlpha = 1;
   if (bird.inside) drawShopFront(fctx);                          // inside: we see him through the glass
   drawLootAndBubbles(fctx);
   drawSmoke(fctx);
@@ -265,4 +285,7 @@ function drawScene() {
     for (const cv of [back, canvas, front]) cv.style.transform = zoom === 1 ? '' : `scale(${zoom.toFixed(4)})`;
     shownZoom = zoom;
   }
+  // ...and the super boost out of it overexposes the background (sky and scenery, not the magpie), fading back to normal
+  const glare = SLING.out / SLING_OUT, look = glare > 0 ? `brightness(${(1 + 1.3 * glare).toFixed(3)}) saturate(${(1 - 0.5 * glare).toFixed(3)})` : '';
+  if (look !== shownGlare) { back.style.filter = canvas.style.filter = look; shownGlare = look; }
 }

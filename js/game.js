@@ -65,11 +65,15 @@ const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 
 // (a full vertical circle, carrying on forward as he goes round)
 const LOOP_TIME = 1.1, LOOP_R = 22;
 // SOLAR-SLINGSHOT!!!!: loop-the-loop with the sun's middle inside the loop and the sun catches him:
-// stretched to twice his length, he whips round it three times (the camera holds still), then is
-// flung out forward at twice swoop speed with a double afterburner, shrinking back to size. As he's
+// he whips round it three times (the camera holds still), speeding up all the way, stretching out
+// along his path and smearing into a blur that grows round the circle, until on the last time round
+// he's a full blurred grey-white ring; then he's spat out forward at twice swoop speed on twin
+// afterburners, shrinking back to size. As he's
 // flung out the whole game jumps 30% closer and bounces back to normal over 2 seconds (always filling
 // the window), and the clouds burn away: none for 10 seconds, then they fade back one at a time over 20.
-const SLING = { t: 0, out: 0, th0: 0, th1: 0 }, SLING_ORBIT = 2.4, SLING_TURNS = 3, SLING_OUT = 1.5, SLING_R = 34;
+const SLING = { t: 0, out: 0, th0: 0, th1: 0 }, SLING_ORBIT = 3, SLING_TURNS = 3, SLING_OUT = 1.5, SLING_R = 28;   // just outside the sun's face, so the ring stays on screen
+const slingProgress = () => 1 - SLING.t / SLING_ORBIT;              // 0 to 1 through the orbit
+const slingBlur = () => SLING.t > 0 ? clamp((slingProgress() - 0.2) / 0.6, 0, 1) : 0;   // how much of the circle the blur covers
 const NOVA = { at: -Infinity }, NOVA_ZOOM = 0.3, NOVA_BOUNCE = 2, CLOUDS_GONE = 10, CLOUDS_BACK = 20;
 const sunCentre = () => ({ x: sunLeft() + SUN_SIZE / 2, y: SUN_TOP + SUN_SIZE / 2 });   // on screen
 function startSlingshot() {
@@ -83,7 +87,7 @@ function updateSlingshot(dt) {
   if (SLING.out > 0) SLING.out = Math.max(0, SLING.out - dt);
   if (SLING.t <= 0) return;
   SLING.t = Math.max(0, SLING.t - dt);
-  const p = 1 - SLING.t / SLING_ORBIT, th = SLING.th0 + (SLING.th1 - SLING.th0) * p, s = sunCentre();
+  const p = slingProgress(), th = SLING.th0 + (SLING.th1 - SLING.th0) * p * p, s = sunCentre();   // p squared: speeding up all the way round
   bird.x = cam + s.x + bird.face * SLING_R * Math.sin(th);
   bird.y = s.y + SLING_R * Math.cos(th);
   bird.vx = bird.vy = 0; bird.pitch = -th; bird.flapT += dt * 14; bird.swooping = false; bird.grounded = false;
@@ -449,8 +453,8 @@ function magpiePose() {
   pose.roll = bird.roll > 0 ? (1 - bird.roll / ROLL_TIME) * Math.PI * 4 : 0;    // barrel roll: two full turns about his body
   const stunt = Math.max(bird.roll > 0 ? 1 - bird.roll / ROLL_TIME : 0, bird.loopT > 0 ? 1 - bird.loopT / LOOP_TIME : 0);
   pose.stretch = stunt > 0 ? 1 + 0.5 * Math.sin(Math.PI * stunt) : 1;   // barrel roll or loop: stretched out to half as long again and back
-  if (SLING.t > 0) pose.stretch = 1 + Math.min(1, (1 - SLING.t / SLING_ORBIT) / 0.1);   // round the sun: twice as long
-  else if (SLING.out > 0) pose.stretch = 1 + SLING.out / SLING_OUT;                   // flung out: shrinking back
+  if (SLING.t > 0) pose.stretch = 1 + 2.5 * slingProgress();                    // round the sun: stretching out as he speeds up
+  else if (SLING.out > 0) pose.stretch = 1 + SLING.out / SLING_OUT;                   // spat out at double length, shrinking back as the boost dies
   pose.drunk = bird.drunk > 0;
   pose.snag = bird.snag;
   if (pose.drunk) pose.pitch += Math.sin(time * 7) * 0.18;
