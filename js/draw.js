@@ -82,7 +82,7 @@ function drawCape(g, pose) {
   }
   g.restore();
 }
-let shownShift = '0.00%,1.0000';  // the slide and zoom last set on the canvases
+let shownZoom = 1;                // the zoom last set on the canvases
 // Drunk glitch: a few frames in every second, bands of the picture jump sideways, the same on all three canvases
 function drunkGlitch(drunk) {
   if (Math.random() > drunk * 0.35) return;
@@ -102,7 +102,37 @@ function sunLeft() {
 }
 const SUN_TOP = 8;                // the sun's top edge on screen
 
+// Drunk: the whole scene sways from side to side, a sine swing of 3% of the screen's width, by drawing
+// it from a swaying camera (so the picture still fills the window), and the magpie leaves 5 fading
+// echoes behind him on the swing
+const drunkLevel = () => clamp(bird.drunk / 2, 0, 1);                // eases off over his last 2 seconds of being drunk
+const drunkSway = t => drunkLevel() * 0.03 * W * Math.sin(t * 1.8);
+// Each echo is a flat, faint shadow of him with a hard edge, one step fainter each further back
+const echoBuf = makeCanvas(1, 1), ectx = echoBuf.getContext('2d');
+function drawEchoes(pose, sc, turn) {
+  if (echoBuf.width !== birdBuf.width || echoBuf.height !== birdBuf.height) { echoBuf.width = birdBuf.width; echoBuf.height = birdBuf.height; }
+  for (let k = 5; k >= 1; k--) {
+    ectx.setTransform(1, 0, 0, 1, 0, 0);
+    ectx.globalCompositeOperation = 'source-over';
+    ectx.clearRect(0, 0, echoBuf.width, echoBuf.height);
+    ectx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam + drunkSway(time - k * 0.12) - drunkSway(time)) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
+    if (pose.flip) ectx.rotate(pose.flip);
+    drawMagpie(ectx, pose);
+    ectx.setTransform(1, 0, 0, 1, 0, 0);
+    ectx.globalCompositeOperation = 'source-in';                      // his shape, filled flat
+    ectx.fillStyle = '#10141c'; ectx.fillRect(0, 0, echoBuf.width, echoBuf.height);
+    bbctx.setTransform(1, 0, 0, 1, 0, 0);
+    bbctx.globalAlpha = 0.04 * (6 - k) * drunkLevel();               // 0.2 nearest, down to 0.04
+    bbctx.drawImage(echoBuf, 0, 0);
+  }
+  bbctx.globalAlpha = 1;
+}
 function draw() {
+  const real = cam;
+  cam = real - drunkSway(time);
+  try { drawScene(); } finally { cam = real; }
+}
+function drawScene() {
   // Back canvas: the pixel sky scaled up, then the smooth sun.
   // The sun is slowest of all: it takes SUN_LOOPS trips round the level to cross the screen.
   bctx.imageSmoothingEnabled = false;
@@ -204,6 +234,7 @@ function draw() {
   drawCast();
   drawCharacter(CYCLIST.x, CYCLIST.ground, CYCLIST_SCALE, CYCLIST.dir, drawCyclist);
   if (DROPBEAR.state !== 'hidden') drawCharacter(DROPBEAR.x, DROPBEAR.y, 0.42, 1, drawDropBear);
+  if (drunkLevel() > 0) drawEchoes(pose, sc, turn);                  // drunk: his echoes behind him on the swing
   bbctx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
   if (bird.hot > 0) bbctx.filter = `sepia(${bird.hot}) saturate(${1 + 6 * bird.hot}) hue-rotate(${-40 * bird.hot}deg) brightness(${1 + 0.4 * bird.hot})`;   // going red
   if (CAPE.t > 0) drawCape(bbctx, pose);                            // TRUE-BLUE!: the Aussie flag as a cape, behind him
@@ -227,15 +258,11 @@ function draw() {
   if (dark > 0) { fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.fillStyle = `rgba(25,35,55,${0.3 * dark})`; fctx.globalCompositeOperation = 'source-atop'; fctx.fillRect(0, 0, front.width, front.height); fctx.globalCompositeOperation = 'source-over'; }
   drawCombo(fctx);
   drawEnd(fctx);
-  // Drunk: the whole game slides about from side to side, and now and then glitches
-  const drunk = clamp(bird.drunk / 2, 0, 1);                        // eases off over his last 2 seconds of being drunk
-  if (drunk > 0) drunkGlitch(drunk);
-  const slide = drunk * (Math.sin(time * 1.1) * 0.6 + Math.sin(time * 2.7 + 1) * 0.3 + Math.sin(time * 5.3 + 2) * 0.1) * 4;   // % of the screen width
-  // SOLAR-SLINGSHOT!!!!: the whole game jumps closer and bounces back. Drunk: zoomed in a little so the
-  // edges never show as it slides. Never zoomed out, so it always fills the window.
-  const zoom = novaZoom() * (1 + 0.1 * drunk), shift = slide.toFixed(2) + '%,' + zoom.toFixed(4);
-  if (shift !== shownShift) {
-    for (const cv of [back, canvas, front]) cv.style.transform = !slide && zoom === 1 ? '' : `translateX(${slide.toFixed(2)}%) scale(${zoom.toFixed(4)})`;
-    shownShift = shift;
+  if (drunkLevel() > 0) drunkGlitch(drunkLevel());                  // drunk: now and then the picture glitches
+  // SOLAR-SLINGSHOT!!!!: the whole game jumps closer and bounces back. Never zoomed out, so it always fills the window.
+  const zoom = novaZoom();
+  if (zoom !== shownZoom) {
+    for (const cv of [back, canvas, front]) cv.style.transform = zoom === 1 ? '' : `scale(${zoom.toFixed(4)})`;
+    shownZoom = zoom;
   }
 }
