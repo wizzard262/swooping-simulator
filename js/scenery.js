@@ -351,10 +351,10 @@ function house(p, r, x, w) {
     wx += ww + 6;
   }
 
-  // Shallow hip roof: a low trapezoid with wide eaves
-  const roof = pick(r, ROOFS), rh = 5 + Math.floor(r() * 3), run = 2.6;
+  // Shallow hip roof: a low trapezoid with wide eaves, out past each wall by 15% of the house's width
+  const roof = pick(r, ROOFS), rh = 5 + Math.floor(r() * 3), run = 2.6, eave = Math.round(w * 0.15);
   for (let j = 0; j < rh; j++) {
-    const y = top - 1 - j, xl = x - 3 + Math.round(j * run), xr = x + w + 2 - Math.round(j * run);
+    const y = top - 1 - j, xl = x - eave + Math.round(j * run), xr = x + w - 1 + eave - Math.round(j * run);
     for (let xx = xl; xx <= xr; xx++) {
       let c;
       if (j === 0) c = roof.fascia;
@@ -491,7 +491,7 @@ function farHouse(p, r, x, s, base) {
   }
   const dx = garageLeft ? gx + gw + S(2) : gx - S(8);
   p.px(dx, base - S(11), pick(r, ['#5a3a24', '#2f4a3a', '#7a2c26']), S(5), S(11));
-  const roof = pick(r, ROOFS), rh = S(5 + r() * 2), eave = S(3);
+  const roof = pick(r, ROOFS), rh = S(5 + r() * 2), eave = Math.round(w * 0.15);   // eaves out 15% of the width
   for (let j = 0; j < rh; j++) {
     const y = top - 1 - j, xl = x - eave + Math.round(j * 2.6), xr = x + w - 1 + eave - Math.round(j * 2.6);
     for (let xx = xl; xx <= xr; xx++)

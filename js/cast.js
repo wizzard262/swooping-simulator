@@ -90,16 +90,16 @@ function rooHeight() {                                               // how high
   return ROO.dizzy > 0 ? 0 : p > 0.15 && p < 0.85 ? Math.sin(Math.PI * (p - 0.15) / 0.7) * 16 : 0;
 }
 const rooTop = () => ROO.ground - ROO.back - rooHeight();             // his back, where the magpie can sit
-function knockOver() {
+function knockOver(caption = 'ROO THE DAY!') {                      // swooped (ROO THE DAY!) or pooped on (KANGA-POO!)
   if (ROO.dizzy > 0) return;
   ROO.dizzy = ROO_DIZZY_TIME;
-  award(100, ROO.x, ROO.ground - 20); say('ROO THE DAY!');
+  award(100, ROO.x, ROO.ground - 20); say(caption);
   Sound.boing();
   if (bird.onRoo) { bird.onRoo = false; bird.grounded = false; bird.vy = -40; }   // thrown off
 }
 const ROO_TARGET = {                                                 // a poop target (added to TARGETS at start-up)
   get x() { return ROO.x - 8; }, get y() { return ROO.ground - 24 - rooHeight(); }, w: 16, h: 24,
-  hit: knockOver
+  hit: () => knockOver('KANGA-POO!')
 };
 
 // Dizzy stars: little yellow stars going round in a ring
@@ -187,7 +187,10 @@ const BBQ = { x: 1450, top: Math.round(166 - 32 * BBQ_SCALE), half: 17 * BBQ_SCA
 const SNAG = { in: 4, air: false, x: 0, y: 0, vy: 0, rot: 0 }, SNAG_EVERY = 4, SNAG_GRAVITY = 300;
 const NEST = { x: 0, y: 0, fed: 0, beg: 0, cheepIn: 0 };
 const POSTIE = { x: 40, dir: 1, stop: 0, last: -1, wheel: 0, down: 0 };   // down: knocked off, then picking his bike up
-const POSTIE_DOWN = 2.6, POSTIE_LIFT = 0.9;
+// Knocked off, a 4-second sequence: he somersaults off over the handlebars in slow motion, arms and
+// legs flailing, and lands on his feet; stands there dazed, walks back to the bike, then hauls it
+// upright and rides off the other way
+const POSTIE_DOWN = 4, POSTIE_FLY = 1.7, POSTIE_DAZED = 0.4, POSTIE_LIFT = 0.8, POSTIE_LAND = 14;
 const SHARK = { in: 8, t: 0, x: 0, dir: 1, sink: 0 }, SHARK_TIME = 9, SHARK_SINK = 0.6;   // sink: swooped, diving out of sight
 const smoke = [];
 const bbqDx = x => wrapDx(x, BBQ.x), kookaDx = x => wrapDx(x, KOOKA.x);
@@ -435,9 +438,33 @@ function drawSmoke(g) {
 
 // Postie: red motorbike, hi-vis vest, white helmet, letters in the box on the back (pixel art).
 // A poop knocks him off.
+// The postie on foot, his feet at (x, y) from the bike, turned by angle (radians), facing forward or
+// back towards the bike, legs apart on alternate steps. flail (0 to 1): arms and legs thrashing about,
+// mid-air. Each pixel is turned about his middle.
+function postieMan(px, x, y, angle, forward, step, flail = 0) {
+  const dots = [];                                                    // [u, v, colour] from his middle
+  const block = (x0, y0, w, h, col) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) dots.push([x0 + i + 0.5, y0 + j + 0.5, col]); };
+  const limb = (x0, y0, a, len, col) => { for (let k = 0; k < len; k++) dots.push([x0 + Math.sin(a) * (k + 0.5), y0 + Math.cos(a) * (k + 0.5), col]); };
+  block(0, -13, 3, 3, '#f4f4f4'); block(forward ? 2 : 0, -12, 1, 1, '#222');   // helmet, visor
+  block(0, -10, 3, 5, '#ff8c1a'); block(0, -8, 3, 1, '#f4f4f4');               // hi-vis vest
+  if (flail > 0) {
+    const w = time * 45;                                              // arms windmilling, legs kicking, fast
+    limb(0, -9.5, Math.PI * (0.6 + 0.5 * Math.sin(w)) * flail, 4, '#ff8c1a');
+    limb(3, -9.5, -Math.PI * (0.6 + 0.5 * Math.sin(w + 2)) * flail, 4, '#ff8c1a');
+    limb(0.5, -5, (0.5 + 0.6 * Math.sin(w * 1.3 + 1)) * flail, 5, '#1d3a6b');
+    limb(2.5, -5, -(0.5 + 0.6 * Math.sin(w * 1.3 + 3)) * flail, 5, '#1d3a6b');
+  } else {
+    block(step ? -1 : 0, -5, 1, 5, '#1d3a6b'); block(step ? 3 : 2, -5, 1, 5, '#1d3a6b');   // legs
+  }
+  const c = Math.cos(angle), s = Math.sin(angle), mx = 1.5, my = -6.5;
+  for (const [a, b, col] of dots) {
+    const u = a - mx, v = b - my;
+    px(Math.round(x + mx + u * c - v * s - 0.5), Math.round(y + my + u * s + v * c - 0.5), 1, 1, col);
+  }
+}
 const postieSx = () => suburbX(POSTIE.x);
 function postieHitBy(sx, y) {
-  return POSTIE.down <= 0 && Math.abs(wrapDx(sx, postieSx(), suburb.P)) < 6 && y >= 139 && y <= 152;
+  return POSTIE.down <= 0 && Math.abs(wrapDx(sx, postieSx(), suburb.P)) < 6 * POOP_REACH && y >= 139 && y <= 152;
 }
 function knockPostie() {
   POSTIE.down = POSTIE_DOWN; POSTIE.stop = 0;
@@ -451,11 +478,20 @@ function drawPostie(g) {
   for (let sx = sx0 - P; sx < W + P; sx += P) {
     if (sx < -14 || sx > W + 14) continue;
     const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(sx + (d > 0 ? x : -x - w + 1)), base + y, w, h); };   // faces the way he's going
-    if (POSTIE.down > POSTIE_LIFT) {                                   // knocked off: bike on its side, him sprawled beside it
+    if (POSTIE.down > POSTIE_LIFT) {                                   // knocked off: bike on its side, and him...
       px(-6, -2, 3, 2, '#1b1b1b'); px(3, -2, 3, 2, '#1b1b1b');         // wheels, flat
       px(-5, -3, 10, 2, '#d0101c'); px(-8, -4, 4, 3, '#d0101c');       // frame, box
-      px(7, -2, 5, 2, '#ff8c1a'); px(12, -2, 2, 2, '#1d3a6b'); px(5, -3, 3, 3, '#f4f4f4');   // him, lying there
-      if (Math.floor(time * 3) % 2) px(8, -6, 1, 2, '#ffffff');        // dazed
+      const t = POSTIE_DOWN - POSTIE.down, walkFrom = POSTIE_FLY + POSTIE_DAZED, walkTime = POSTIE_DOWN - POSTIE_LIFT - walkFrom;
+      if (t < POSTIE_FLY) {                                            // ...somersaulting off over the handlebars
+        const f = t / POSTIE_FLY;
+        postieMan(px, POSTIE_LAND * f, -16 * Math.sin(Math.PI * f), f * Math.PI * 2, true, 0, Math.sin(Math.PI * f));
+      } else if (t < walkFrom) {                                       // ...standing there, seeing stars
+        postieMan(px, POSTIE_LAND, 0, Math.sin(time * 9) * 0.15, true, 0);
+        if (Math.floor(time * 6) % 2) px(POSTIE_LAND + 1, -16, 1, 1, '#ffffff');
+      } else {                                                         // ...walking back to the bike
+        const f = (t - walkFrom) / walkTime;
+        postieMan(px, POSTIE_LAND + (7 - POSTIE_LAND) * f, 0, 0, false, Math.floor(time * 7) % 2);
+      }
       continue;
     }
     if (POSTIE.down > 0) {                                             // getting up, hauling the bike upright
@@ -713,7 +749,7 @@ function updateClimbers(dt) {
 function climbersHitBy(sx, y) {                                      // does a drop at screen x, height y land on them?
   return CLIMB.hit <= 0 && CLIMBERS.some(c => {
     const p = climberPos(c);
-    return Math.abs(wrapDx(sx, p.x, hills.P)) < 5 && y >= p.y - 6 && y <= p.y + 2;
+    return Math.abs(wrapDx(sx, p.x, hills.P)) < 5 * POOP_REACH && y >= p.y - 6 && y <= p.y + 2;
   });
 }
 function hitClimbers() {
@@ -755,7 +791,7 @@ const possumSx = () => suburbX(Math.round(POSSUM.x));
 function possumHitBy(sx, y) {
   if (POSSUM.visit <= 0 || POSSUM.spin > 0) return false;
   const wy = wireY(POSSUM.x);
-  return Math.abs(wrapDx(sx, possumSx(), suburb.P)) < 5 * POSSUM_SCALE && y >= wy - 6 * POSSUM_SCALE && y <= wy + 1;
+  return Math.abs(wrapDx(sx, possumSx(), suburb.P)) < 5 * POSSUM_SCALE * POOP_REACH && y >= wy - 6 * POSSUM_SCALE && y <= wy + 1;
 }
 function spinPossum() {
   POSSUM.spin = POSSUM_SPIN; POSSUM.visit = Math.max(POSSUM.visit, POSSUM_SPIN + 3);

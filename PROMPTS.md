@@ -752,9 +752,37 @@
 
 - I want a very low level of cloud, like thin wispy lines
 
+## 156. SOLAR-NOVA! bounce
+
+- Make the sun fade out 4 times slower, and then when we come back to normal I want a 2-second tween bounce
+- A tween bounce of the whole game!
+- The fade should start slow and accelerate
+
+## 157. Drunk glitch
+
+- When the bird is drunk, can we have some pixel glitch and a horizontal random slide around the screen
+
+## 158. Postie somersault
+
+- When the postie is knocked off his bike, make him somersault off and walk back to the bike: a 4-second sequence
+- Somersault off in a slow-motion roll with limbs flailing
+- Make the postie's limbs flail much faster
+
+## 159. More time, bigger poops
+
+- Allow twice as long for a swoop-poop, a swoop-and-loop and a loop-poop-swoop; make poos hit 25% wider
+
+## 160. Eaves
+
+- Make the house roofs extend out about 15% of the building's width
+
+## 161. KANGA-POO!
+
+- Add a goal to poop on the kangaroo, called KANGA-POO!
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
 | 1 | 2026-10-21 | about 740 min so far | Prompts 1–145: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
-| 2 | 2026-10-23 | about 55 min so far | Prompts 146–155: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in five sharp strips, low wisps of cloud, SOLAR-NOVA! (loop round the sun: white flash, clouds burnt away) |
+| 2 | 2026-10-23 | about 90 min so far | Prompts 146–161: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in five sharp strips, low wisps of cloud, SOLAR-NOVA! (loop round the sun: white flash, clouds burnt away, the whole game bouncing back), a drunk slide and glitch, the postie's slow-motion somersault, longer swoops, wider poop hits, wider eaves, KANGA-POO! |

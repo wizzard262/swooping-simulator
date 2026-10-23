@@ -67,6 +67,19 @@ function drawPoop(out) {
   out.drawImage(poopBuf, 0, 0, poopBuf.width * BIRD_PIX, poopBuf.height * BIRD_PIX);
 }
 
+let shownShift = '0.00%,1.0000';  // the slide and zoom last set on the canvases
+// Drunk glitch: a few frames in every second, bands of the picture jump sideways, the same on all three canvases
+function drunkGlitch(drunk) {
+  if (Math.random() > drunk * 0.35) return;
+  for (let n = 1 + Math.floor(Math.random() * 4); n > 0; n--) {
+    const y = Math.floor(Math.random() * H), h = 1 + Math.floor(Math.random() * 10), dx = Math.round((Math.random() - 0.5) * 24);
+    ctx.drawImage(canvas, 0, y, W, h, dx, y, W, h);
+    for (const [g, cv] of [[bctx, back], [fctx, front]]) {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.drawImage(cv, 0, y * K, cv.width, h * K, dx * K, y * K, cv.width, h * K);
+    }
+  }
+}
 // Where the sun's left edge is on screen: it takes SUN_LOOPS trips round the level to cross the screen
 function sunLeft() {
   const span = W + SUN_SIZE;
@@ -198,9 +211,19 @@ function draw() {
   if (dark > 0) { fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.fillStyle = `rgba(25,35,55,${0.3 * dark})`; fctx.globalCompositeOperation = 'source-atop'; fctx.fillRect(0, 0, front.width, front.height); fctx.globalCompositeOperation = 'source-over'; }
   drawCombo(fctx);
   drawEnd(fctx);
-  if (NOVA.t > 0) {                                                  // SOLAR-NOVA!: everything fades to white, then snaps back
+  // Drunk: the whole game slides about from side to side, and now and then glitches
+  const drunk = clamp(bird.drunk / 2, 0, 1);                        // eases off over his last 2 seconds of being drunk
+  if (drunk > 0) drunkGlitch(drunk);
+  const slide = drunk * (Math.sin(time * 1.1) * 0.6 + Math.sin(time * 2.7 + 1) * 0.3 + Math.sin(time * 5.3 + 2) * 0.1) * 4;   // % of the screen width
+  const zoom = novaZoom() * (1 + 0.1 * drunk), shift = slide.toFixed(2) + '%,' + zoom.toFixed(4);   // zoomed in a little when drunk so the edges never show
+  if (shift !== shownShift) {                                        // SOLAR-NOVA!: the whole game bounces back into place
+    for (const cv of [back, canvas, front]) cv.style.transform = zoom === 1 && !slide ? '' : `translateX(${slide.toFixed(2)}%) scale(${zoom.toFixed(4)})`;
+    shownShift = shift;
+  }
+  const white = novaWhite();
+  if (white > 0) {                                                   // SOLAR-NOVA!: everything fades to white, then bounces back
     fctx.setTransform(1, 0, 0, 1, 0, 0);
-    fctx.fillStyle = `rgba(255,255,255,${Math.min(1, (NOVA_TIME - NOVA.t) / NOVA_FADE)})`;
+    fctx.fillStyle = `rgba(255,255,255,${white.toFixed(3)})`;
     fctx.fillRect(0, 0, front.width, front.height);
   }
 }

@@ -56,7 +56,7 @@ function begin() { Sound.start(); if (!started) { started = true; startedAt = ti
 // ---------------------------------------------------------------------------
 // Swooping: fast flight while Space is held. The charge bar empties in 3 seconds of
 // swooping and takes 10 seconds to fill again. Up and down tilt the magpie 30 degrees.
-const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 3, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;
+const SWOOP_SPEED = 330, SWOOP_DRAIN = 1 / 6, SWOOP_RECHARGE = 1 / 10, TILT = Math.PI / 6;   // a full swoop bar lasts 6 seconds: time to swoop-poop or loop in it
 const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, walkT: 0, pitch: 0, swooping: false, spent: false, charge: 1, poop: 1, inside: false, wasIn: false, drunk: 0, roll: 0, loopT: 0, loop: null, onHoist: false, hoistAt: 0, hoistR: 0, hoistTurn: 1, hoistFaceAt: 0, onRoo: false, rooAt: 0, turnDir: 0, turnRate: 0, callIn: 12, calling: 0, onBbq: false, hot: 0, hotFade: 0, flung: false, onBack: 0, dazed: false, onCarrier: null, carrierAt: 0, hanging: false, whipped: false, snag: false, beerRoll: false, loopEndAt: -99 };
 const ON_BACK_TIME = 2.2, GET_UP_TIME = 0.4;   // after the barbecue: on his back waving his legs, then he rolls back up
 const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 20 seconds on the ground
@@ -65,12 +65,30 @@ const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 
 // (a full vertical circle, carrying on forward as he goes round)
 const LOOP_TIME = 1.1, LOOP_R = 22;
 // SOLAR-NOVA!: loop-the-loop with the sun's middle inside the loop. The screen fades to white
-// in a quarter of a second, holds, then snaps back; the clouds are burnt away, none for 10 seconds,
-// then they fade back one at a time over 20.
-const NOVA = { t: 0, at: -Infinity }, NOVA_TIME = 0.4, NOVA_FADE = 0.25, CLOUDS_GONE = 10, CLOUDS_BACK = 20;
+// over a second (slowly at first, then faster), holds, then the white clears and the whole game
+// bounces back into place over 2 seconds; the clouds are burnt away, none for 10 seconds, then
+// they fade back one at a time over 20.
+const NOVA = { at: -Infinity }, NOVA_FADE = 1, NOVA_HOLD = 0.15, NOVA_BOUNCE = 2, NOVA_CLEAR = 0.3, NOVA_ZOOM = 0.25;
+const CLOUDS_GONE = 10, CLOUDS_BACK = 20;
 function solarNova() {
   showCombo('SOLAR-NOVA!');
-  NOVA.t = NOVA_TIME; NOVA.at = time;
+  NOVA.at = time;
+}
+function novaWhite() {                                               // how white the screen is, 0 to 1
+  const age = time - NOVA.at, back = age - NOVA_FADE - NOVA_HOLD;
+  if (age < 0 || back >= NOVA_CLEAR) return 0;
+  if (age < NOVA_FADE) return (age / NOVA_FADE) ** 3;               // eases in: slow, then faster
+  return back < 0 ? 1 : 1 - back / NOVA_CLEAR;
+}
+function novaZoom() {                                                // the whole game's scale: zoomed in, bouncing back to 1
+  const back = time - NOVA.at - NOVA_FADE - NOVA_HOLD;
+  return back < 0 || back >= NOVA_BOUNCE ? 1 : 1 + NOVA_ZOOM * (1 - bounceOut(back / NOVA_BOUNCE));
+}
+function bounceOut(t) {                                              // the classic bounce ease: overshoots and settles in three bounces
+  if (t < 1 / 2.75) return 7.5625 * t * t;
+  if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
+  if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
+  return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
 }
 function cloudAlpha(cl) {
   const each = CLOUDS_BACK / clouds.list.length;                     // each cloud's turn to fade in
@@ -98,6 +116,7 @@ function loopTheLoop() {
 // Drops splosh on whatever they hit: a target in TARGETS, the bridge climbers, the postie,
 // the possum, or the lawn.
 const POOP_RECHARGE = 1 / 3, DROP_GRAVITY = 320;   // a full poop bar every 3 seconds
+const POOP_REACH = 1.25;          // a poop hits anything within a quarter wider than it looks
 const TARGETS = [];               // { x, y, w, h, hit(drop) } in world pixels
 const drops = [], sploshes = [], splashes = [], SPLOSH_TIME = 10;
 
@@ -125,7 +144,7 @@ function poop() {
     swoop: bird.swooping,                                             // dropped in a swoop: SWOOP-AND-POOP! if it hits someone
     afterLoop: bird.swooping && time - bird.loopEndAt < LOOP_POOP_TIME });   // ...and LOOP-POOP-SWOOP! if he'd just looped
 }
-const LOOP_POOP_TIME = 3;          // a loop, then a swoop-poop on someone within this many seconds: LOOP-POOP-SWOOP!
+const LOOP_POOP_TIME = 6;          // a loop, then a swoop-poop on someone within this many seconds: LOOP-POOP-SWOOP!
 // A poop dropped in a swoop has hit someone (or the barbie)
 function swoopPoopHit(d) {
   showCombo('SWOOP-AND-POOP!');
@@ -146,7 +165,7 @@ function updateDrops(dt) {
   for (const d of drops) {
     d.vy += DROP_GRAVITY * dt;
     d.x += d.vx * dt; d.y += d.vy * dt;
-    const target = TARGETS.find(t => mod(d.x - t.x, LEVEL_W) < t.w && d.y > t.y && d.y < t.y + t.h);   // allowing for the loop
+    const target = TARGETS.find(t => mod(d.x - t.x + t.w * (POOP_REACH - 1) / 2, LEVEL_W) < t.w * POOP_REACH && d.y > t.y && d.y < t.y + t.h);   // allowing for the loop
     if (target) { d.done = true; target.hit(d); splosh(d.x, d.y); }
     else if (climbersHitBy(loopX(d.x), d.y)) { d.done = true; hitClimbers(); }   // splat on the bridge climbers
     else if (postieHitBy(loopX(d.x), d.y)) { d.done = true; knockPostie(); }       // splat on the postie
@@ -369,7 +388,6 @@ function update(dt) {
   else if (bird.grounded && bird.onBack <= 0) { bird.callIn -= dt; if (bird.callIn <= 0) { bird.calling = CALL_TIME; bird.callIn = 10 + Math.random() * 10; Sound.carol(); } }
 
   blur += ((bird.swooping ? 1 : 0) - blur) * Math.min(1, (bird.swooping ? 6 : 3) * dt);
-  NOVA.t = Math.max(0, NOVA.t - dt);
   for (const c of captions) c.t -= dt;
   for (let i = captions.length - 1; i >= 0; i--) if (captions[i].t <= 0) captions.splice(i, 1);
   Sound.tick(dt);
