@@ -45,7 +45,7 @@ const FONT = {
   I: '72227', J: '11152', K: '55655', L: '44447', M: '57755', N: '65555', O: '25552', P: '65644',
   Q: '25563', R: '65655', S: '34216', T: '72222', U: '55557', V: '55552', W: '55775', X: '55255',
   Y: '55222', Z: '71247', 0: '75557', 1: '26227', 2: '61247', 3: '61216', 4: '55711', 5: '74616',
-  6: '34757', 7: '71222', 8: '75757', 9: '75716', ' ': '00000', '-': '00700', '.': '00002',
+  6: '34757', 7: '71222', 8: '75757', 9: '75716', ' ': '00000', '-': '00700', '+': '02720', '.': '00002',
   '!': '22202', ':': '02020', '/': '11244',
   '#': '57575', '$': '36236', '?': '61202', '@': '75747', '%': '51245', '&': '25253', '*': '52725'   // for cartoon swearing
 };
@@ -132,7 +132,7 @@ const OBJECTIVES = [
   ['COOKED, MATE!', 'Get flung off the hot barbie'],
   ['SNAG-ROCKET!', 'Swoop tumbling off the barbie'],
   ['ROO THE DAY!', 'Knock the kangaroo over'],
-  ['ROO WRECKER!', 'Ride the kangaroo'],
+  ['ROO-DIMENTARY!', 'Ride the kangaroo'],
   ['KOOKA-BOOM-A!', 'Knock the kookaburra off'],
   ['CYCLO-PATH!', 'Poop on the cyclist'],
   ['STREWTH!', 'Swoop the cyclist'],

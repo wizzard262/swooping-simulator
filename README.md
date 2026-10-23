@@ -16,17 +16,17 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - A cyclist rides along the lawn with 4 short cable ties fanned round his helmet like spokes: poop him and he wobbles, shakes his fist, rings his bell and shouts "Oi!"; swoop him and the cable ties spike you: knocked back tumbling, you land on your back with your legs waving
 - Hang about under the big gum for 3 seconds and a drop bear drops on you, then climbs back into the leaves
 - Land on the postie or the ferry and ride along with them
-- A possum is out on the power line between two houses about a third of the time, scurrying back and forth and stopping for a rest (poop on him and he spins round and round the wire for 3 seconds); a screeching flock of cockatoos flies across the sky (fly in among them for 5 seconds to join the flock: FLOCK YEAH!); tiny bridge climbers cross the Harbour Bridge (poop on them and they jump up and down swearing: #!$?)
+- A possum (a bit bigger than at first) is out on the power line between two houses about 40% of the time, scurrying back and forth and stopping for a rest (poop on him and he spins round and round the wire for 3 seconds); a screeching flock of cockatoos flies across the sky (fly in among them for 5 seconds to join the flock: FLOCK YEAH!); tiny bridge climbers cross the Harbour Bridge (poop on them and they jump up and down swearing: #!$?)
 - Every few minutes a summer storm rolls in: dark sky, rain, lightning and thunder, then a rainbow. The rain slants past you the way you're flying: fly forward, swoop, climb or dive and it tilts, streaking longer the faster you go
-- Score points for knocking things over, poops on target, stunts and rides; each score within 6 seconds of the last builds a combo (up to x5), with a COMBO bar under the poop bar counting down the 6 seconds; your high score is remembered. You lose 100 points (a red minus) for swooping the cyclist, landing on the barbecue or getting drop-beared, and the score can go below zero
+- Score points for knocking things over, poops on target, stunts and rides; each score within 6 seconds of the last builds a combo (up to x5, shown next to the points, e.g. +40  COMBO X4), with a COMBO bar under the poop bar counting down the 6 seconds; your high score is remembered. You lose 100 points (a red minus) for swooping the cyclist, landing on the barbecue or getting drop-beared, and the score can go below zero
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
-- B for a corkscrew barrel roll, L for a loop-the-loop
+- B for a barrel roll (two turns on his own axis, bursting forward at swoop speed with no afterburner), L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
 - O (or the OBJECTIVES link under the timer, top right) opens the list of all 28 objectives, each named by the caption it shows, with a tick when done; the game waits while it's open, and any key closes it. A timer runs from your first move
 - Do all 28 and the game is complete: a fanfare, a big TOO EASY, MATE!, your time and score, and only then does your score count for the high score. Press any key to play again
 - Poops fade away after 10 seconds
 - The game keeps a 16:9 view and fits any window size, centred, with black bars top and bottom (tall windows) or at the sides (wide ones)
-- Everything you hit or ride gets a pop-art Aussie caption: ROO THE DAY!, ROO WRECKER!, KOOKA-BOOM-A!, SPECIAL DELIVERY!, CYCLO-PATH!, STREWTH!, ROUND THE TWIST!, COAT-HANGER!, BARBIE-POO!, COOKED, MATE!, SNAG-ROCKET!, YEAH, NAH!, DOWN UNDER!, BLUDGER! (the ferry), POSTIE-PILLION! (RBT TIME! if you land on the postie drunk), SPIN-CYCLE!, WHIPPER-SNIPPER!
+- Everything you hit or ride gets a pop-art Aussie caption: ROO THE DAY!, ROO-DIMENTARY!, KOOKA-BOOM-A!, SPECIAL DELIVERY!, CYCLO-PATH!, STREWTH!, ROUND THE TWIST!, COAT-HANGER!, BARBIE-POO!, COOKED, MATE!, SNAG-ROCKET!, YEAH, NAH!, DOWN UNDER!, BLUDGER! (the ferry), POSTIE-PILLION! (RBT TIME! if you land on the postie drunk), SPIN-CYCLE!, WHIPPER-SNIPPER!
 - Poop on someone during a swoop for a pop-art SWOOP-AND-POOP! (red comic lettering) above the magpie, loop during a swoop for SWOOP-AND-LOOP!, or barrel roll during one for BARREL SWOOP!. Loop-the-loop and then, within 3 seconds, land a swoop-poop on someone for LOOP-POOP-SWOOP! (+400, and it counts for SWOOP-AND-LOOP! too)
 - Things done together all count, and their captions stack: a swoop-poop on the kangaroo is ROO THE DAY! and SWOOP-AND-POOP!; a barrel roll in the BOTTLE-O mid-swoop is BEER-BARREL! and BARREL SWOOP!, then GROG RUN! on the way out; landing on the postie drunk is POSTIE-PILLION! and RBT TIME!
 - Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 3 seconds
@@ -71,7 +71,7 @@ Do all 28 to complete the game (press O in the game for this list, with ticks). 
 | 14 | COOKED, MATE! | Get flung off the hot barbie |
 | 15 | SNAG-ROCKET! | Swoop tumbling off the barbie |
 | 16 | ROO THE DAY! | Knock the kangaroo over |
-| 17 | ROO WRECKER! | Ride the kangaroo |
+| 17 | ROO-DIMENTARY! | Ride the kangaroo |
 | 18 | KOOKA-BOOM-A! | Knock the kookaburra off |
 | 19 | CYCLO-PATH! | Poop on the cyclist |
 | 20 | STREWTH! | Swoop the cyclist |

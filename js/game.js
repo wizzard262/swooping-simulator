@@ -61,7 +61,7 @@ const bird = { x: 120, y: 90, vx: 0, vy: 0, face: 1, grounded: false, flapT: 0, 
 const ON_BACK_TIME = 2.2, GET_UP_TIME = 0.4;   // after the barbecue: on his back waving his legs, then he rolls back up
 const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 20 seconds on the ground
 
-// Stunts: B for a barrel roll (a full turn about his body), L for a loop-the-loop
+// Stunts: B for a barrel roll (two full turns on his own axis, bursting forward at swoop speed), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
 const LOOP_TIME = 1.1, LOOP_R = 22;
 function barrelRoll() {
@@ -249,10 +249,13 @@ function update(dt) {
     else if (Math.abs(bird.vx) > maxX) bird.vx += (Math.sign(bird.vx) * maxX - bird.vx) * Math.min(1, 2 * dt);  // ease back after a swoop
     else if (dirX) bird.vx = clamp(bird.vx + dirX * ACCEL_X * dt, -maxX, maxX);
     else bird.vx *= Math.exp(-0.8 * dt);                           // glide keeps most of its speed
-    bird.vy += (GRAVITY - (c.up ? FLAP : 0) + (c.down ? DIVE : 0)) * dt;
-    const maxDown = c.down ? MAX_DIVE : MAX_FALL;
-    if (bird.vy > maxDown) bird.vy += (maxDown - bird.vy) * Math.min(1, 6 * dt);  // ease to falling speed
-    bird.vy = Math.max(bird.vy, -MAX_CLIMB);
+    if (bird.roll > 0) { bird.vx = bird.face * SWOOP_SPEED; bird.vy = 0; }   // barrel roll: a straight burst forward at swoop speed (no afterburner)
+    else {
+      bird.vy += (GRAVITY - (c.up ? FLAP : 0) + (c.down ? DIVE : 0)) * dt;
+      const maxDown = c.down ? MAX_DIVE : MAX_FALL;
+      if (bird.vy > maxDown) bird.vy += (maxDown - bird.vy) * Math.min(1, 6 * dt);  // ease to falling speed
+      bird.vy = Math.max(bird.vy, -MAX_CLIMB);
+    }
     bird.y += bird.vy * dt;
     if (bird.y < TOP_Y) { bird.y = TOP_Y; bird.vy = Math.max(0, bird.vy); }
     if (bird.vy < 0 && bird.loopT <= 0 && Math.abs(hoistDx(bird.x)) < HOIST.r - 2 && bird.y > HOIST.top && bird.y < HOIST.top + 14) {
@@ -265,7 +268,7 @@ function update(dt) {
     if (bird.y >= floor) {
       bird.y = floor; bird.vy = 0; bird.grounded = true; bird.walkT = 0;
       if (bird.flung) { bird.flung = false; bird.onBack = ON_BACK_TIME; bird.vx = 0; }   // came down from the barbecue: tumbles onto his back
-      else if (overRoo && floorTop === rooTop()) { bird.onRoo = true; bird.rooAt = clamp(rooDx(bird.x), -6, 6); award(50); say('ROO WRECKER!'); }   // landed on the kangaroo
+      else if (overRoo && floorTop === rooTop()) { bird.onRoo = true; bird.rooAt = clamp(rooDx(bird.x), -6, 6); award(50); say('ROO-DIMENTARY!'); }   // landed on the kangaroo
       else if (overBbq && floorTop === BBQ.top) bird.onBbq = true;   // landed on the barbecue: ouch
       else if (carrier && !bird.onCarrier) {                           // landed on the postie or the ferry: hitch a ride
         bird.onCarrier = carrier; bird.carrierAt = clamp(bird.x - cam - CARRIERS[carrier].x(), -4, 4); award(50);
@@ -379,7 +382,7 @@ function magpiePose() {
     pose.headPitch = -0.55;
     pose.beak = Math.abs(Math.sin((CALL_TIME - bird.calling) * Math.PI * 5));
   }
-  pose.roll = bird.roll > 0 ? (1 - bird.roll / ROLL_TIME) * Math.PI * 2 : 0;    // barrel roll: a full turn about his body
+  pose.roll = bird.roll > 0 ? (1 - bird.roll / ROLL_TIME) * Math.PI * 4 : 0;    // barrel roll: two full turns about his body
   pose.drunk = bird.drunk > 0;
   pose.snag = bird.snag;
   if (pose.drunk) pose.pitch += Math.sin(time * 7) * 0.18;

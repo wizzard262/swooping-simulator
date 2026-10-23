@@ -73,7 +73,7 @@ for (const [name, art] of Object.entries(LOOT_ART)) {
 }
 
 const loot = [], bubbles = [];
-const DRUNK_TIME = 10, ROLL_TIME = 0.55, LOOT_TIME = 4;
+const DRUNK_TIME = 10, ROLL_TIME = 0.8, LOOT_TIME = 4;   // ROLL_TIME: a barrel roll, two full turns
 
 // Out the other side: GROG RUN!, bottles and cans tumble out of the door and the magpie goes wobbly.
 // If he barrel-rolled while inside, two beer barrels come bouncing out instead.

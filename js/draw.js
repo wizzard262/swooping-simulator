@@ -149,12 +149,10 @@ function draw() {
   drawShelfStock(fctx);
   if (!bird.inside) drawShopFront(fctx);                         // outside: the shop is behind him
   const pose = magpiePose();
-  // A barrel roll corkscrews: he swings up and round the line of flight, smaller on the far side
-  const ra = pose.roll || 0, cork = Math.sin(ra) * 20;               // a wide corkscrew round the line of flight
-  const depth = 1 - 0.32 * (1 - Math.cos(ra)) / 2;
+  // A barrel roll turns him on his own axis: drawMagpie squashes him through his back and belly
   const turn = bird.onHoist ? Math.sign(bird.hoistTurn || 1) * Math.max(0.2, Math.abs(bird.hoistTurn)) : bird.face;   // turning on the hoist
   // Slightly pixelated: he's drawn at 1/BIRD_PIX of the screen's resolution, then scaled up
-  const sc = K * BIRD_SCALE * depth / BIRD_PIX;
+  const sc = K * BIRD_SCALE / BIRD_PIX;
   bbctx.setTransform(1, 0, 0, 1, 0, 0);
   bbctx.clearRect(0, 0, birdBuf.width, birdBuf.height);
   const rx = loopX(ROO.x);
@@ -167,7 +165,7 @@ function draw() {
   drawCast();
   drawCharacter(CYCLIST.x, CYCLIST.ground, CYCLIST_SCALE, CYCLIST.dir, drawCyclist);
   if (DROPBEAR.state !== 'hidden') drawCharacter(DROPBEAR.x, DROPBEAR.y, 0.42, 1, drawDropBear);
-  bbctx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam - bird.face * cork * 0.45) * K / BIRD_PIX, (bird.y - cork + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
+  bbctx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
   if (bird.hot > 0) bbctx.filter = `sepia(${bird.hot}) saturate(${1 + 6 * bird.hot}) hue-rotate(${-40 * bird.hot}deg) brightness(${1 + 0.4 * bird.hot})`;   // going red
   if (pose.flip) bbctx.rotate(pose.flip);                           // upside down, on his back
   if (pose.hang) bbctx.scale(1, -1);                                 // hanging upside down by his feet, still facing the same way

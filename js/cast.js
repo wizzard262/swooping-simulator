@@ -549,6 +549,8 @@ function wireY(x) {                                                  // the sag 
 }
 const POSSUM = { in: 8, x: 0, dir: 1, visit: 0, pause: 0, spin: 0 };   // out on the wire about a third of the time; spin: pooped, whirling round the wire
 const POSSUM_SPIN = 3;
+const POSSUM_SCALE = 1.25;         // a quarter bigger than his first drawing
+const POSSUM_GAP = 0.65;           // shorter waits between visits: he comes out 30% more often
 const CYCLIST = { x: 1200, dir: -1, speed: 36, wobble: 0, sting: 0, ties: 4, ground: 170, crank: 0 };   // ties: always on his helmet
 const CYCLIST_SCALE = 0.6;        // a bit taller than the kangaroo
 const DROPBEAR = { state: 'hidden', x: 0, y: 0, vy: 0, t: 0, under: 0 };
@@ -566,13 +568,14 @@ function award(base, x = bird.x, y = bird.y) {
   SCORE.comboT = COMBO_WINDOW;
   const pts = base * SCORE.combo;
   SCORE.pts += pts;                                                  // (the high score is only set when the game's complete)
-  SCORE.pops.push({ text: '+' + pts, x, y: y - 14, life: 1.2 });
+  SCORE.pops.push({ text: '+' + pts + (SCORE.combo > 1 ? '  COMBO X' + SCORE.combo : ''), x, y: popY(y), life: SCORE.combo > 1 ? 1.6 : 1.2 });   // with the combo once it's building
 }
+const popY = y => Math.max(y - 14, 66);                              // points pop up above where they were won, but never under the key hints
 // Losing points (swooping the cyclist, the barbecue, the drop bear): shown in red, and the score can go below zero
 function penalty(base, x = bird.x, y = bird.y) {
   SCORE.combo = 1; SCORE.comboT = 0;
   SCORE.pts -= base;
-  SCORE.pops.push({ text: '-' + base, x, y: y - 14, life: 1.4, bad: true });
+  SCORE.pops.push({ text: '-' + base, x, y: popY(y), life: 1.4, bad: true });
 }
 
 const stormDark = () => STORM.t > 0 ? clamp(Math.min((STORM.len - STORM.t) / 4, STORM.t / 4), 0, 1) : 0;
@@ -602,7 +605,7 @@ function updateMore(dt) {
       const end = POSSUM.dir > 0 ? POSSUM.x >= WIRE.x1 - 2 : POSSUM.x <= WIRE.x0 + 2;
       if (end) { if (POSSUM.visit < 3) POSSUM.visit = 0; else POSSUM.dir *= -1; }   // off down the pole, or turn back
     }
-    if (POSSUM.visit <= 0) POSSUM.in = 2 * (10 + Math.random() * 5);
+    if (POSSUM.visit <= 0) POSSUM.in = 2 * (10 + Math.random() * 5) * POSSUM_GAP;
   } else if ((POSSUM.in -= dt) <= 0) {
     POSSUM.visit = 10 + Math.random() * 5; POSSUM.pause = 0; POSSUM.dir = Math.random() < 0.5 ? -1 : 1;
     POSSUM.x = POSSUM.dir > 0 ? WIRE.x0 + 2 : WIRE.x1 - 2;
@@ -752,7 +755,7 @@ const possumSx = () => suburbX(Math.round(POSSUM.x));
 function possumHitBy(sx, y) {
   if (POSSUM.visit <= 0 || POSSUM.spin > 0) return false;
   const wy = wireY(POSSUM.x);
-  return Math.abs(wrapDx(sx, possumSx(), suburb.P)) < 5 && y >= wy - 6 && y <= wy + 1;
+  return Math.abs(wrapDx(sx, possumSx(), suburb.P)) < 5 * POSSUM_SCALE && y >= wy - 6 * POSSUM_SCALE && y <= wy + 1;
 }
 function spinPossum() {
   POSSUM.spin = POSSUM_SPIN; POSSUM.visit = Math.max(POSSUM.visit, POSSUM_SPIN + 3);
@@ -766,9 +769,11 @@ function drawPossum(g) {
   const k = POSSUM.spin / POSSUM_SPIN, turn = Math.cos(3 * Math.PI * 2 * (1 - k * k));   // three turns round the wire, slowing down; seen side on
   for (let sx = sx0 - P; sx < W + P; sx += P) {
     if (sx < -10 || sx > W + 10) continue;
-    const px = (x, yy, w, h, c) => {                                  // each row swung round the wire (over the top, then hanging under it)
+    const px = (x, yy, w, h, c) => {                                  // each row swung round the wire (over the top, then hanging under it), scaled up
       g.fillStyle = c;
-      for (let r = 0; r < h; r++) g.fillRect(sx + (d > 0 ? x : -x - w + 1), y + Math.round((yy + r) * turn), w, 1);
+      const x0 = Math.round(x * POSSUM_SCALE), x1 = Math.round((x + w) * POSSUM_SCALE);
+      const y0 = Math.round(yy * POSSUM_SCALE), y1 = Math.round((yy + h) * POSSUM_SCALE);
+      for (let r = y0; r < y1; r++) g.fillRect(sx + (d > 0 ? x0 : -x1 + 1), y + Math.round(r * turn), x1 - x0, 1);
     };
     px(-5, -2, 2, 1, '#2a2a2a'); px(-6, -1, 1, 2, '#2a2a2a'); px(-5, 1, 1, 1, '#2a2a2a');   // bushy black tail, curling
     px(-3, -3, 4, 2, '#8a8f96'); px(1, -4, 2, 2, '#9aa0a6'); px(3, -3, 1, 1, '#e8a0a8');   // body, head, pink nose
