@@ -5,19 +5,18 @@
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Sky (static: flat strips, dithered at the joins)
+// Sky (static: flat strips with sharp joins)
 // ---------------------------------------------------------------------------
 const SKY_RGB = SKY.map(hex);       // the sky's colours as [r, g, b]
 let skyCanvas;
 function buildSky() {
   const c = makeCanvas(W, H), g = c.getContext('2d'), img = g.createImageData(W, H);
-  const strip = GRASS_TOP / SKY.length, last = SKY.length - 1;
+  const strip = SKY_BOTTOM / SKY.length;
   for (let y = 0; y < H; y++) {
-    const k = Math.round(y / strip), edge = y - k * strip;           // the nearest join, and how far from it
-    const blending = k >= 1 && k <= last && Math.abs(edge) < SKY_BLEND / 2, f = (edge + SKY_BLEND / 2) / SKY_BLEND;
+    const rgb = SKY_RGB[Math.min(SKY.length - 1, Math.floor(y / strip))];
     for (let x = 0; x < W; x++) {
       const o = (y * W + x) * 4;
-      img.data.set(SKY_RGB[blending ? k - (dither(x, y, f) ? 0 : 1) : Math.min(last, Math.floor(y / strip))], o);
+      img.data.set(rgb, o);
       img.data[o + 3] = 255;
     }
   }
@@ -113,7 +112,24 @@ function buildClouds() {
     const bottom = tower ? 85 + r() * 25 : 30 + r() * 70;
     list.push({ x: (i + r() * 0.6) * P / n, y: Math.max(2, Math.round(bottom - h)), img: makeCloud(r, w, h, tower) });
   }
+  for (let i = 0; i < 5; i++)                                       // a few thin wisps low down, just above the hills
+    list.push({ x: (i + r() * 0.7) * P / 5, y: 92 + Math.floor(r() * 18), img: makeWisp(r, 50 + Math.floor(r() * 80)) });
+  const order = list.map((_, i) => i).sort(() => r() - 0.5);       // the order they come back after a SOLAR-NOVA!
+  order.forEach((k, n) => { list[k].back = n; });
   return { P, list, wind: 3 };
+}
+// A wisp of cloud: a long, thin, broken streak of white, fading out at both ends
+function makeWisp(r, w) {
+  const c = makeCanvas(w, 3), g = c.getContext('2d');
+  const strands = [[1, 0, w, 0.55], [0, Math.floor(w * (0.15 + r() * 0.2)), Math.floor(w * (0.5 + r() * 0.3)), 0.3], [2, Math.floor(w * (0.3 + r() * 0.2)), w - Math.floor(r() * 10), 0.25]];
+  for (const [y, x0, x1, a] of strands)
+    for (let x = x0; x < x1; x++) {
+      const end = Math.min(x - x0, x1 - 1 - x) / ((x1 - x0) * 0.3);  // taper at the ends
+      if (r() < 0.12) continue;                                      // broken here and there
+      g.fillStyle = `rgba(250,252,255,${(a * Math.min(1, end)).toFixed(2)})`;
+      g.fillRect(x, y, 1, 1);
+    }
+  return c;
 }
 
 // ---------------------------------------------------------------------------

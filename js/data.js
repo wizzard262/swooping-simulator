@@ -50,10 +50,10 @@ const FONT = {
   '#': '57575', '$': '36236', '?': '61202', '@': '75747', '%': '51245', '&': '25253', '*': '52725'   // for cartoon swearing
 };
 
-// The sky: four flat strips of blue from the top down to the horizon (like Harrier Carrier's),
-// dithered into each other only where they meet
-const SKY = ['#1c78d8', '#2e94e5', '#4ca8ea', '#86c6f0'];
-const SKY_BLEND = 10;             // how many pixels each join is dithered over
+// The sky: five flat strips of blue, all the same height, from the top down to SKY_BOTTOM (about where
+// the hills and the harbour start; the last strip carries on below), like Harrier Carrier's, with sharp joins
+const SKY = ['#1c78d8', '#2a8ae0', '#3c9ce6', '#5cb0eb', '#86c6f0'];
+const SKY_BOTTOM = 120;
 
 // Clouds: the shades of a cloud, lit side to shadow (from the reference picture in prompt-art/)
 const CLOUD_TONES = ['#fafcff', '#e2ebfa', '#c8e2f9', '#a8d6f8', '#84d0f6', '#6cb6e8'];
@@ -145,6 +145,7 @@ const OBJECTIVES = [
   ['FLOCK YEAH!', 'Fly 5 s in the cockatoo flock'],
   ['ROUND THE TWIST!', 'Poop on the possum'],
   ['COAT-HANGER!', 'Poop on the bridge climbers'],
-  ['YEAH, NAH!', 'Get caught by the drop bear']
+  ['YEAH, NAH!', 'Get caught by the drop bear'],
+  ['SOLAR-NOVA!', 'Loop-the-loop round the sun']
 ];
 const END_TEXT = 'TOO EASY, MATE!';   // shown when they're all done

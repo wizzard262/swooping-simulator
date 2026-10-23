@@ -67,27 +67,38 @@ function drawPoop(out) {
   out.drawImage(poopBuf, 0, 0, poopBuf.width * BIRD_PIX, poopBuf.height * BIRD_PIX);
 }
 
+// Where the sun's left edge is on screen: it takes SUN_LOOPS trips round the level to cross the screen
+function sunLeft() {
+  const span = W + SUN_SIZE;
+  return mod(W * 0.62 - cam * span / (SUN_LOOPS * LEVEL_W) + SUN_SIZE, span) - SUN_SIZE;
+}
+const SUN_TOP = 8;                // the sun's top edge on screen
+
 function draw() {
   // Back canvas: the pixel sky scaled up, then the smooth sun.
   // The sun is slowest of all: it takes SUN_LOOPS trips round the level to cross the screen.
   bctx.imageSmoothingEnabled = false;
   bctx.drawImage(skyCanvas, 0, 0, back.width, back.height);
-  const span = W + SUN_SIZE, sunX = mod(W * 0.62 - cam * span / (SUN_LOOPS * LEVEL_W) + SUN_SIZE, span) - SUN_SIZE;
+  const sunX = sunLeft();
   bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
   bctx.filter = blur > 0.02 ? 'blur(' + (blur * K * 1.2).toFixed(1) + 'px)' : 'none';   // the sun blurs in a swoop too
-  const glow = bctx.createRadialGradient((sunX + SUN_SIZE / 2) * K, (8 + SUN_SIZE / 2) * K, 0, (sunX + SUN_SIZE / 2) * K, (8 + SUN_SIZE / 2) * K, SUN_SIZE * 0.75 * K);
+  const glow = bctx.createRadialGradient((sunX + SUN_SIZE / 2) * K, (SUN_TOP + SUN_SIZE / 2) * K, 0, (sunX + SUN_SIZE / 2) * K, (SUN_TOP + SUN_SIZE / 2) * K, SUN_SIZE * 0.75 * K);
   glow.addColorStop(0, 'rgba(255,236,170,0.55)'); glow.addColorStop(1, 'rgba(255,236,170,0)');
-  bctx.fillStyle = glow; bctx.fillRect((sunX - SUN_SIZE / 2) * K, (8 - SUN_SIZE / 2) * K, SUN_SIZE * 2 * K, SUN_SIZE * 2 * K);
-  if (sunHi.complete) bctx.drawImage(sunHi, (sunX + SUN_SIZE * (1 - SUN_ASPECT) / 2) * K, 8 * K, SUN_SIZE * SUN_ASPECT * K, SUN_SIZE * K);
+  bctx.fillStyle = glow; bctx.fillRect((sunX - SUN_SIZE / 2) * K, (SUN_TOP - SUN_SIZE / 2) * K, SUN_SIZE * 2 * K, SUN_SIZE * 2 * K);
+  if (sunHi.complete) bctx.drawImage(sunHi, (sunX + SUN_SIZE * (1 - SUN_ASPECT) / 2) * K, SUN_TOP * K, SUN_SIZE * SUN_ASPECT * K, SUN_SIZE * K);
   bctx.filter = 'none';
 
 
   // Pixel canvas: clouds, hills, suburb, lawn
   sctx.clearRect(0, 0, W, H);
   const cOff = cam * PARALLAX.clouds + time * clouds.wind;
-  for (const cl of clouds.list)
-    for (let x = mod(Math.round(cl.x - cOff), clouds.P) - clouds.P; x < W; x += clouds.P)
-      if (x + cl.img.width > 0) sctx.drawImage(cl.img, x, cl.y);
+  for (const cl of clouds.list) {
+    sctx.globalAlpha = cloudAlpha(cl);                               // burnt away after a SOLAR-NOVA!
+    if (sctx.globalAlpha > 0)
+      for (let x = mod(Math.round(cl.x - cOff), clouds.P) - clouds.P; x < W; x += clouds.P)
+        if (x + cl.img.width > 0) sctx.drawImage(cl.img, x, cl.y);
+  }
+  sctx.globalAlpha = 1;
   drawRainbow(sctx);
   drawCockies(sctx);
   drawTiled(hills.c, hills.P, cam * PARALLAX.hills, -HILLS_LIFT);
@@ -187,4 +198,9 @@ function draw() {
   if (dark > 0) { fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.fillStyle = `rgba(25,35,55,${0.3 * dark})`; fctx.globalCompositeOperation = 'source-atop'; fctx.fillRect(0, 0, front.width, front.height); fctx.globalCompositeOperation = 'source-over'; }
   drawCombo(fctx);
   drawEnd(fctx);
+  if (NOVA.t > 0) {                                                  // SOLAR-NOVA!: everything fades to white, then snaps back
+    fctx.setTransform(1, 0, 0, 1, 0, 0);
+    fctx.fillStyle = `rgba(255,255,255,${Math.min(1, (NOVA_TIME - NOVA.t) / NOVA_FADE)})`;
+    fctx.fillRect(0, 0, front.width, front.height);
+  }
 }

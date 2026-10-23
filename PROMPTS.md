@@ -736,9 +736,25 @@
 
 - Try the sky as 4 coloured blue strips, like in Harrier Carrier, but blended at the edges
 
+## 153. SOLAR-NOVA!
+
+- Add a goal to loop-the-loop round the sun: give me 10 names, something SOLAR-. Picked: SOLAR-NOVA!
+- And the screen fades out quickly to white and snaps back
+- When the SOLAR-NOVA! happens, I want all the clouds to disappear for 10 seconds and fade back in
+- Fade back in slowly, one at a time, over 20 seconds
+
+## 154. Sharp sky strips
+
+- No, for the sky make the coloured strips distinct and sharp
+- Make the sky 5 distinct strips, all the same height
+
+## 155. Wisps
+
+- I want a very low level of cloud, like thin wispy lines
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
 | 1 | 2026-10-21 | about 740 min so far | Prompts 1–145: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
-| 2 | 2026-10-23 | about 35 min so far | Prompts 146–152: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in four blended strips |
+| 2 | 2026-10-23 | about 55 min so far | Prompts 146–155: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in five sharp strips, low wisps of cloud, SOLAR-NOVA! (loop round the sun: white flash, clouds burnt away) |

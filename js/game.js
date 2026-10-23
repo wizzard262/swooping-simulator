@@ -64,6 +64,18 @@ const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 
 // Stunts: B for a barrel roll (two full turns on his own axis, bursting forward at swoop speed), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
 const LOOP_TIME = 1.1, LOOP_R = 22;
+// SOLAR-NOVA!: loop-the-loop with the sun's middle inside the loop. The screen fades to white
+// in a quarter of a second, holds, then snaps back; the clouds are burnt away, none for 10 seconds,
+// then they fade back one at a time over 20.
+const NOVA = { t: 0, at: -Infinity }, NOVA_TIME = 0.4, NOVA_FADE = 0.25, CLOUDS_GONE = 10, CLOUDS_BACK = 20;
+function solarNova() {
+  showCombo('SOLAR-NOVA!');
+  NOVA.t = NOVA_TIME; NOVA.at = time;
+}
+function cloudAlpha(cl) {
+  const each = CLOUDS_BACK / clouds.list.length;                     // each cloud's turn to fade in
+  return clamp((time - NOVA.at - CLOUDS_GONE - cl.back * each) / each, 0, 1);
+}
 function barrelRoll() {
   if (bird.roll > 0) return;
   bird.roll = ROLL_TIME;
@@ -326,6 +338,11 @@ function update(dt) {
     bird.vx = L.vx; bird.vy = 0; bird.face = L.face;
     bird.pitch = -th;
     bird.flapT += dt * 14;
+    if (!L.sunChecked && t >= 0.5) {                                 // halfway round: is the sun inside the loop?
+      L.sunChecked = true;
+      const cx = L.x + L.vx * el * 0.6 - cam, cy = L.y - LOOP_R;
+      if (Math.hypot(cx - (sunLeft() + SUN_SIZE / 2), cy - (SUN_TOP + SUN_SIZE / 2)) < LOOP_R) solarNova();
+    }
     if (bird.loopT === 0) { bird.pitch = 0; bird.loopEndAt = time; }
   }
 
@@ -352,6 +369,7 @@ function update(dt) {
   else if (bird.grounded && bird.onBack <= 0) { bird.callIn -= dt; if (bird.callIn <= 0) { bird.calling = CALL_TIME; bird.callIn = 10 + Math.random() * 10; Sound.carol(); } }
 
   blur += ((bird.swooping ? 1 : 0) - blur) * Math.min(1, (bird.swooping ? 6 : 3) * dt);
+  NOVA.t = Math.max(0, NOVA.t - dt);
   for (const c of captions) c.t -= dt;
   for (let i = captions.length - 1; i >= 0; i--) if (captions[i].t <= 0) captions.splice(i, 1);
   Sound.tick(dt);
