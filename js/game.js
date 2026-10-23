@@ -467,6 +467,6 @@ function basePose() {
   return {
     pitch: bird.pitch, headPitch: -bird.pitch * 0.3,
     wings: bird.swooping ? 'folded' : flapping ? 0.2 + 0.8 * Math.sin(bird.flapT * Math.PI / 2) : 0.35,
-    legs: null, bob: 0, burn: blur * (SLING.out > 0 ? 2 : 1), dangle: bird.swooping
+    legs: null, bob: 0, burn: blur * (SLING.out > 0 ? 1.6 : 1), twin: SLING.out > 0, dangle: bird.swooping
   };
 }

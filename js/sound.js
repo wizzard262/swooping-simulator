@@ -6,7 +6,7 @@
 // key press or touch (browsers need that); M or the speaker icon mutes it, and that's remembered.
 // ---------------------------------------------------------------------------
 const Sound = (() => {
-  let ac = null, master = null, noise = null, muted = false, hicT = 1, cicadaT = 6, didgT = 8, burner = null, wasSwooping = false, rain = null;
+  let ac = null, master = null, noise = null, muted = false, hicT = 1, cicadaT = 6, didgT = 8, burner = null, slinger = null, wasSwooping = false, wasFlung = false, rain = null;
   try { muted = localStorage.getItem('swoopMuted') === '1'; } catch (e) { /* storage blocked: default on */ }
 
   function start() {
@@ -20,6 +20,7 @@ const Sound = (() => {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     breeze();
     burner = afterburnerRoar();
+    slinger = slingshotRoar();
     rain = ac.createGain(); rain.gain.value = 0; rain.connect(master);   // rain, faded up in a storm
     const rs = ac.createBufferSource(), rf = ac.createBiquadFilter();
     rs.buffer = noise; rs.loop = true; rf.type = 'bandpass'; rf.frequency.value = 2800; rf.Q.value = 0.5;
@@ -42,6 +43,25 @@ const Sound = (() => {
     rumble.connect(rf); rf.connect(rg); rg.connect(out);
     s.start(); fl.start(); rumble.start();
     return { out, filter: f };
+  }
+  // Flung out of the SOLAR-SLINGSHOT!!!!: the afterburner's coarser big brother. Lower, distorted
+  // noise chopped up by a slow square-wave stutter, over a deep growling square-wave rumble
+  function slingshotRoar() {
+    const out = ac.createGain(); out.gain.value = 0; out.connect(master);
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), grit = ac.createWaveShaper();
+    s.buffer = noise; s.loop = true; f.type = 'lowpass'; f.frequency.value = 420; f.Q.value = 1.4;
+    const curve = new Float32Array(1024);
+    for (let i = 0; i < curve.length; i++) { const x = i / 511.5 - 1; curve[i] = Math.tanh(x * 6); }   // hard-driven: gritty
+    grit.curve = curve;
+    const chop = ac.createGain(); chop.gain.value = 0.7;
+    const st = ac.createOscillator(), stg = ac.createGain(); st.type = 'square'; st.frequency.value = 9; stg.gain.value = 0.35;
+    st.connect(stg); stg.connect(chop.gain);
+    s.connect(f); f.connect(grit); grit.connect(chop); chop.connect(out);
+    const growl = ac.createOscillator(), gf = ac.createBiquadFilter(), gg = ac.createGain();
+    growl.type = 'square'; growl.frequency.value = 31; gf.type = 'lowpass'; gf.frequency.value = 130; gg.gain.value = 0.7;
+    growl.connect(gf); gf.connect(gg); gg.connect(out);
+    s.start(); st.start(); growl.start();
+    return { out };
   }
   // The burner lighting: a deep whoomp
   function ignite() {
@@ -350,6 +370,10 @@ const Sound = (() => {
     const fast = bird.swooping || SLING.out > 0;                       // a swoop, or flung out of the SOLAR-SLINGSHOT!!!!
     if (fast && !wasSwooping && !muted) ignite();
     wasSwooping = fast;
+    const flung = SLING.out > 0;                                       // the slingshot's own coarse roar, fading as he slows
+    slinger.out.gain.setTargetAtTime(muted || !flung ? 0 : 0.2 + 0.3 * SLING.out / SLING_OUT, now(), 0.05);
+    if (flung && !wasFlung && !muted) { ignite(); tone('sawtooth', 70, 28, now(), 0.6, 0.35); }   // a bigger, rougher whoomp
+    wasFlung = flung;
     rain.gain.setTargetAtTime(muted ? 0 : stormDark() * 0.16, now(), 0.3);
     if (muted) return;
     cicadaT -= dt;
