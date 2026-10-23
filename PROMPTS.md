@@ -820,9 +820,33 @@
 
 - The bird still looks height-swollen: never increase his height
 
+## 171. Bent round the sun
+
+- When the bird rotates round the sun, make him bend into a circle, but don't fade him
+
+## 172. Roar, not bells
+
+- Do you know the sound a sword lens flare makes in anime? I want to hear this when he goes round the sun
+- No, I heard the 3 bells: is that the anime noise? Lose it entirely
+- Just start the afterburner roar immediately in the loop and build it up until the exit from the loop
+
+## 173. Thin, not fat
+
+- The bird is still getting fat: he's supposed to be stretched thin and long
+
+## 174. The wake
+
+- Give him a big wake, like 30 degrees of echo around him, that hits all targets passed like both a poop and a swoop as he passes
+- When we grow it to fill the screen and fade out, it returns to normal when the fade-out's completed
+- We need to see a really visible wake line: make it smoky
+
+## 175. Numbered objectives
+
+- The objectives list says 31 but shows 2 equal-length lists
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
 | 1 | 2026-10-21 | about 740 min so far | Prompts 1–145: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
-| 2 | 2026-10-23 | about 155 min so far | Prompts 146–170: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in five sharp strips, low wisps of cloud, SOLAR-NOVA! (loop round the sun: white flash, clouds burnt away, the whole game bouncing back), a drunk slide and glitch, the postie's slow-motion somersault, longer swoops, wider poop hits, wider eaves, KANGA-POO!, TRUE-BLUE! (the flag as a cape), stretchy stunts, the sun loop becoming SOLAR-SLINGSHOT!!!! (three times round the sun, flung out at double swoop speed, the game zooming in and bouncing back), a drunk sway with echoes, twin afterburners and a coarser roar out of the slingshot, a speeding-up orbit blurring into a grey-white ring, an overexposed super boost |
+| 2 | 2026-10-23 | about 175 min so far | Prompts 146–175: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in five sharp strips, low wisps of cloud, SOLAR-NOVA! (loop round the sun: white flash, clouds burnt away, the whole game bouncing back), a drunk slide and glitch, the postie's slow-motion somersault, longer swoops, wider poop hits, wider eaves, KANGA-POO!, TRUE-BLUE! (the flag as a cape), stretchy stunts, the sun loop becoming SOLAR-SLINGSHOT!!!! (three times round the sun, flung out at double swoop speed, the game zooming in and bouncing back), a drunk sway with echoes, twin afterburners and a coarser roar out of the slingshot, a speeding-up orbit blurring into a grey-white ring, an overexposed super boost, the bird bent round the sun, a roar building up, a smoky 30-degree wake that hits everything, numbered objectives |

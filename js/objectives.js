@@ -34,10 +34,10 @@ function restart() { location.reload(); }
 function fillObjectives() {
   document.getElementById('objCount').textContent = RUN.done.size + ' / ' + OBJECTIVES.length;
   document.getElementById('objTime').textContent = 'TIME ' + clock(runTime()) + (RUN.finished ? '   GAME COMPLETE!' : '');
-  const rows = OBJECTIVES.map(([name, what]) => {
+  const rows = OBJECTIVES.map(([name, what], i) => {
     const tr = document.createElement('tr'), done = RUN.done.has(name);
     if (done) tr.className = 'done';
-    for (const [cls, text] of [['tick', done ? '\u2714' : '\u2610'], ['name', name], ['what', what]]) {
+    for (const [cls, text] of [['num', i + 1], ['tick', done ? '\u2714' : '\u2610'], ['name', name], ['what', what]]) {
       const td = document.createElement('td'); td.className = cls; td.textContent = text; tr.append(td);
     }
     return tr;

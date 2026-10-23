@@ -365,13 +365,14 @@ const Sound = (() => {
   // Background events and hiccups, timed from the game loop
   function tick(dt) {
     if (!ac) return;
-    burner.out.gain.setTargetAtTime(muted ? 0 : blur * 0.32, now(), 0.06);   // roar follows the swoop
+    const orbit = SLING.t > 0 ? slingProgress() : 0;                  // whipping round the sun: the roar builds all the way round
+    burner.out.gain.setTargetAtTime(muted ? 0 : Math.max(blur * 0.32, SLING.t > 0 ? 0.08 + 0.3 * orbit : 0), now(), 0.06);   // roar follows the swoop
     burner.filter.frequency.setTargetAtTime(600 + blur * 900, now(), 0.1);
     const fast = bird.swooping || SLING.out > 0;                       // a swoop, or flung out of the SOLAR-SLINGSHOT!!!!
     if (fast && !wasSwooping && !muted) ignite();
     wasSwooping = fast;
     const flung = SLING.out > 0;                                       // the slingshot's own coarse roar, fading as he slows
-    slinger.out.gain.setTargetAtTime(muted || !flung ? 0 : 0.2 + 0.3 * SLING.out / SLING_OUT, now(), 0.05);
+    slinger.out.gain.setTargetAtTime(muted ? 0 : flung ? 0.2 + 0.3 * SLING.out / SLING_OUT : SLING.t > 0 ? 0.03 + 0.47 * orbit * orbit : 0, now(), 0.05);
     if (flung && !wasFlung && !muted) { ignite(); tone('sawtooth', 70, 28, now(), 0.6, 0.35); }   // a bigger, rougher whoomp
     wasFlung = flung;
     rain.gain.setTargetAtTime(muted ? 0 : stormDark() * 0.16, now(), 0.3);

@@ -168,7 +168,8 @@ function drawMagpie(g, pose) {
   }
   g.save();
   g.rotate(pose.pitch);
-  g.scale(pose.stretch || 1, 1);                                           // stretched along his body in a stunt, no taller
+  const st = pose.stretch || 1;
+  g.scale(st, 1 / Math.sqrt(st));                                          // stretched along his body in a stunt: longer and thinner
   if (pose.twin) for (const dy of [-9, 9]) { g.save(); g.translate(0, dy); afterburner(g, pose.burn || 0); g.restore(); }   // flung out of the SOLAR-SLINGSHOT!!!!: twin jets
   else afterburner(g, pose.burn || 0);
   g.scale(1, Math.cos(pose.roll || 0));

@@ -83,8 +83,49 @@ function startSlingshot() {
   SLING.t = SLING_ORBIT;
   bird.loopT = 0; bird.swooping = false;
 }
+// Spat out, he leaves a big wake: a 30-degree fan of echoes trailing behind and below him, up to
+// WAKE_LEN pixels back. Everything it sweeps over is hit as if he'd both pooped on it and swooped it
+// (each thing once per slingshot; the cyclist's cable ties can't sting a wake)
+const WAKE_LEN = 260, WAKE_ANGLE = Math.PI / 6, wakeHit = new Set();
+function inWake(sx, y) {                                             // is a point on screen inside the wake (which grows as the boost dies)?
+  const d = -bird.face * (sx - (bird.x - cam)), v = y - bird.y;
+  return d > 0 && d < WAKE_LEN * wakeGrow() && v >= -6 && v <= d * Math.tan(WAKE_ANGLE);
+}
+function sweepWake() {
+  const once = (key, fn) => { if (!wakeHit.has(key)) { wakeHit.add(key); fn(); } };
+  for (const t of TARGETS) if (inWake(loopX(t.x + t.w / 2), t.y + t.h / 2)) once(t, () => t.hit({}));   // the poop hits
+  if (inWake(loopX(HOIST.x), HOIST.mastTop + 10)) once('hoist', () => { HOIST.spin = -bird.face * HOIST_WHIRL; showCombo('WHIPPER-SNIPPER!', true); });
+  if (ROO.dizzy <= 0 && inWake(loopX(ROO.x), rooTop())) once('roo', () => knockOver());
+  for (let d = 4; d < WAKE_LEN * wakeGrow(); d += 4)               // the rest by where they are on their own layers
+    for (let v = -6; v <= d * Math.tan(WAKE_ANGLE); v += 3) {
+      const sx = bird.x - cam - bird.face * d, y = bird.y + v;
+      if (postieHitBy(sx, y)) once('postie', knockPostie);
+      if (possumHitBy(sx, y)) once('possum', spinPossum);
+      if (climbersHitBy(sx, y)) once('climbers', hitClimbers);
+      if (SHARK.sink <= 0 && sharkHitBy(sx, y)) once('shark', swoopShark);
+    }
+}
+// The wake's smoke: puffs pour off his tail and spread out down the two edges of the fan (and some
+// between), swelling and fading, so the wake shows as a big smoky V behind him
+const wakeSmoke = [];
+function updateWakeSmoke(dt) {
+  if (SLING.out > 0)
+    for (let n = Math.round(260 * dt); n > 0; n--) {
+      const edge = Math.random(), spread = edge < 0.4 ? 0 : edge < 0.8 ? 1 : Math.random();   // top edge, bottom edge, or between
+      wakeSmoke.push({ y: bird.y + 2, vx: bird.face * 40 * Math.random(),
+        vy: SWOOP_SPEED * 2 * Math.tan(WAKE_ANGLE) * spread * (0.85 + 0.3 * Math.random()) + (Math.random() - 0.5) * 30,
+        x: bird.x - bird.face * (16 + Math.random() * 20), r: 4 + Math.random() * 3, life: 1.8 + Math.random() * 0.8 });
+    }
+  for (const p of wakeSmoke) {
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vy *= Math.exp(-1.8 * dt); p.vx *= Math.exp(-1.8 * dt);       // slowing as it spreads
+    p.r += 16 * dt; p.life -= dt;
+  }
+  for (let i = wakeSmoke.length - 1; i >= 0; i--) if (wakeSmoke[i].life <= 0) wakeSmoke.splice(i, 1);
+}
 function updateSlingshot(dt) {
-  if (SLING.out > 0) SLING.out = Math.max(0, SLING.out - dt);
+  updateWakeSmoke(dt);
+  if (SLING.out > 0) { SLING.out = Math.max(0, SLING.out - dt); sweepWake(); }
   if (SLING.t <= 0) return;
   SLING.t = Math.max(0, SLING.t - dt);
   const p = slingProgress(), th = SLING.th0 + (SLING.th1 - SLING.th0) * p * p, s = sunCentre();   // p squared: speeding up all the way round
@@ -92,7 +133,7 @@ function updateSlingshot(dt) {
   bird.y = s.y + SLING_R * Math.cos(th);
   bird.vx = bird.vy = 0; bird.pitch = -th; bird.flapT += dt * 14; bird.swooping = false; bird.grounded = false;
   if (SLING.t === 0) {                                               // let go: flung out
-    bird.pitch = 0; SLING.out = SLING_OUT; NOVA.at = time;
+    bird.pitch = 0; SLING.out = SLING_OUT; NOVA.at = time; wakeHit.clear();
     showCombo('SOLAR-SLINGSHOT!!!!');
   }
 }

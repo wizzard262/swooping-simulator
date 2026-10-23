@@ -33,7 +33,8 @@
   #objectives .panel { position: relative; width: min(1180px, 96vw); max-height: 94vh; overflow: auto; box-sizing: border-box; padding: 12px 16px;
     background: #12202e; border: 3px solid #ffd23f; border-radius: 6px; box-shadow: 0 6px 30px rgba(0, 0, 0, .6);
     color: #e8eef4; font: min(14px, 2.1vh, 1.25vw)/1.3 Consolas, 'Courier New', monospace; }
-  #objCols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }   /* two columns, so all 25 fit without scrolling */
+  #objCols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; align-items: start; }   /* two columns, so they all fit without scrolling; rows the same height in both */
+  #objectives .num { width: 1.6em; text-align: right; color: #5d7088; }
   #objectives h2 { margin: 0 0 2px; color: #ffd23f; font-size: 1.45em; letter-spacing: 1px; }
   #objTime { margin: 0 0 10px; color: #9fdcff; }
   #objectives table { width: 100%; border-collapse: collapse; }
@@ -54,7 +55,7 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v78</div>
+<div id="ver" title="Version: one for each update published">v79</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
