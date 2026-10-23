@@ -67,6 +67,21 @@ function drawPoop(out) {
   out.drawImage(poopBuf, 0, 0, poopBuf.width * BIRD_PIX, poopBuf.height * BIRD_PIX);
 }
 
+// The flag worn as a cape (magpie units, he faces +x): tied on at the back of his neck, streaming
+// out behind him and rippling, the Union Jack end at his neck
+function drawCape(g, pose) {
+  const cols = FLAG.w, rows = FLAG.h, cw = 3.6, ch = 3.4, fold = Math.min(1, CAPE.t / 0.4);   // furls up in the last moment
+  g.save();
+  g.rotate(pose.pitch || 0);
+  for (let i = 0; i < cols * fold; i++) {
+    const wave = Math.sin(time * 12 - i * 0.6) * i * 0.35, droop = i * 0.5;
+    for (let j = 0; j < rows; j++) {
+      g.fillStyle = flagColour(i, j);
+      g.fillRect(-2 - (i + 1) * cw, -16 + droop + wave + j * ch, cw + 0.4, ch + 0.4);
+    }
+  }
+  g.restore();
+}
 let shownShift = '0.00%,1.0000';  // the slide and zoom last set on the canvases
 // Drunk glitch: a few frames in every second, bands of the picture jump sideways, the same on all three canvases
 function drunkGlitch(drunk) {
@@ -191,6 +206,7 @@ function draw() {
   if (DROPBEAR.state !== 'hidden') drawCharacter(DROPBEAR.x, DROPBEAR.y, 0.42, 1, drawDropBear);
   bbctx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
   if (bird.hot > 0) bbctx.filter = `sepia(${bird.hot}) saturate(${1 + 6 * bird.hot}) hue-rotate(${-40 * bird.hot}deg) brightness(${1 + 0.4 * bird.hot})`;   // going red
+  if (CAPE.t > 0) drawCape(bbctx, pose);                            // TRUE-BLUE!: the Aussie flag as a cape, behind him
   if (pose.flip) bbctx.rotate(pose.flip);                           // upside down, on his back
   if (pose.hang) bbctx.scale(1, -1);                                 // hanging upside down by his feet, still facing the same way
   drawMagpie(bbctx, pose);

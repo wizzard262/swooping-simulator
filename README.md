@@ -22,8 +22,8 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
 - B for a barrel roll (two turns on his own axis, bursting forward at swoop speed with no afterburner), L for a loop-the-loop
 - M (or the speaker icon) turns the sound on and off
-- O (or the OBJECTIVES link under the timer, top right) opens the list of all 30 objectives, each named by the caption it shows, with a tick when done; the game waits while it's open, and any key closes it. A timer runs from your first move
-- Do all 30 and the game is complete: a fanfare, a big TOO EASY, MATE!, your time and score, and only then does your score count for the high score. Press any key to play again
+- O (or the OBJECTIVES link under the timer, top right) opens the list of all 31 objectives, each named by the caption it shows, with a tick when done; the game waits while it's open, and any key closes it. A timer runs from your first move
+- Do all 31 and the game is complete: a fanfare, a big TOO EASY, MATE!, your time and score, and only then does your score count for the high score. Press any key to play again
 - Poops fade away after 10 seconds
 - The game keeps a 16:9 view and fits any window size, centred, with black bars top and bottom (tall windows) or at the sides (wide ones)
 - Everything you hit or ride gets a pop-art Aussie caption: ROO THE DAY!, KANGA-POO!, ROO-DIMENTARY!, KOOKA-BOOM-A!, SPECIAL DELIVERY!, CYCLO-PATH!, STREWTH!, ROUND THE TWIST!, COAT-HANGER!, BARBIE-POO!, COOKED, MATE!, SNAG-ROCKET!, YEAH, NAH!, DOWN UNDER!, BLUDGER! (the ferry), POSTIE-PILLION! (RBT TIME! if you land on the postie drunk), SPIN-CYCLE!, WHIPPER-SNIPPER!
@@ -51,7 +51,7 @@ Standard layout (Xbox, PlayStation and similar). Press any button once after plu
 
 ## Objectives
 
-Do all 30 to complete the game (press O in the game for this list, with ticks). Each is named by the pop-art caption that shows when you do it.
+Do all 31 to complete the game (press O in the game for this list, with ticks). Each is named by the pop-art caption that shows when you do it.
 
 | # | Caption | How |
 |---|---|---|
@@ -85,6 +85,7 @@ Do all 30 to complete the game (press O in the game for this list, with ticks). 
 | 28 | COAT-HANGER! | Poop on the bridge climbers |
 | 29 | YEAH, NAH! | Get caught by the drop bear |
 | 30 | SOLAR-NOVA! | Loop-the-loop round the sun (the screen flashes white and the clouds burn away for 10 seconds, then drift back one by one) |
+| 31 | TRUE-BLUE! | Barrel roll past the Aussie flag (you wear it as a cape for 5 seconds) |
 
 ## How it's made
 

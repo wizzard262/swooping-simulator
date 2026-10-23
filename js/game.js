@@ -101,6 +101,17 @@ function barrelRoll() {
   if (bird.swooping) showCombo('BARREL SWOOP!');                    // rolling mid-swoop (both, if it's both)
   if (!bird.inside && !bird.swooping && !bird.grounded) award(10);
 }
+// TRUE-BLUE!: barrel roll past the Aussie flag and he takes it off the pole and wears it as a cape
+// for 5 seconds; then it's back flying on its pole
+const CAPE = { t: 0 }, CAPE_TIME = 5;
+function checkTrueBlue() {
+  if (bird.roll <= 0 || CAPE.t > 0) return;
+  const sx = suburbX(FLAG.x + 2), top = SUBURB_BASE - FLAG.pole + 1;
+  if (Math.abs(wrapDx(bird.x - cam, sx + FLAG.w / 2, suburb.P)) < FLAG.w / 2 + 6 && Math.abs(bird.y - (top + FLAG.h / 2)) < 12) {
+    CAPE.t = CAPE_TIME;
+    showCombo('TRUE-BLUE!');
+  }
+}
 function loopTheLoop() {
   if (bird.loopT > 0 || bird.inside || bird.onBack > 0) return;    // no room under the shop ceiling; not while on his back
   if (bird.swooping) showCombo('SWOOP-AND-LOOP!');
@@ -388,6 +399,8 @@ function update(dt) {
   else if (bird.grounded && bird.onBack <= 0) { bird.callIn -= dt; if (bird.callIn <= 0) { bird.calling = CALL_TIME; bird.callIn = 10 + Math.random() * 10; Sound.carol(); } }
 
   blur += ((bird.swooping ? 1 : 0) - blur) * Math.min(1, (bird.swooping ? 6 : 3) * dt);
+  CAPE.t = Math.max(0, CAPE.t - dt);
+  checkTrueBlue();
   for (const c of captions) c.t -= dt;
   for (let i = captions.length - 1; i >= 0; i--) if (captions[i].t <= 0) captions.splice(i, 1);
   Sound.tick(dt);

@@ -458,6 +458,7 @@ const FLAG_TONES = [0, 0.18, -0.25].map(t => {                       // plain, l
   return pix;
 });
 function drawFlag(g) {
+  if (CAPE.t > 0) return;                                             // the magpie's wearing it (TRUE-BLUE!)
   const P = suburb.P, top = SUBURB_BASE - FLAG.pole + 1;
   const sx = suburbX(FLAG.x + 2);
   for (let x0 = sx - P; x0 < W + P; x0 += P) {                        // every copy across even a very wide screen
