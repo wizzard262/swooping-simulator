@@ -150,7 +150,7 @@ function afterburner(g, power) {
 }
 
 // pose: { pitch (radians, + is nose down), headPitch, wings: 'folded' | open amount, legs: walk phase or null,
-//         burn: afterburner 0 to 1, dangle: legs trailing in a swoop }
+//         burn: afterburner 0 to 1, dangle: legs trailing in a swoop, stretch: length factor in a stunt }
 function drawMagpie(g, pose) {
   if (pose.legs !== null) {                                                // legs, in the upright frame
     const swing = Math.sin(pose.legs) * 5;
@@ -167,6 +167,7 @@ function drawMagpie(g, pose) {
   }
   g.save();
   g.rotate(pose.pitch);
+  g.scale(pose.stretch || 1, 1);                                           // stretched along his body in a stunt, no taller
   afterburner(g, pose.burn || 0);
   g.scale(1, Math.cos(pose.roll || 0));
   const spread = pose.wings !== 'folded';

@@ -147,7 +147,7 @@ const OBJECTIVES = [
   ['ROUND THE TWIST!', 'Poop on the possum'],
   ['COAT-HANGER!', 'Poop on the bridge climbers'],
   ['YEAH, NAH!', 'Get caught by the drop bear'],
-  ['SOLAR-NOVA!', 'Loop-the-loop round the sun'],
+  ['SOLAR-SLINGSHOT!!!!', 'Loop-the-loop round the sun'],
   ['TRUE-BLUE!', 'Barrel roll past the Aussie flag']
 ];
 const END_TEXT = 'TOO EASY, MATE!';   // shown when they're all done

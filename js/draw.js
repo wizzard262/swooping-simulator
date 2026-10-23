@@ -121,7 +121,7 @@ function draw() {
   sctx.clearRect(0, 0, W, H);
   const cOff = cam * PARALLAX.clouds + time * clouds.wind;
   for (const cl of clouds.list) {
-    sctx.globalAlpha = cloudAlpha(cl);                               // burnt away after a SOLAR-NOVA!
+    sctx.globalAlpha = cloudAlpha(cl);                               // burnt away after a SOLAR-SLINGSHOT!!!!
     if (sctx.globalAlpha > 0)
       for (let x = mod(Math.round(cl.x - cOff), clouds.P) - clouds.P; x < W; x += clouds.P)
         if (x + cl.img.width > 0) sctx.drawImage(cl.img, x, cl.y);
@@ -231,15 +231,11 @@ function draw() {
   const drunk = clamp(bird.drunk / 2, 0, 1);                        // eases off over his last 2 seconds of being drunk
   if (drunk > 0) drunkGlitch(drunk);
   const slide = drunk * (Math.sin(time * 1.1) * 0.6 + Math.sin(time * 2.7 + 1) * 0.3 + Math.sin(time * 5.3 + 2) * 0.1) * 4;   // % of the screen width
-  const zoom = novaZoom() * (1 + 0.1 * drunk), shift = slide.toFixed(2) + '%,' + zoom.toFixed(4);   // zoomed in a little when drunk so the edges never show
-  if (shift !== shownShift) {                                        // SOLAR-NOVA!: the whole game bounces back into place
-    for (const cv of [back, canvas, front]) cv.style.transform = zoom === 1 && !slide ? '' : `translateX(${slide.toFixed(2)}%) scale(${zoom.toFixed(4)})`;
+  // SOLAR-SLINGSHOT!!!!: the whole game jumps closer and bounces back. Drunk: zoomed in a little so the
+  // edges never show as it slides. Never zoomed out, so it always fills the window.
+  const zoom = novaZoom() * (1 + 0.1 * drunk), shift = slide.toFixed(2) + '%,' + zoom.toFixed(4);
+  if (shift !== shownShift) {
+    for (const cv of [back, canvas, front]) cv.style.transform = !slide && zoom === 1 ? '' : `translateX(${slide.toFixed(2)}%) scale(${zoom.toFixed(4)})`;
     shownShift = shift;
-  }
-  const white = novaWhite();
-  if (white > 0) {                                                   // SOLAR-NOVA!: everything fades to white, then bounces back
-    fctx.setTransform(1, 0, 0, 1, 0, 0);
-    fctx.fillStyle = `rgba(255,255,255,${white.toFixed(3)})`;
-    fctx.fillRect(0, 0, front.width, front.height);
   }
 }

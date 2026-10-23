@@ -64,27 +64,39 @@ const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 
 // Stunts: B for a barrel roll (two full turns on his own axis, bursting forward at swoop speed), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
 const LOOP_TIME = 1.1, LOOP_R = 22;
-// SOLAR-NOVA!: loop-the-loop with the sun's middle inside the loop. The screen fades to white
-// over a second (slowly at first, then faster), holds, then the white clears and the whole game
-// bounces back into place over 2 seconds; the clouds are burnt away, none for 10 seconds, then
-// they fade back one at a time over 20.
-const NOVA = { at: -Infinity }, NOVA_FADE = 1, NOVA_HOLD = 0.15, NOVA_BOUNCE = 2, NOVA_CLEAR = 0.3, NOVA_ZOOM = 0.25;
-const CLOUDS_GONE = 10, CLOUDS_BACK = 20;
-function solarNova() {
-  showCombo('SOLAR-NOVA!');
-  NOVA.at = time;
+// SOLAR-SLINGSHOT!!!!: loop-the-loop with the sun's middle inside the loop and the sun catches him:
+// stretched to twice his length, he whips round it three times (the camera holds still), then is
+// flung out forward at twice swoop speed with a double afterburner, shrinking back to size. As he's
+// flung out the whole game jumps 30% closer and bounces back to normal over 2 seconds (always filling
+// the window), and the clouds burn away: none for 10 seconds, then they fade back one at a time over 20.
+const SLING = { t: 0, out: 0, th0: 0, th1: 0 }, SLING_ORBIT = 2.4, SLING_TURNS = 3, SLING_OUT = 1.5, SLING_R = 34;
+const NOVA = { at: -Infinity }, NOVA_ZOOM = 0.3, NOVA_BOUNCE = 2, CLOUDS_GONE = 10, CLOUDS_BACK = 20;
+const sunCentre = () => ({ x: sunLeft() + SUN_SIZE / 2, y: SUN_TOP + SUN_SIZE / 2 });   // on screen
+function startSlingshot() {
+  const s = sunCentre();
+  SLING.th0 = Math.atan2(bird.face * (bird.x - cam - s.x), bird.y - s.y);   // where he is round it, the same way the loop goes
+  SLING.th1 = Math.PI * 2 * Math.ceil((SLING.th0 + SLING_TURNS * Math.PI * 2) / (Math.PI * 2));   // three times round, ending underneath going forward
+  SLING.t = SLING_ORBIT;
+  bird.loopT = 0; bird.swooping = false;
 }
-function novaWhite() {                                               // how white the screen is, 0 to 1
-  const age = time - NOVA.at, back = age - NOVA_FADE - NOVA_HOLD;
-  if (age < 0 || back >= NOVA_CLEAR) return 0;
-  if (age < NOVA_FADE) return (age / NOVA_FADE) ** 3;               // eases in: slow, then faster
-  return back < 0 ? 1 : 1 - back / NOVA_CLEAR;
+function updateSlingshot(dt) {
+  if (SLING.out > 0) SLING.out = Math.max(0, SLING.out - dt);
+  if (SLING.t <= 0) return;
+  SLING.t = Math.max(0, SLING.t - dt);
+  const p = 1 - SLING.t / SLING_ORBIT, th = SLING.th0 + (SLING.th1 - SLING.th0) * p, s = sunCentre();
+  bird.x = cam + s.x + bird.face * SLING_R * Math.sin(th);
+  bird.y = s.y + SLING_R * Math.cos(th);
+  bird.vx = bird.vy = 0; bird.pitch = -th; bird.flapT += dt * 14; bird.swooping = false; bird.grounded = false;
+  if (SLING.t === 0) {                                               // let go: flung out
+    bird.pitch = 0; SLING.out = SLING_OUT; NOVA.at = time;
+    showCombo('SOLAR-SLINGSHOT!!!!');
+  }
 }
-function novaZoom() {                                                // the whole game's scale: zoomed in, bouncing back to 1
-  const back = time - NOVA.at - NOVA_FADE - NOVA_HOLD;
-  return back < 0 || back >= NOVA_BOUNCE ? 1 : 1 + NOVA_ZOOM * (1 - bounceOut(back / NOVA_BOUNCE));
+function novaZoom() {                                                // the whole game's scale: 1.3, bouncing back to 1 (never below)
+  const t = (time - NOVA.at) / NOVA_BOUNCE;
+  return t < 0 || t >= 1 ? 1 : 1 + NOVA_ZOOM * (1 - bounceOut(t));
 }
-function bounceOut(t) {                                              // the classic bounce ease: overshoots and settles in three bounces
+function bounceOut(t) {                                              // the classic bounce ease: settles in three bounces
   if (t < 1 / 2.75) return 7.5625 * t * t;
   if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
   if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
@@ -291,7 +303,8 @@ function update(dt) {
     else if (Math.abs(bird.vx) > maxX) bird.vx += (Math.sign(bird.vx) * maxX - bird.vx) * Math.min(1, 2 * dt);  // ease back after a swoop
     else if (dirX) bird.vx = clamp(bird.vx + dirX * ACCEL_X * dt, -maxX, maxX);
     else bird.vx *= Math.exp(-0.8 * dt);                           // glide keeps most of its speed
-    if (bird.roll > 0) { bird.vx = bird.face * SWOOP_SPEED; bird.vy = 0; }   // barrel roll: a straight burst forward at swoop speed (no afterburner)
+    if (SLING.out > 0) { bird.vx = bird.face * SWOOP_SPEED * 2; bird.vy = 0; }   // flung out of the SOLAR-SLINGSHOT!!!!
+    else if (bird.roll > 0) { bird.vx = bird.face * SWOOP_SPEED; bird.vy = 0; }   // barrel roll: a straight burst forward at swoop speed (no afterburner)
     else {
       bird.vy += (GRAVITY - (c.up ? FLAP : 0) + (c.down ? DIVE : 0)) * dt;
       const maxDown = c.down ? MAX_DIVE : MAX_FALL;
@@ -371,10 +384,11 @@ function update(dt) {
     if (!L.sunChecked && t >= 0.5) {                                 // halfway round: is the sun inside the loop?
       L.sunChecked = true;
       const cx = L.x + L.vx * el * 0.6 - cam, cy = L.y - LOOP_R;
-      if (Math.hypot(cx - (sunLeft() + SUN_SIZE / 2), cy - (SUN_TOP + SUN_SIZE / 2)) < LOOP_R) solarNova();
+      if (Math.hypot(cx - sunCentre().x, cy - sunCentre().y) < LOOP_R) startSlingshot();
     }
-    if (bird.loopT === 0) { bird.pitch = 0; bird.loopEndAt = time; }
+    if (bird.loopT === 0 && SLING.t <= 0) { bird.pitch = 0; bird.loopEndAt = time; }
   }
+  updateSlingshot(dt);
 
   // Speed streaks when going fast
   const speed = Math.hypot(bird.vx, bird.vy);
@@ -398,7 +412,8 @@ function update(dt) {
   if (bird.calling > 0) bird.calling = Math.max(0, bird.calling - dt);
   else if (bird.grounded && bird.onBack <= 0) { bird.callIn -= dt; if (bird.callIn <= 0) { bird.calling = CALL_TIME; bird.callIn = 10 + Math.random() * 10; Sound.carol(); } }
 
-  blur += ((bird.swooping ? 1 : 0) - blur) * Math.min(1, (bird.swooping ? 6 : 3) * dt);
+  const fast = bird.swooping || SLING.out > 0;
+  blur += ((fast ? 1 : 0) - blur) * Math.min(1, (fast ? 6 : 3) * dt);
   CAPE.t = Math.max(0, CAPE.t - dt);
   checkTrueBlue();
   for (const c of captions) c.t -= dt;
@@ -406,7 +421,7 @@ function update(dt) {
   Sound.tick(dt);
 
   const target = bird.x - W * 0.42 + bird.face * W * 0.06 + clamp(bird.vx * 0.25, -60, 60);
-  cam += (target - cam) * Math.min(1, 3 * dt);
+  if (SLING.t <= 0) cam += (target - cam) * Math.min(1, 3 * dt);    // held still while he whips round the sun
   if (bird.onCarrier && bird.grounded) {                             // riding: stay put on the postie or the ferry, on screen
     const c = CARRIERS[bird.onCarrier];
     bird.x = cam + c.x() + bird.carrierAt; bird.y = c.top() - FEET; bird.vx = 0; bird.face = c.dir();
@@ -432,6 +447,10 @@ function magpiePose() {
     pose.beak = Math.abs(Math.sin((CALL_TIME - bird.calling) * Math.PI * 5));
   }
   pose.roll = bird.roll > 0 ? (1 - bird.roll / ROLL_TIME) * Math.PI * 4 : 0;    // barrel roll: two full turns about his body
+  const stunt = Math.max(bird.roll > 0 ? 1 - bird.roll / ROLL_TIME : 0, bird.loopT > 0 ? 1 - bird.loopT / LOOP_TIME : 0);
+  pose.stretch = stunt > 0 ? 1 + 0.5 * Math.sin(Math.PI * stunt) : 1;   // barrel roll or loop: stretched out to half as long again and back
+  if (SLING.t > 0) pose.stretch = 1 + Math.min(1, (1 - SLING.t / SLING_ORBIT) / 0.1);   // round the sun: twice as long
+  else if (SLING.out > 0) pose.stretch = 1 + SLING.out / SLING_OUT;                   // flung out: shrinking back
   pose.drunk = bird.drunk > 0;
   pose.snag = bird.snag;
   if (pose.drunk) pose.pitch += Math.sin(time * 7) * 0.18;
@@ -448,6 +467,6 @@ function basePose() {
   return {
     pitch: bird.pitch, headPitch: -bird.pitch * 0.3,
     wings: bird.swooping ? 'folded' : flapping ? 0.2 + 0.8 * Math.sin(bird.flapT * Math.PI / 2) : 0.35,
-    legs: null, bob: 0, burn: blur, dangle: bird.swooping
+    legs: null, bob: 0, burn: blur * (SLING.out > 0 ? 2 : 1), dangle: bird.swooping
   };
 }

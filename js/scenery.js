@@ -114,7 +114,7 @@ function buildClouds() {
   }
   for (let i = 0; i < 5; i++)                                       // a few thin wisps low down, just above the hills
     list.push({ x: (i + r() * 0.7) * P / 5, y: 92 + Math.floor(r() * 18), img: makeWisp(r, 50 + Math.floor(r() * 80)) });
-  const order = list.map((_, i) => i).sort(() => r() - 0.5);       // the order they come back after a SOLAR-NOVA!
+  const order = list.map((_, i) => i).sort(() => r() - 0.5);       // the order they come back after a SOLAR-SLINGSHOT!!!!
   order.forEach((k, n) => { list[k].back = n; });
   return { P, list, wind: 3 };
 }

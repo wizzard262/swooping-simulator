@@ -347,8 +347,9 @@ const Sound = (() => {
     if (!ac) return;
     burner.out.gain.setTargetAtTime(muted ? 0 : blur * 0.32, now(), 0.06);   // roar follows the swoop
     burner.filter.frequency.setTargetAtTime(600 + blur * 900, now(), 0.1);
-    if (bird.swooping && !wasSwooping && !muted) ignite();
-    wasSwooping = bird.swooping;
+    const fast = bird.swooping || SLING.out > 0;                       // a swoop, or flung out of the SOLAR-SLINGSHOT!!!!
+    if (fast && !wasSwooping && !muted) ignite();
+    wasSwooping = fast;
     rain.gain.setTargetAtTime(muted ? 0 : stormDark() * 0.16, now(), 0.3);
     if (muted) return;
     cicadaT -= dt;

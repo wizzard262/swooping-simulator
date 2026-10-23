@@ -20,7 +20,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - Every few minutes a summer storm rolls in: dark sky, rain, lightning and thunder, then a rainbow. The rain slants past you the way you're flying: fly forward, swoop, climb or dive and it tilts, streaking longer the faster you go
 - Score points for knocking things over, poops on target, stunts and rides; each score within 6 seconds of the last builds a combo (up to x5, shown next to the points, e.g. +40  COMBO X4), with a COMBO bar under the poop bar counting down the 6 seconds; your high score is remembered. You lose 100 points (a red minus) for swooping the cyclist, landing on the barbecue or getting drop-beared, and the score can go below zero
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
-- B for a barrel roll (two turns on his own axis, bursting forward at swoop speed with no afterburner), L for a loop-the-loop
+- B for a barrel roll (two turns on his own axis, bursting forward at swoop speed with no afterburner), L for a loop-the-loop; in both he stretches out to half as long again and back
 - M (or the speaker icon) turns the sound on and off
 - O (or the OBJECTIVES link under the timer, top right) opens the list of all 31 objectives, each named by the caption it shows, with a tick when done; the game waits while it's open, and any key closes it. A timer runs from your first move
 - Do all 31 and the game is complete: a fanfare, a big TOO EASY, MATE!, your time and score, and only then does your score count for the high score. Press any key to play again
@@ -84,7 +84,7 @@ Do all 31 to complete the game (press O in the game for this list, with ticks). 
 | 27 | ROUND THE TWIST! | Poop on the possum |
 | 28 | COAT-HANGER! | Poop on the bridge climbers |
 | 29 | YEAH, NAH! | Get caught by the drop bear |
-| 30 | SOLAR-NOVA! | Loop-the-loop round the sun (the screen flashes white and the clouds burn away for 10 seconds, then drift back one by one) |
+| 30 | SOLAR-SLINGSHOT!!!! | Loop-the-loop round the sun: it whips you round three times, stretched to twice your length, and flings you out at twice swoop speed; the game jumps closer and bounces back, and the clouds burn away |
 | 31 | TRUE-BLUE! | Barrel roll past the Aussie flag (you wear it as a cape for 5 seconds) |
 
 ## How it's made
