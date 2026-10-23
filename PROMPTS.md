@@ -563,8 +563,148 @@
 
 - Faster poops: make them recharge in 3 seconds
 
+## 118. Snags and the nest
+
+- The barbecue bloke flips a sausage into the air every 4 seconds; it spins up to half the screen's height
+- The magpie can catch it (SNAG-A-SNAG!) and carry it in his beak; the bloke keeps flipping more
+- Swooping, pooping or getting knocked back (the barbecue, the cyclist) makes him drop it, and it disappears
+- He can take it to a nest of 3 little chicks at the top of the tree and feed them; give me ideas for the text in radio options. Picked: BREKKIE!
+- Both score
+- Also: a table of all the events, with their text and score (or minus score). Are there any events with no score or no text?
+
+## 119. Don't commit yet
+
+- Don't commit for now: I want to time it
+
+## 120. Barrels, GROG RUN! and a quieter kookaburra
+
+- Make sure we only hear the kookaburra when he's on screen
+- When we barrel roll through the BOTTLE-O, don't throw out bottles and cans: show 2 beer barrels bouncing out
+- What text can we show for flying through the BOTTLE-O? Give radio options. Picked: GROG RUN!
+
+## 121. Hyphens and a postie pillion
+
+- WHIPPER SNIPPER! becomes WHIPPER-SNIPPER!, SNAG ROCKET! becomes SNAG-ROCKET!, SPIN CYCLE! becomes SPIN-CYCLE!
+- We need a different text for landing on the postie: give me radio options, maybe PILLION-something. Picked: POSTIE-PILLION!
+
+## 122. Sounds and a tidy-up
+
+- List all the sounds used
+- Then run a review for efficiency, refactor, and remove duplication
+
+## 123. A separate JS file?
+
+- Will it still run in the browser directly, without hosting, if we put the JavaScript in its own file?
+
+## 124. Rain that tilts
+
+- When the magpie swoops or flies forward, up or down, make the rain tilt as he moves
+
+## 125. JavaScript in its own files
+
+- OK, put the JavaScript in its own file, and split the library out into other files if it will still work in the browser unhosted: data like the sun image, tables of numbers, functions, and the game loop
+
+## 126. Questions about the art
+
+- Open the folder with all the pixel art. So we draw all the art from code? How is this possible? So it's totally different from using sprite sheets?
+
+## 127. A bigger sun
+
+- Make the sun 25% larger
+
+## 128. Fit any window
+
+- Can we resize to any browser size, with a black strip if needed to keep the aspect ratio? Picked: a fixed 16:9 view, centred, with black bars
+
+## 129. Objectives and a timer
+
+- Put a timer on the game, near the score, and below it a link to the objectives. Put it in the list of keys as O, below the others, and give it a controller button
+- Clicking it toggles a popup window with the table of events: each event's name is the text shown when it's done, then the description, and each shows done or not done with a tick
+- That's a lot of data to get on screen: can we do it?
+- When they're all done the game is complete, and only then is a run's high score set. Play a little fanfare and some celebratory text; give me 10 great end-text options. Picked: TOO EASY, MATE!
+- Make the end text like all the others, but bigger, and it doesn't fade away; add a smaller PRESS ANY KEY TO RESTART
+- I keep closing your browser windows when the game opens: is that OK?
+
+## 130. A tidier list
+
+- Remove the 3 instances of "(costs 100 points)"
+- Put the list in 2 columns, to get it all on screen without scrolling
+
+## 131. One line each
+
+- Shorten any text to stop any line wraps
+
+## 132. Links to the bottom right
+
+- Move the top-right text (prompts and the rest) to the bottom right, so the pixel score and the rest can sit in the top right
+- For the bottom line of the popup put just "Press any key to exit", and make it work that way
+
+## 133. SWOOP-POO-LOOP!
+
+- Is it possible to do a SWOOP-POO-LOOP? Add it as another goal, listed 3rd down
+- Also, can we require the swoop-poop and the swoop-poo-loop to hit something (any poopable character)?
+- Add the list to the instructions
+
+## 134. SWOOP-POOP-LOOP!
+
+- Call it SWOOP-POOP-LOOP
+
+## 135. A new roo caption
+
+- I don't like ROO-DY HELL!: think of some others, 10 options. Picked: ROO THE DAY!
+
+## 136. Together, in any order
+
+- Can the swoop, poop and loop all happen together, or do they need to be in order?
+- OK, make it loop, then poop and swoop, and rename it. Picked: LOOP-POOP-SWOOP!
+- Make it so any 2 goals can happen together, like flying through the BOTTLE-O and a barrel roll together
+- Or LOOP-POOP-SWOOP! fulfils all the swoop, poop and loop goals; list any others that might count as 2 goals at once
+- How do we score the multiplier currently?
+
+## 137. Helmets for the climbers
+
+- What's the best colour for the bridge walkers, as in real life? OK, try a white helmet dot
+
+## 138. A combo bar
+
+- Can we have a combo cooldown in the key list section? Make it 6 seconds
+- Remove the white helmets from the bridge walkers
+
+## 139. Shark attack
+
+- Let's add a shark attack: you've got to swoop the shark fin. Give me 10 options for the text. Picked: FIN-ISHED!
+
+## 140. More shark
+
+- What else are we missing? It looks pretty good
+- Make the shark appear more often: decide what works well
+
+## 141. Join the flock
+
+- Another goal, join the flock: fly with the crested cockatoos for 5 seconds, keeping with them. Suggest some text. Picked: FLOCK YEAH!
+- By keeping above the cockatoos I don't mean vertically above, I mean overlapping them
+- How often does the storm come?
+
+## 142. Struck by lightning? No
+
+- I want a goal where he gets hit by lightning, but there's nothing easy to interact with and the storm is rare: give me ideas
+- OK, no storm lightning goal
+
+## 143. Hoot the owl
+
+- Do you know the owl Hoot from Giggle and Hoot? We can add him: what could we do with him, how would he interact?
+- Picked: follow the leader, flying through his trail of hoot notes. Caption picked: HOOT HOOT!
+- Does he just turn up rarely, like the cockatoos?
+
+## 144. Hoot's look, then no Hoot
+
+- He's got to be blue and flying sideways: give me options, show me 5 renders, make it look just like Hoot
+- OK, show me 5 renders of him from the front: we'll do something else with him
+- Look at the picture on the Desktop, hoot.png: show me 5 pixelated versions of him
+- None: let's leave this idea. Remove the owl and his goal
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
-| 1 | 2026-10-21 | about 490 min so far | Prompts 1–117: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
+| 1 | 2026-10-21 | about 740 min so far | Prompts 1–144: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
