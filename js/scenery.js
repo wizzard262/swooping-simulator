@@ -5,17 +5,19 @@
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Sky (static, dithered bands)
+// Sky (static: flat strips, dithered at the joins)
 // ---------------------------------------------------------------------------
 const SKY_RGB = SKY.map(hex);       // the sky's colours as [r, g, b]
 let skyCanvas;
 function buildSky() {
   const c = makeCanvas(W, H), g = c.getContext('2d'), img = g.createImageData(W, H);
+  const strip = GRASS_TOP / SKY.length, last = SKY.length - 1;
   for (let y = 0; y < H; y++) {
-    const t = Math.min(1, y / GRASS_TOP) * (SKY.length - 1), i = Math.floor(t), f = t - i;
+    const k = Math.round(y / strip), edge = y - k * strip;           // the nearest join, and how far from it
+    const blending = k >= 1 && k <= last && Math.abs(edge) < SKY_BLEND / 2, f = (edge + SKY_BLEND / 2) / SKY_BLEND;
     for (let x = 0; x < W; x++) {
       const o = (y * W + x) * 4;
-      img.data.set(SKY_RGB[Math.min(SKY.length - 1, i + (dither(x, y, f) ? 1 : 0))], o);
+      img.data.set(SKY_RGB[blending ? k - (dither(x, y, f) ? 0 : 1) : Math.min(last, Math.floor(y / strip))], o);
       img.data[o + 3] = 255;
     }
   }

@@ -50,8 +50,10 @@ const FONT = {
   '#': '57575', '$': '36236', '?': '61202', '@': '75747', '%': '51245', '&': '25253', '*': '52725'   // for cartoon swearing
 };
 
-// The sky: bands of blue from the top down to the horizon
-const SKY = ['#1c78d8', '#2283dd', '#288ce2', '#2e94e5', '#3a9de8', '#4ca8ea', '#66b6ed', '#86c6f0'];
+// The sky: four flat strips of blue from the top down to the horizon (like Harrier Carrier's),
+// dithered into each other only where they meet
+const SKY = ['#1c78d8', '#2e94e5', '#4ca8ea', '#86c6f0'];
+const SKY_BLEND = 10;             // how many pixels each join is dithered over
 
 // Clouds: the shades of a cloud, lit side to shadow (from the reference picture in prompt-art/)
 const CLOUD_TONES = ['#fafcff', '#e2ebfa', '#c8e2f9', '#a8d6f8', '#84d0f6', '#6cb6e8'];
