@@ -180,7 +180,8 @@ const KOOKA_CALL_TIME = 2.8;      // his laugh; rarely (every 1 to 2 minutes of 
 const KOOKA_SCALE = 0.6;          // a big kookaburra (twice the size he was)
 const BBQ_SCALE = 0.48;
 const BBQ_WIDE = 1.6;              // twice as wide as it was
-const BBQ = { x: 800, top: Math.round(166 - 32 * BBQ_SCALE), half: 17 * BBQ_SCALE * BBQ_WIDE, flipT: 0, flipIn: 2 };
+// The barbie stands on the lawn between the BOTTLE-O (x 1000 to 1075) and the Hills Hoist (x 1830)
+const BBQ = { x: 1450, top: Math.round(166 - 32 * BBQ_SCALE), half: 17 * BBQ_SCALE * BBQ_WIDE, flipT: 0, flipIn: 2 };
 // Every 4 seconds the bloke flips a snag high in the air (up to half the screen's height), spinning;
 // the magpie can catch it in his beak and take it to the nest of chicks at the top of the big gum
 const SNAG = { in: 4, air: false, x: 0, y: 0, vy: 0, rot: 0 }, SNAG_EVERY = 4, SNAG_GRAVITY = 300;
