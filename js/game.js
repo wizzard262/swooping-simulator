@@ -108,7 +108,7 @@ function inWake(sx, y) {                                             // is a poi
 function sweepWake() {
   const once = (key, fn) => { if (!wakeHit.has(key)) { wakeHit.add(key); fn(); } };
   for (const t of TARGETS) if (inWake(loopX(t.x + t.w / 2), t.y + t.h / 2)) once(t, () => t.hit({}));   // the poop hits
-  if (inWake(loopX(HOIST.x), HOIST.mastTop + 10)) once('hoist', () => { HOIST.spin = -bird.face * HOIST_WHIRL; showCombo('WHIPPER-SNIPPER!', true); });
+  if (inWake(loopX(HOIST.x), HOIST.mastTop + 10)) once('hoist', () => whirlHoist(-bird.face));
   if (ROO.dizzy <= 0 && inWake(loopX(ROO.x), rooTop())) once('roo', () => knockOver());
   for (let d = 4; d < WAKE_LEN; d += 4)                              // the rest by where they are on their own layers
     for (let v = -6 - d * Math.tan(WAKE_ANGLE / 2); v <= 6 + d * Math.tan(WAKE_ANGLE / 2); v += 3) {

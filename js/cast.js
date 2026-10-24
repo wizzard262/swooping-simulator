@@ -20,19 +20,21 @@ const HOIST_WHIRL = 10;            // how fast a swoop past sends it spinning (r
 function updateHoist(dt) {
   // Swoop past it and it whirls round the way you went, the washing flung outwards, then slowly winds down
   if (bird.swooping && !bird.onHoist && !bird.hanging && Math.abs(hoistDx(bird.x)) < HOIST.r && bird.y > HOIST.mastTop - 20 && bird.y < LAND_Y - 5
-      && Math.abs(HOIST.spin) < HOIST_WHIRL * 0.8) {
-    HOIST.spin = -Math.sign(bird.vx || bird.face) * HOIST_WHIRL;
-    showCombo('WHIPPER-SNIPPER!', true);                             // +200, the words travelling along above him, flashing
-  }
+      && Math.abs(HOIST.spin) < HOIST_WHIRL * 0.8) whirlHoist(-Math.sign(bird.vx || bird.face));
   const riding = bird.onHoist || bird.hanging, target = riding ? 2.6 : 0;   // spins up with him on it (or under it), slows down without
   HOIST.spin += (target - HOIST.spin) * Math.min(1, (riding ? 1.2 : 0.5) * dt);
   HOIST.angle += HOIST.spin * dt;
-  // Rusty: it creaks like an old gate every half turn while it's going round, if it's on screen
-  if ((HOIST.creakIn -= Math.abs(HOIST.spin) * dt) <= 0) {
-    HOIST.creakIn = Math.PI;
-    const hx = loopX(HOIST.x);
-    if (Math.abs(HOIST.spin) > 0.3 && hx > -HOIST.r - 20 && hx < W + HOIST.r + 20) Sound.creak(Math.min(1, Math.abs(HOIST.spin) / HOIST_WHIRL));
-  }
+  // Rusty: it squeals like an old gate every couple of seconds while he rides round on (or under) it
+  if ((HOIST.creakIn -= dt) <= 0 && riding) { HOIST.creakIn = HOIST_CREAK_EVERY; if (hoistOnScreen()) Sound.creak(); }
+}
+const HOIST_CREAK_EVERY = 2.1;      // seconds between squeals while riding it
+const hoistOnScreen = () => { const hx = loopX(HOIST.x); return hx > -HOIST.r - 20 && hx < W + HOIST.r + 20; };
+// WHIPPER-SNIPPER!: sent whirling round (dir 1 or -1), squealing fast then slowing down
+function whirlHoist(dir) {
+  HOIST.spin = dir * HOIST_WHIRL;
+  showCombo('WHIPPER-SNIPPER!', true);                               // +200, the words travelling along above him, flashing
+  if (hoistOnScreen()) Sound.whirl();
+  HOIST.creakIn = 3.5;                                               // no riding squeal on top of the whirl
 }
 
 function drawHoist(g) {

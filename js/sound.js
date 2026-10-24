@@ -372,30 +372,67 @@ const Sound = (() => {
     tone('square', 280, 720, t, 0.07, 0.07);
     burst(t, 0.06, 'bandpass', 1200, 3, 0.12);
   }
-  // The Hills Hoist turning: a creaky, rusty gate. The mast's metal sticks and slips (a juddering
-  // buzz whose rate wanders as it grips and lets go), rung through a few tinny resonances. Each
-  // half turn bends the other way, like a gate swung back and forth; faster spins creak shorter
-  // and higher (speed 0 to 1)
-  let creakUp = false;
-  function creak(speed = 0.3) {
-    creakUp = !creakUp;
-    const t = now(), len = 0.6 - 0.32 * speed, f0 = 30 + 45 * speed;
-    const o = ac.createOscillator(), g = ac.createGain(), out = ac.createGain();
-    const curve = new Float32Array(24);
-    for (let i = 0; i < curve.length; i++) {
-      const k = i / (curve.length - 1), bend = Math.sin((creakUp ? k : 1 - k) * Math.PI * 0.8);
-      curve[i] = f0 * (0.6 + bend) * (0.8 + Math.random() * 0.4);    // grip, slip, grip
+  // The Hills Hoist: a rusty squeal copied from a recording of a real squeaky gate. A reedy note
+  // about 830 Hz that steps up to 870 Hz and swells, with a short, high squeak (about 3,400 Hz)
+  // at the start. Each voice is one oscillator carrying the gate's overtones at their measured
+  // loudness (dB below the note: the quieter first part and the louder second part), its pitch
+  // shaken fast and unevenly (the scrape: metal gripping and slipping) and its level roughened
+  const SQUEAL_TONES = { first: [0, -5, -19, -10, -15, -17, -26, -38, -35, -43], loud: [0, -13, -14, -11, -20, -20, -32, -40, -45, -50] };
+  const squealWaves = {};
+  function squealWave(name) {
+    if (!squealWaves[name]) {
+      const db = SQUEAL_TONES[name], re = new Float32Array(db.length + 1), im = new Float32Array(db.length + 1);
+      db.forEach((d, k) => { im[k + 1] = Math.pow(10, d / 20); });
+      squealWaves[name] = ac.createPeriodicWave(re, im);
     }
-    o.type = 'sawtooth'; o.frequency.setValueCurveAtTime(curve, t, len);
-    env(g, t, 0.05, len * 0.45, len * 0.45, 1);
-    o.connect(g);
-    for (const [f, q, level] of [[650, 9, 1], [1180, 11, 0.7], [2250, 13, 0.45], [3600, 15, 0.25]]) {   // the tinny metal
-      const bp = ac.createBiquadFilter(), lg = ac.createGain();
-      bp.type = 'bandpass'; bp.frequency.value = f * (0.92 + Math.random() * 0.16) * (1 + 0.25 * speed); bp.Q.value = q; lg.gain.value = level;
-      g.connect(bp); bp.connect(lg); lg.connect(out);
+    return squealWaves[name];
+  }
+  // A curve through [where 0..1, value] points, straight lines between them
+  function shape(points, n = 120) {
+    const c = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const k = i / (n - 1); let j = 1;
+      while (j < points.length - 1 && points[j][0] < k) j++;
+      const [k0, v0] = points[j - 1], [k1, v1] = points[j], u = Math.min(1, Math.max(0, (k - k0) / (k1 - k0 || 1)));
+      c[i] = v0 + (v1 - v0) * u;
     }
-    out.gain.value = 1.6; out.connect(master);
-    o.start(t); o.stop(t + len + 0.1);
+    return c;
+  }
+  const flipPts = pts => pts.map(([k, v]) => [1 - k, v]).reverse();
+  // Noise that wanders at up to cutoff times a second, scaled by gain
+  function wander(t, len, cutoff, gain) {
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = noise; s.loop = true; f.type = 'lowpass'; f.frequency.value = cutoff; f.Q.value = 0.7; g.gain.value = gain;
+    s.connect(f); f.connect(g); s.start(t, Math.random()); s.stop(t + len + 0.05);
+    return g;
+  }
+  function squealVoice(t, len, { pitch, amp, table = 'first', scrape = 8, rough = 0.25, grit = 0.02, peak = 0.12 }) {
+    const g = ac.createGain(), r = ac.createGain();
+    g.gain.value = 0; g.gain.setValueCurveAtTime(shape(amp).map(v => v * peak), t, len);
+    r.gain.value = 1 - rough; wander(t, len, 90, rough * 15).connect(r.gain);
+    g.connect(r); r.connect(master);
+    const o = ac.createOscillator(); o.setPeriodicWave(squealWave(table));
+    o.frequency.setValueCurveAtTime(shape(pitch), t, len);
+    wander(t, len, 130, scrape * 20).connect(o.frequency);            // the scrape
+    o.connect(g); o.start(t); o.stop(t + len + 0.05);
+    if (grit) burst(t, len, 'bandpass', 3800, 0.8, grit * 10, g);       // a gritty hiss under it
+  }
+  // One squeal, len seconds; each one bends the other way, like a gate swung back and forth
+  let squealUp = false;
+  function squeal(t, len) {
+    squealUp = !squealUp;
+    const p = [[0, 780], [0.22, 830], [0.38, 822], [0.5, 832], [0.53, 832], [0.56, 865], [0.62, 870], [1, 874]];
+    squealVoice(t, len * 0.53, { pitch: (squealUp ? p : flipPts(p)).filter(([k]) => k <= 0.53).map(([k, f]) => [k / 0.53, f]), amp: [[0, 0], [0.1, 0.25], [0.5, 0.6], [0.85, 1], [1, 0.1]] });
+    squealVoice(t + len * 0.52, len * 0.48, { pitch: [[0, 860], [0.15, 870], [1, 874]], amp: [[0, 0.1], [0.45, 1], [0.8, 0.8], [0.9, 0.3], [1, 0]], table: 'loud', peak: 0.16, scrape: 3, rough: 0.05, grit: 0.005 });
+    const c = len * 0.2, f = 3390;                                     // the high squeak, sounding with the low note
+    squealVoice(t + len * 0.1, c, { pitch: [[0, f * 0.97], [0.4, f * 1.01], [1, f]], amp: [[0, 0], [0.15, 1], [0.7, 0.8], [1, 0]], table: 'loud', scrape: 25, peak: 0.07, grit: 0 });
+  }
+  const SQUEAL_LEN = 1.9;
+  function creak() { squeal(now(), SQUEAL_LEN); }                     // riding round on it
+  // WHIPPER-SNIPPER!: six quick squeals, each a little longer apart as it slows
+  function whirl() {
+    let t = now(), gap = 0.32;
+    for (let i = 0; i < 6; i++) { squeal(t, Math.min(SQUEAL_LEN, gap * 0.9)); t += gap; gap *= 1.22; }
   }
   // Background events and hiccups, timed from the game loop
   function tick(dt) {
@@ -434,7 +471,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   // The effects only play once sound has started and while it's on
-  const effects = { plop, splosh, can, boing, carol, sizzle, scream, laugh, hushLaugh, cheep, fanfare, didgeridoo, bell, oi, thunder, screech, growl, creak };
+  const effects = { plop, splosh, can, boing, carol, sizzle, scream, laugh, hushLaugh, cheep, fanfare, didgeridoo, bell, oi, thunder, screech, growl, creak, whirl };
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
   return { start, toggle, tick, updateIcon, isMuted: () => muted, ...Object.fromEntries(Object.entries(effects).map(([name, fn]) => [name, safe(fn)])) };
 })();
