@@ -207,6 +207,26 @@ function drawBentMagpie(pose, sc) {
     bbctx.drawImage(bendBuf, half + u, 0, 1, 2 * tall, -0.5, -tall, 1.6, 2 * tall);
   }
 }
+// The slingshot's wake as anime speed lines: dense flickering streaks fanning back from his tail along
+// the top and bottom edges of the 30-degree cone (and a few through the middle), white with dark ones
+// among them so they show on any sky, fading as the boost dies
+function drawSpeedLines() {
+  const fade = SLING.out / SLING_OUT, tx = bird.x - cam - bird.face * 14, ty = bird.y + 1;
+  fctx.save(); fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.lineCap = 'round';
+  for (const [a, count] of [[-WAKE_ANGLE / 2, 12], [WAKE_ANGLE / 2, 12], [0, 5]]) {
+    for (let n = 0; n < count; n++) {
+      const spread = a + (Math.random() - 0.5) * 0.06, dx = -bird.face * Math.cos(spread), dy = Math.sin(spread);
+      const start = Math.random() * 40, len = WAKE_LEN * (0.4 + 0.75 * Math.random());
+      const x0 = tx + dx * start, y0 = ty + dy * start, x1 = x0 + dx * len, y1 = y0 + dy * len;
+      const dark = n % 4 === 3, col = dark ? '24,30,48' : '255,255,245';
+      const g = fctx.createLinearGradient(x0 * K, y0 * K, x1 * K, y1 * K);
+      g.addColorStop(0, `rgba(${col},${((dark ? 0.7 : 1) * fade).toFixed(3)})`); g.addColorStop(1, `rgba(${col},0)`);
+      fctx.strokeStyle = g; fctx.lineWidth = K * (n < 2 ? 3 : 0.6 + Math.random() * 1.8);
+      fctx.beginPath(); fctx.moveTo(x0 * K, y0 * K); fctx.lineTo(x1 * K, y1 * K); fctx.stroke();
+    }
+  }
+  fctx.restore();
+}
 function draw() {
   const real = cam;
   cam = real - drunkSway(time);
@@ -339,6 +359,7 @@ function drawScene() {
   fctx.setTransform(1, 0, 0, 1, 0, 0);
   if (slingBlur() > 0) drawSlingRing();                              // SOLAR-SLINGSHOT!!!!: his blur round the sun, behind him
   fctx.imageSmoothingEnabled = false;
+  if (SLING.out > 0) drawSpeedLines();                               // the slingshot's wake: anime speed lines behind him, above and below
   if (echoes) fctx.drawImage(echoLayer, 0, 0, echoLayer.width * BIRD_PIX, echoLayer.height * BIRD_PIX);   // his echoes, behind him
   fctx.drawImage(birdBuf, 0, 0, birdBuf.width * BIRD_PIX, birdBuf.height * BIRD_PIX);
   if (bird.inside) drawShopFront(fctx);                          // inside: we see him through the glass

@@ -96,13 +96,14 @@ function startSlingshot() {
   SLING.t = SLING_ORBIT;
   bird.loopT = 0; bird.swooping = false;
 }
-// Spat out, everything in a 30-degree fan behind and below him, up to WAKE_LEN pixels back, is hit as
-// if he'd both pooped on it and swooped it (each thing once per slingshot; the cyclist's cable ties
-// can't sting it)
+// Spat out, he leaves a wake: a 30-degree cone behind him, half above and half below, up to WAKE_LEN
+// pixels back. Everything in it is hit as if he'd both pooped on it and swooped it (each thing once per
+// slingshot; the cyclist's cable ties can't sting it). It shows as anime speed lines, and he glides to
+// the middle of the screen so the cone has room both sides
 const WAKE_LEN = 260, WAKE_ANGLE = Math.PI / 6, wakeHit = new Set();
-function inWake(sx, y) {                                             // is a point on screen inside the wake?
+function inWake(sx, y) {                                             // is a point on screen inside the cone?
   const d = -bird.face * (sx - (bird.x - cam)), v = y - bird.y;
-  return d > 0 && d < WAKE_LEN && v >= -6 && v <= d * Math.tan(WAKE_ANGLE);
+  return d > 0 && d < WAKE_LEN && Math.abs(v) <= 6 + d * Math.tan(WAKE_ANGLE / 2);
 }
 function sweepWake() {
   const once = (key, fn) => { if (!wakeHit.has(key)) { wakeHit.add(key); fn(); } };
@@ -110,7 +111,7 @@ function sweepWake() {
   if (inWake(loopX(HOIST.x), HOIST.mastTop + 10)) once('hoist', () => { HOIST.spin = -bird.face * HOIST_WHIRL; showCombo('WHIPPER-SNIPPER!', true); });
   if (ROO.dizzy <= 0 && inWake(loopX(ROO.x), rooTop())) once('roo', () => knockOver());
   for (let d = 4; d < WAKE_LEN; d += 4)                              // the rest by where they are on their own layers
-    for (let v = -6; v <= d * Math.tan(WAKE_ANGLE); v += 3) {
+    for (let v = -6 - d * Math.tan(WAKE_ANGLE / 2); v <= 6 + d * Math.tan(WAKE_ANGLE / 2); v += 3) {
       const sx = bird.x - cam - bird.face * d, y = bird.y + v;
       if (postieHitBy(sx, y)) once('postie', knockPostie);
       if (possumHitBy(sx, y)) once('possum', spinPossum);
@@ -342,7 +343,7 @@ function update(dt) {
     else if (Math.abs(bird.vx) > maxX) bird.vx += (Math.sign(bird.vx) * maxX - bird.vx) * Math.min(1, 2 * dt);  // ease back after a swoop
     else if (dirX) bird.vx = clamp(bird.vx + dirX * ACCEL_X * dt, -maxX, maxX);
     else bird.vx *= Math.exp(-0.8 * dt);                           // glide keeps most of its speed
-    if (SLING.out > 0) { bird.vx = bird.face * SWOOP_SPEED * 2; bird.vy = 0; }   // flung out of the SOLAR-SLINGSHOT!!!!
+    if (SLING.out > 0) { bird.vx = bird.face * SWOOP_SPEED * 2; bird.vy = (H / 2 - bird.y) * 6; }   // flung out of the SOLAR-SLINGSHOT!!!!, gliding to the middle of the screen
     else if (bird.roll > 0) { bird.vx = bird.face * SWOOP_SPEED; bird.vy = 0; }   // barrel roll: a straight burst forward at swoop speed (no afterburner)
     else {
       bird.vy += (GRAVITY - (c.up ? FLAP : 0) + (c.down ? DIVE : 0)) * dt;

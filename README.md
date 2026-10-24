@@ -85,7 +85,7 @@ Do all 31 to complete the game (press O in the game for this list, with ticks). 
 | 27 | ROUND THE TWIST! | Poop on the possum |
 | 28 | COAT-HANGER! | Poop on the bridge climbers |
 | 29 | YEAH, NAH! | Get caught by the drop bear |
-| 30 | SOLAR-SLINGSHOT!!!! | Loop-the-loop round the sun: it whips you round three times in 4 seconds, faster and faster, bent round it and stretching thinner and longer inside a blurred grey-white ring, the roar building, the sun swelling to 2.5 times its size and everything fading to white; then it spits you out at twice swoop speed, double length, on twin afterburners with a coarser roar and trailing echoes, the background overexposed, hitting everything in a 30-degree wake behind you as if pooped on and swooped; the game jumps closer and bounces back, and the clouds burn away |
+| 30 | SOLAR-SLINGSHOT!!!! | Loop-the-loop round the sun: it whips you round three times in 4 seconds, faster and faster, bent round it and stretching thinner and longer inside a blurred grey-white ring, the roar building, the sun swelling to 2.5 times its size and everything fading to white; then it spits you out at twice swoop speed, double length, on twin afterburners with a coarser roar and trailing echoes, the background overexposed, gliding to the middle of the screen and hitting everything in a 30-degree wake behind you (shown as anime speed lines above and below) as if pooped on and swooped; the game jumps closer and bounces back, and the clouds burn away |
 | 31 | TRUE-BLUE! | Barrel roll past the Aussie flag (you wear it as a cape for 5 seconds) |
 
 ## How it's made
