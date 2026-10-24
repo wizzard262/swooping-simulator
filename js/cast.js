@@ -839,12 +839,11 @@ function drawCockies(g) {
     g.fillStyle = '#f2d33a'; g.fillRect(x + (d > 0 ? 3 : -2), y - 1, 1, 1);   // crest
     g.fillStyle = '#333'; g.fillRect(x + (d > 0 ? 3 : -2), y + 1, 1, 1);      // beak
   }
-  if (COCKIES.with > 0.3 && !COCKIES.joined) {                      // flying with them: count down the seconds left
-    const f = flockBox(), n = String(Math.ceil(FLOCK_TIME - COCKIES.with));
-    const nx = Math.round((f.x0 + f.x1) / 2) - 1, ny = Math.round(f.top) - 34;
-    g.fillStyle = '#18222e'; glyphs(n, nx, ny, 1, (x, y) => g.fillRect(x - 1, y - 1, 3, 3));   // dark outline
-    g.fillStyle = '#ffe066'; glyphs(n, nx, ny, 1, (x, y) => g.fillRect(x, y, 1, 1));
-  }
+}
+// Flying with the cockatoos: the seconds left to FLOCK YEAH!, in pop-art lettering just above the magpie
+function drawFlockCount(g) {
+  if (COCKIES.with <= 0.3 || COCKIES.joined) return;
+  drawPopText(g, String(Math.ceil(FLOCK_TIME - COCKIES.with)), clamp(bird.x - cam, 20, W - 20), Math.max(14, bird.y - 15), 0.42, 1, '#ffd23f');
 }
 
 // Storm and rainbow

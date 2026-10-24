@@ -67,17 +67,24 @@ function drawPoop(out) {
   out.drawImage(poopBuf, 0, 0, poopBuf.width * BIRD_PIX, poopBuf.height * BIRD_PIX);
 }
 
-// The flag worn as a cape (magpie units, he faces +x): tied on at the back of his neck, streaming
-// out behind him and rippling, the Union Jack end at his neck
+// The flag worn as a cape (magpie units, he faces +x): tied round his neck and draped over the top
+// half of his body, just over his back, the Union Jack end at his neck. The loose end lifts and flaps.
+// It follows his body: tipped with his pitch, stretched in a stunt, squashed in a barrel roll
 function drawCape(g, pose) {
-  const cols = FLAG.w, rows = FLAG.h, cw = 3.6, ch = 3.4, fold = Math.min(1, CAPE.t / 0.4);   // furls up in the last moment
+  const cols = FLAG.w, rows = FLAG.h, x0 = 15, x1 = -33, cw = (x0 - x1) / cols, fold = Math.min(1, CAPE.t / 0.4);   // furls up in the last moment
+  const st = pose.stretch || 1;
   g.save();
   g.rotate(pose.pitch || 0);
+  g.scale(st, 1 / Math.sqrt(st));
+  g.scale(1, Math.cos(pose.roll || 0));
   for (let i = 0; i < cols * fold; i++) {
-    const wave = Math.sin(time * 12 - i * 0.6) * i * 0.35, droop = i * 0.5;
+    const x = x0 - (i + 1) * cw, k = i / (cols - 1);                    // k: 0 at his neck, 1 at the loose end
+    const back = -Math.sqrt(Math.max(0, 1 - ((x + cw / 2) / 27) ** 2)) * 16;   // the curve of his back
+    const lift = k * k * (5 + 3.5 * Math.sin(time * 14 - i * 0.7));   // the loose end lifting off his back and flapping
+    const ch = 1.55 + 0.25 * k;                                       // a little fuller towards the end
     for (let j = 0; j < rows; j++) {
       g.fillStyle = flagColour(i, j);
-      g.fillRect(-2 - (i + 1) * cw, -16 + droop + wave + j * ch, cw + 0.4, ch + 0.4);
+      g.fillRect(x, back - 1.5 - lift + j * ch + Math.sin(time * 9 - i * 0.5 + j * 0.2) * 0.6 * k, cw + 0.3, ch + 0.3);
     }
   }
   g.restore();
@@ -304,10 +311,10 @@ function drawScene() {
   else {
   bbctx.setTransform(sc * turn, 0, 0, sc / novaZoom(), (bird.x - cam) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);   // never taller, even when the game zooms in
   if (bird.hot > 0) bbctx.filter = `sepia(${bird.hot}) saturate(${1 + 6 * bird.hot}) hue-rotate(${-40 * bird.hot}deg) brightness(${1 + 0.4 * bird.hot})`;   // going red
-  if (CAPE.t > 0) drawCape(bbctx, pose);                            // TRUE-BLUE!: the Aussie flag as a cape, behind him
   if (pose.flip) bbctx.rotate(pose.flip);                           // upside down, on his back
   if (pose.hang) bbctx.scale(1, -1);                                 // hanging upside down by his feet, still facing the same way
   drawMagpie(bbctx, pose);
+  if (CAPE.t > 0) drawCape(bbctx, pose);                            // TRUE-BLUE!: the Aussie flag as a cape, over his back
   bbctx.filter = 'none';
   }
   if (bird.dazed) {                                                  // seeing stars after the drop bear
@@ -327,6 +334,7 @@ function drawScene() {
   const dark = stormDark();                                          // the storm darkens the characters too
   if (dark > 0) { fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.fillStyle = `rgba(25,35,55,${0.3 * dark})`; fctx.globalCompositeOperation = 'source-atop'; fctx.fillRect(0, 0, front.width, front.height); fctx.globalCompositeOperation = 'source-over'; }
   drawCombo(fctx);
+  drawFlockCount(fctx);
   drawEnd(fctx);
   if (drunkLevel() > 0) drunkGlitch(drunkLevel());                  // drunk: now and then the picture glitches
   // SOLAR-SLINGSHOT!!!!: the whole game jumps closer and bounces back. Never zoomed out, so it always fills the window.
