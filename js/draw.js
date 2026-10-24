@@ -93,7 +93,7 @@ let shownZoom = 1;                // the zoom last set on the canvases
 let shownGlare = '';              // the overexposure last set on the background canvases
 // Drunk glitch: every so often the game (not the key hints and score) is cut into 10 strips across
 // the screen that jolt sideways, alternate ways and by different amounts, then slide back
-const GLITCH = { at: -9, next: 0, amp: [] }, GLITCH_STRIPS = 10, GLITCH_OUT = 0.07, GLITCH_BACK = 0.22;
+const GLITCH = { at: -9, next: 0, amp: [] }, GLITCH_STRIPS = 10, GLITCH_OUT = 0.07, GLITCH_BACK = 0.4;
 const glitchTmp = makeCanvas(1, 1), gtctx = glitchTmp.getContext('2d');
 function glitchShift(i) {                                            // how far strip i is shifted right now, in game pixels
   const t = time - GLITCH.at, f = t < 0 ? 0 : t < GLITCH_OUT ? t / GLITCH_OUT : Math.max(0, 1 - (t - GLITCH_OUT) / GLITCH_BACK);
@@ -102,7 +102,7 @@ function glitchShift(i) {                                            // how far 
 function updateGlitch(drunk) {
   if (drunk <= 0 || time < GLITCH.next) return;
   GLITCH.at = time; GLITCH.next = time + 0.45 + Math.random() * 0.9;
-  GLITCH.amp = Array.from({ length: GLITCH_STRIPS }, (_, i) => (i % 2 ? 1 : -1) * (3 + Math.random() * 11) * drunk);
+  GLITCH.amp = Array.from({ length: GLITCH_STRIPS }, (_, i) => (i % 2 ? 1 : -1) * (1.5 + Math.random() * 5.5) * drunk);
 }
 function glitchStrips(g, cv, scale) {                                // shift this canvas's strips (scale: its pixels per game pixel)
   if (time - GLITCH.at > GLITCH_OUT + GLITCH_BACK) return;
@@ -133,16 +133,20 @@ const drunkSway = t => drunkLevel() * 0.03 * W * Math.sin(t * 1.8);
 // Echoes (drunk, and spat out of the slingshot): three faint see-through copies of him, each the whole
 // bird, following along his path like traces, each fainter than the last, spaced half his length apart
 const echoPath = [];                                                 // where he's been, newest first, in world pixels
-const ECHOES = 3, ECHO_ALPHA = [0.26, 0.15, 0.07];                 // nearest first
+const ECHOES = 3, ECHO_ALPHA = [0.42, 0.3, 0.18];                  // nearest first
 function recordEchoPath(pose) {
   echoPath.unshift({ x: bird.x, y: bird.y + pose.bob * BIRD_SCALE, pose: { ...pose } });
   if (echoPath.length > 120) echoPath.pop();
 }
 const echoBuf = makeCanvas(1, 1), ectx = echoBuf.getContext('2d');
+const echoLayer = makeCanvas(1, 1), elctx = echoLayer.getContext('2d');   // all the echoes, laid behind him on the front canvas
 function drawEchoTrail(sc, turn, level) {
-  // each echo is drawn whole into its own canvas first, then laid down see-through in one go,
-  // so it's the same bird all over, just fainter (not patchy where his parts overlap)
-  if (echoBuf.width !== birdBuf.width || echoBuf.height !== birdBuf.height) { echoBuf.width = birdBuf.width; echoBuf.height = birdBuf.height; }
+  // Each echo is drawn whole into its own canvas, sharpened into pixels like him, then laid down
+  // see-through in one go on a layer of its own (so it's the same bird all over, just fainter, and
+  // his own sharpening can't wipe it out)
+  for (const c of [echoBuf, echoLayer]) if (c.width !== birdBuf.width || c.height !== birdBuf.height) { c.width = birdBuf.width; c.height = birdBuf.height; }
+  elctx.setTransform(1, 0, 0, 1, 0, 0);
+  elctx.clearRect(0, 0, echoLayer.width, echoLayer.height);
   const span = 1.5 * 95 * BIRD_SCALE * (echoPath[0].pose.stretch || 1);   // 1.5 times his length, in game pixels
   let k = 1, walked = 0;
   for (let i = 1; i < echoPath.length && k <= ECHOES; i++) {
@@ -156,12 +160,13 @@ function drawEchoTrail(sc, turn, level) {
     ectx.setTransform(sc * turn, 0, 0, sc / novaZoom(), (e.x - cam) * K / BIRD_PIX, e.y * K / BIRD_PIX);
     if (e.pose.flip) ectx.rotate(e.pose.flip);
     drawMagpie(ectx, e.pose);
-    bbctx.setTransform(1, 0, 0, 1, 0, 0);
-    bbctx.globalAlpha = ECHO_ALPHA[k - 1] * level;
-    bbctx.drawImage(echoBuf, 0, 0);
+    crispen(ectx, (e.x - cam) * K / BIRD_PIX, e.y * K / BIRD_PIX, Math.ceil(80 * K / BIRD_PIX / 4) * 2);
+    elctx.globalAlpha = ECHO_ALPHA[k - 1] * level;
+    elctx.drawImage(echoBuf, 0, 0);
     k++;
   }
-  bbctx.globalAlpha = 1;
+  elctx.globalAlpha = 1;
+  return true;
 }
 // SOLAR-SLINGSHOT!!!!: the blur of him whipping round the sun. An arc trailing behind him round the
 // circle, growing with his speed until it's a whole blurred grey-white ring
@@ -314,7 +319,7 @@ function drawScene() {
   if (DROPBEAR.state !== 'hidden') drawCharacter(DROPBEAR.x, DROPBEAR.y, 0.42, 1, drawDropBear);
   recordEchoPath(pose);
   const echo = Math.max(drunkLevel(), SLING.out / SLING_OUT);        // drunk, or spat out of the slingshot: his echoes
-  if (echo > 0 && SLING.t <= 0) drawEchoTrail(sc, turn, echo);
+  const echoes = echo > 0 && SLING.t <= 0 && drawEchoTrail(sc, turn, echo);
   if (SLING.t > 0) drawBentMagpie(pose, sc);                         // SOLAR-SLINGSHOT!!!!: bent round the sun
   else {
   bbctx.setTransform(sc * turn, 0, 0, sc / novaZoom(), (bird.x - cam) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);   // never taller, even when the game zooms in
@@ -334,6 +339,7 @@ function drawScene() {
   fctx.setTransform(1, 0, 0, 1, 0, 0);
   if (slingBlur() > 0) drawSlingRing();                              // SOLAR-SLINGSHOT!!!!: his blur round the sun, behind him
   fctx.imageSmoothingEnabled = false;
+  if (echoes) fctx.drawImage(echoLayer, 0, 0, echoLayer.width * BIRD_PIX, echoLayer.height * BIRD_PIX);   // his echoes, behind him
   fctx.drawImage(birdBuf, 0, 0, birdBuf.width * BIRD_PIX, birdBuf.height * BIRD_PIX);
   if (bird.inside) drawShopFront(fctx);                          // inside: we see him through the glass
   drawLootAndBubbles(fctx);
