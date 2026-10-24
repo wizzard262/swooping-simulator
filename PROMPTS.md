@@ -852,9 +852,31 @@
 
 - TRUE-BLUE!: the bird needs to wear the cape around his neck, flapping over the top half of his body, just over the back
 
+## 178. Slingshot: white-out and a swelling sun
+
+- Make the fade to white last the 3 rotations. As he rotates, the sun grows and he rotates round a wider circle to keep orbiting it; when he exits, the sun is 2.5 times its size
+- Take 4 seconds to do the 3 rotations of the sun
+- Remove the dense grey smoke puffs off his tail
+
+## 179. Echoes
+
+- Instead of the 6 copies fanned out 30 degrees and growing to fill the screen, make them follow him like an echo, each always overlapping and fainter, like traces over 1.5 times the magpie's length. Remove the drunk shadow effect and use this same echo effect for him
+- Make the echoes fainter, only 3, and make sure they're the whole bird, not just part of him
+- For the echo, show the whole same bird, just fainter: currently each echo only shows part of the bird
+
+## 180. Drunk strip glitch
+
+- For the drunk glitch, cut the screen into about 10 horizontal strips and have all the game content (not the controls) glitchily slide to each side and return
+- The glitch is too much: make it 50% of the current movement, snapping back 20% quicker
+
+## 181. Drunk echo sound
+
+- When he's drunk, can we have the sounds echo
+
 ## Sessions
 
 | # | Date | Length | What we did |
 |---|------|--------|-------------|
 | 1 | 2026-10-21 | about 740 min so far | Prompts 1–145: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
 | 2 | 2026-10-23 | about 185 min | Prompts 146–177: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in five sharp strips, low wisps of cloud, SOLAR-NOVA! (loop round the sun: white flash, clouds burnt away, the whole game bouncing back), a drunk slide and glitch, the postie's slow-motion somersault, longer swoops, wider poop hits, wider eaves, KANGA-POO!, TRUE-BLUE! (the flag as a cape), stretchy stunts, the sun loop becoming SOLAR-SLINGSHOT!!!! (three times round the sun, flung out at double swoop speed, the game zooming in and bouncing back), a drunk sway with echoes, twin afterburners and a coarser roar out of the slingshot, a speeding-up orbit blurring into a grey-white ring, an overexposed super boost, the bird bent round the sun, a roar building up, a smoky 30-degree wake that hits everything, numbered objectives, the first gameplay video, the flock countdown in pop art, the cape over his back |
+| 3 | 2026-10-24 | about 60 min so far | Prompts 176–181: the flock countdown in pop art, the cape over his back, v80 live, a 1-minute gameplay video, the slingshot white-out with a swelling sun and wider orbit, trailing echoes, a 10-strip drunk glitch, drunk sound echo |

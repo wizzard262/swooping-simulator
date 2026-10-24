@@ -17,7 +17,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - Hang about under the big gum for 3 seconds and a drop bear drops on you, then climbs back into the leaves
 - Land on the postie or the ferry and ride along with them
 - A possum (a bit bigger than at first) is out on the power line between two houses about 40% of the time, scurrying back and forth and stopping for a rest (poop on him and he spins round and round the wire for 3 seconds); a screeching flock of cockatoos flies across the sky (fly in among them for 5 seconds to join the flock: FLOCK YEAH!); tiny bridge climbers cross the Harbour Bridge (poop on them and they jump up and down swearing: #!$?)
-- Fly through the BOTTLE-O and he's drunk for 10 seconds: left and right swap now and then, he hiccups, the whole scene sways from side to side (3% of the screen's width) with faint hard-edged echoes of him trailing on the swing, and the picture glitches now and then
+- Fly through the BOTTLE-O and he's drunk for 10 seconds: left and right swap now and then, he hiccups, the whole scene sways from side to side (3% of the screen's width), three faint echoes of him trail along his path, every sound echoes, and now and then the game jolts sideways in 10 strips and slides back
 - Every few minutes a summer storm rolls in: dark sky, rain, lightning and thunder, then a rainbow. The rain slants past you the way you're flying: fly forward, swoop, climb or dive and it tilts, streaking longer the faster you go
 - Score points for knocking things over, poops on target, stunts and rides; each score within 6 seconds of the last builds a combo (up to x5, shown next to the points, e.g. +40  COMBO X4), with a COMBO bar under the poop bar counting down the 6 seconds; your high score is remembered. You lose 100 points (a red minus) for swooping the cyclist, landing on the barbecue or getting drop-beared, and the score can go below zero
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
@@ -85,7 +85,7 @@ Do all 31 to complete the game (press O in the game for this list, with ticks). 
 | 27 | ROUND THE TWIST! | Poop on the possum |
 | 28 | COAT-HANGER! | Poop on the bridge climbers |
 | 29 | YEAH, NAH! | Get caught by the drop bear |
-| 30 | SOLAR-SLINGSHOT!!!! | Loop-the-loop round the sun: it whips you round three times, faster and faster, bent round it and stretching thinner and longer inside a blurred grey-white ring, the roar building; then it spits you out at twice swoop speed, double length, on twin afterburners with a coarser roar, the background overexposed, leaving a big smoky 30-degree wake that hits everything it passes as if pooped on and swooped; the game jumps closer and bounces back, and the clouds burn away |
+| 30 | SOLAR-SLINGSHOT!!!! | Loop-the-loop round the sun: it whips you round three times in 4 seconds, faster and faster, bent round it and stretching thinner and longer inside a blurred grey-white ring, the roar building, the sun swelling to 2.5 times its size and everything fading to white; then it spits you out at twice swoop speed, double length, on twin afterburners with a coarser roar and trailing echoes, the background overexposed, hitting everything in a 30-degree wake behind you as if pooped on and swooped; the game jumps closer and bounces back, and the clouds burn away |
 | 31 | TRUE-BLUE! | Barrel roll past the Aussie flag (you wear it as a cape for 5 seconds) |
 
 ## How it's made

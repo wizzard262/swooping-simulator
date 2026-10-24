@@ -6,7 +6,7 @@
 // key press or touch (browsers need that); M or the speaker icon mutes it, and that's remembered.
 // ---------------------------------------------------------------------------
 const Sound = (() => {
-  let ac = null, master = null, noise = null, muted = false, hicT = 1, cicadaT = 6, didgT = 8, burner = null, slinger = null, wasSwooping = false, wasFlung = false, rain = null;
+  let ac = null, master = null, noise = null, muted = false, hicT = 1, cicadaT = 6, didgT = 8, burner = null, slinger = null, drunkEcho = null, wasSwooping = false, wasFlung = false, rain = null;
   try { muted = localStorage.getItem('swoopMuted') === '1'; } catch (e) { /* storage blocked: default on */ }
 
   function start() {
@@ -15,6 +15,7 @@ const Sound = (() => {
     if (!AC) return;
     ac = new AC();
     master = ac.createGain(); master.gain.value = muted ? 0 : 0.8; master.connect(ac.destination);
+    drunkEcho = echoSend();
     noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -62,6 +63,15 @@ const Sound = (() => {
     growl.connect(gf); gf.connect(gg); gg.connect(out);
     s.start(); st.start(); growl.start();
     return { out };
+  }
+  // Drunk: everything echoes. A copy of all the sound goes round a delay that feeds back on itself
+  // (each repeat a bit duller and quieter), faded in while he's drunk
+  function echoSend() {
+    const delay = ac.createDelay(1), fb = ac.createGain(), tone = ac.createBiquadFilter(), wet = ac.createGain();
+    delay.delayTime.value = 0.27; fb.gain.value = 0.45; tone.type = 'lowpass'; tone.frequency.value = 2200; wet.gain.value = 0;
+    master.connect(delay); delay.connect(tone); tone.connect(fb); fb.connect(delay);
+    tone.connect(wet); wet.connect(ac.destination);
+    return wet;
   }
   // The burner lighting: a deep whoomp
   function ignite() {
@@ -376,6 +386,7 @@ const Sound = (() => {
     if (flung && !wasFlung && !muted) { ignite(); tone('sawtooth', 70, 28, now(), 0.6, 0.35); }   // a bigger, rougher whoomp
     wasFlung = flung;
     rain.gain.setTargetAtTime(muted ? 0 : stormDark() * 0.16, now(), 0.3);
+    drunkEcho.gain.setTargetAtTime(muted ? 0 : 0.6 * drunkLevel(), now(), 0.2);   // drunk: echoing
     if (muted) return;
     cicadaT -= dt;
     if (cicadaT <= 0) { cicadas(); cicadaT = 9 + Math.random() * 8; }

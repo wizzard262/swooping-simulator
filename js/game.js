@@ -64,18 +64,31 @@ const CALL_TIME = 2;              // a magpie call lasts 2 seconds, every 10 to 
 // Stunts: B for a barrel roll (two full turns on his own axis, bursting forward at swoop speed), L for a loop-the-loop
 // (a full vertical circle, carrying on forward as he goes round)
 const LOOP_TIME = 1.1, LOOP_R = 22;
-// SOLAR-SLINGSHOT!!!!: loop-the-loop with the sun's middle inside the loop and the sun catches him:
-// he whips round it three times (the camera holds still), speeding up all the way, stretching out
-// along his path and smearing into a blur that grows round the circle, until on the last time round
-// he's a full blurred grey-white ring; then he's spat out forward at twice swoop speed on twin
-// afterburners, shrinking back to size. As he's
-// flung out the whole game jumps 30% closer and bounces back to normal over 2 seconds (always filling
-// the window), and the clouds burn away: none for 10 seconds, then they fade back one at a time over 20.
-const SLING = { t: 0, out: 0, th0: 0, th1: 0 }, SLING_ORBIT = 3, SLING_TURNS = 3, SLING_OUT = 1.5, SLING_R = 28;   // just outside the sun's face, so the ring stays on screen
+// SOLAR-SLINGSHOT!!!!: loop-the-loop with the sun's middle inside the loop and the sun catches him.
+// He whips round it three times in 4 seconds (the camera holds still), speeding up all the way,
+// bent round it and stretching out, smearing into a blur that grows into a full grey-white ring.
+// All the while the sun swells to 2.5 times its size (dropping a little so he stays on screen), his
+// circle widening with it, and everything fades to white. Then he's spat out forward at twice swoop
+// speed on twin afterburners, shrinking back to size, the white clears, the whole game jumps 30%
+// closer and bounces back over 2 seconds (always filling the window), the sun shrinks back over 3,
+// and the clouds burn away: none for 10 seconds, then they fade back one at a time over 20.
+const SLING = { t: 0, out: 0, th0: 0, th1: 0 }, SLING_ORBIT = 4, SLING_TURNS = 3, SLING_OUT = 1.5, SLING_R = 28;   // SLING_R: just outside the sun's face
+const SUN_SWELL = 2.5, SUN_SHRINK = 3, WHITE_CLEAR = 0.25;
 const slingProgress = () => 1 - SLING.t / SLING_ORBIT;              // 0 to 1 through the orbit
 const slingBlur = () => SLING.t > 0 ? clamp((slingProgress() - 0.2) / 0.6, 0, 1) : 0;   // how much of the circle the blur covers
 const NOVA = { at: -Infinity }, NOVA_ZOOM = 0.3, NOVA_BOUNCE = 2, CLOUDS_GONE = 10, CLOUDS_BACK = 20;
-const sunCentre = () => ({ x: sunLeft() + SUN_SIZE / 2, y: SUN_TOP + SUN_SIZE / 2 });   // on screen
+function sunGrow() {                                                 // the sun's size, 1 normally
+  if (SLING.t > 0) return 1 + (SUN_SWELL - 1) * slingProgress();
+  const k = (time - NOVA.at) / SUN_SHRINK;                           // after the slingshot: shrinking back, smoothly
+  return k >= 0 && k < 1 ? SUN_SWELL - (SUN_SWELL - 1) * (k * k * (3 - 2 * k)) : 1;
+}
+const slingR = () => SLING_R * sunGrow();                             // his circle round it, widening as it grows
+const sunCentre = () => ({ x: sunLeft() + SUN_SIZE / 2, y: Math.max(SUN_TOP + SUN_SIZE / 2, slingR() + 4) });   // on screen
+function novaWhite() {                                               // how white the screen is: fading in all the way round, clearing fast after
+  if (SLING.t > 0) return slingProgress() ** 1.5;
+  const k = (time - NOVA.at) / WHITE_CLEAR;
+  return k >= 0 && k < 1 ? 1 - k : 0;
+}
 function startSlingshot() {
   const s = sunCentre();
   SLING.th0 = Math.atan2(bird.face * (bird.x - cam - s.x), bird.y - s.y);   // where he is round it, the same way the loop goes
@@ -83,20 +96,20 @@ function startSlingshot() {
   SLING.t = SLING_ORBIT;
   bird.loopT = 0; bird.swooping = false;
 }
-// Spat out, he leaves a big wake: a 30-degree fan of echoes trailing behind and below him, up to
-// WAKE_LEN pixels back. Everything it sweeps over is hit as if he'd both pooped on it and swooped it
-// (each thing once per slingshot; the cyclist's cable ties can't sting a wake)
+// Spat out, everything in a 30-degree fan behind and below him, up to WAKE_LEN pixels back, is hit as
+// if he'd both pooped on it and swooped it (each thing once per slingshot; the cyclist's cable ties
+// can't sting it)
 const WAKE_LEN = 260, WAKE_ANGLE = Math.PI / 6, wakeHit = new Set();
-function inWake(sx, y) {                                             // is a point on screen inside the wake (which grows as the boost dies)?
+function inWake(sx, y) {                                             // is a point on screen inside the wake?
   const d = -bird.face * (sx - (bird.x - cam)), v = y - bird.y;
-  return d > 0 && d < WAKE_LEN * wakeGrow() && v >= -6 && v <= d * Math.tan(WAKE_ANGLE);
+  return d > 0 && d < WAKE_LEN && v >= -6 && v <= d * Math.tan(WAKE_ANGLE);
 }
 function sweepWake() {
   const once = (key, fn) => { if (!wakeHit.has(key)) { wakeHit.add(key); fn(); } };
   for (const t of TARGETS) if (inWake(loopX(t.x + t.w / 2), t.y + t.h / 2)) once(t, () => t.hit({}));   // the poop hits
   if (inWake(loopX(HOIST.x), HOIST.mastTop + 10)) once('hoist', () => { HOIST.spin = -bird.face * HOIST_WHIRL; showCombo('WHIPPER-SNIPPER!', true); });
   if (ROO.dizzy <= 0 && inWake(loopX(ROO.x), rooTop())) once('roo', () => knockOver());
-  for (let d = 4; d < WAKE_LEN * wakeGrow(); d += 4)               // the rest by where they are on their own layers
+  for (let d = 4; d < WAKE_LEN; d += 4)                              // the rest by where they are on their own layers
     for (let v = -6; v <= d * Math.tan(WAKE_ANGLE); v += 3) {
       const sx = bird.x - cam - bird.face * d, y = bird.y + v;
       if (postieHitBy(sx, y)) once('postie', knockPostie);
@@ -105,32 +118,13 @@ function sweepWake() {
       if (SHARK.sink <= 0 && sharkHitBy(sx, y)) once('shark', swoopShark);
     }
 }
-// The wake's smoke: puffs pour off his tail and spread out down the two edges of the fan (and some
-// between), swelling and fading, so the wake shows as a big smoky V behind him
-const wakeSmoke = [];
-function updateWakeSmoke(dt) {
-  if (SLING.out > 0)
-    for (let n = Math.round(260 * dt); n > 0; n--) {
-      const edge = Math.random(), spread = edge < 0.4 ? 0 : edge < 0.8 ? 1 : Math.random();   // top edge, bottom edge, or between
-      wakeSmoke.push({ y: bird.y + 2, vx: bird.face * 40 * Math.random(),
-        vy: SWOOP_SPEED * 2 * Math.tan(WAKE_ANGLE) * spread * (0.85 + 0.3 * Math.random()) + (Math.random() - 0.5) * 30,
-        x: bird.x - bird.face * (16 + Math.random() * 20), r: 4 + Math.random() * 3, life: 1.8 + Math.random() * 0.8 });
-    }
-  for (const p of wakeSmoke) {
-    p.x += p.vx * dt; p.y += p.vy * dt;
-    p.vy *= Math.exp(-1.8 * dt); p.vx *= Math.exp(-1.8 * dt);       // slowing as it spreads
-    p.r += 16 * dt; p.life -= dt;
-  }
-  for (let i = wakeSmoke.length - 1; i >= 0; i--) if (wakeSmoke[i].life <= 0) wakeSmoke.splice(i, 1);
-}
 function updateSlingshot(dt) {
-  updateWakeSmoke(dt);
   if (SLING.out > 0) { SLING.out = Math.max(0, SLING.out - dt); sweepWake(); }
   if (SLING.t <= 0) return;
   SLING.t = Math.max(0, SLING.t - dt);
-  const p = slingProgress(), th = SLING.th0 + (SLING.th1 - SLING.th0) * p * p, s = sunCentre();   // p squared: speeding up all the way round
-  bird.x = cam + s.x + bird.face * SLING_R * Math.sin(th);
-  bird.y = s.y + SLING_R * Math.cos(th);
+  const p = slingProgress(), th = SLING.th0 + (SLING.th1 - SLING.th0) * p * p, s = sunCentre(), R = slingR();   // p squared: speeding up all the way round
+  bird.x = cam + s.x + bird.face * R * Math.sin(th);
+  bird.y = s.y + R * Math.cos(th);
   bird.vx = bird.vy = 0; bird.pitch = -th; bird.flapT += dt * 14; bird.swooping = false; bird.grounded = false;
   if (SLING.t === 0) {                                               // let go: flung out
     bird.pitch = 0; SLING.out = SLING_OUT; NOVA.at = time; wakeHit.clear();

@@ -91,17 +91,33 @@ function drawCape(g, pose) {
 }
 let shownZoom = 1;                // the zoom last set on the canvases
 let shownGlare = '';              // the overexposure last set on the background canvases
-// Drunk glitch: a few frames in every second, bands of the picture jump sideways, the same on all three canvases
-function drunkGlitch(drunk) {
-  if (Math.random() > drunk * 0.35) return;
-  for (let n = 1 + Math.floor(Math.random() * 4); n > 0; n--) {
-    const y = Math.floor(Math.random() * H), h = 1 + Math.floor(Math.random() * 10), dx = Math.round((Math.random() - 0.5) * 24);
-    ctx.drawImage(canvas, 0, y, W, h, dx, y, W, h);
-    for (const [g, cv] of [[bctx, back], [fctx, front]]) {
-      g.setTransform(1, 0, 0, 1, 0, 0);
-      g.drawImage(cv, 0, y * K, cv.width, h * K, dx * K, y * K, cv.width, h * K);
-    }
+// Drunk glitch: every so often the game (not the key hints and score) is cut into 10 strips across
+// the screen that jolt sideways, alternate ways and by different amounts, then slide back
+const GLITCH = { at: -9, next: 0, amp: [] }, GLITCH_STRIPS = 10, GLITCH_OUT = 0.07, GLITCH_BACK = 0.22;
+const glitchTmp = makeCanvas(1, 1), gtctx = glitchTmp.getContext('2d');
+function glitchShift(i) {                                            // how far strip i is shifted right now, in game pixels
+  const t = time - GLITCH.at, f = t < 0 ? 0 : t < GLITCH_OUT ? t / GLITCH_OUT : Math.max(0, 1 - (t - GLITCH_OUT) / GLITCH_BACK);
+  return (GLITCH.amp[i] || 0) * f * f * (3 - 2 * f);
+}
+function updateGlitch(drunk) {
+  if (drunk <= 0 || time < GLITCH.next) return;
+  GLITCH.at = time; GLITCH.next = time + 0.45 + Math.random() * 0.9;
+  GLITCH.amp = Array.from({ length: GLITCH_STRIPS }, (_, i) => (i % 2 ? 1 : -1) * (3 + Math.random() * 11) * drunk);
+}
+function glitchStrips(g, cv, scale) {                                // shift this canvas's strips (scale: its pixels per game pixel)
+  if (time - GLITCH.at > GLITCH_OUT + GLITCH_BACK) return;
+  if (glitchTmp.width !== cv.width || glitchTmp.height !== cv.height) { glitchTmp.width = cv.width; glitchTmp.height = cv.height; }
+  gtctx.clearRect(0, 0, cv.width, cv.height); gtctx.drawImage(cv, 0, 0);
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  const h = cv.height / GLITCH_STRIPS;
+  for (let i = 0; i < GLITCH_STRIPS; i++) {
+    const y = Math.round(i * h), sh = Math.round((i + 1) * h) - y, dx = Math.round(glitchShift(i) * scale);
+    if (!dx) continue;
+    g.clearRect(0, y, cv.width, sh);
+    g.drawImage(glitchTmp, 0, y, cv.width, sh, dx, y, cv.width, sh);
+    g.drawImage(glitchTmp, 0, y, cv.width, sh, dx - Math.sign(dx) * cv.width, y, cv.width, sh);   // wrapped round, so no gap shows
   }
+  g.restore();
 }
 // Where the sun's left edge is on screen: it takes SUN_LOOPS trips round the level to cross the screen
 function sunLeft() {
@@ -111,27 +127,39 @@ function sunLeft() {
 const SUN_TOP = 8;                // the sun's top edge on screen
 
 // Drunk: the whole scene sways from side to side, a sine swing of 3% of the screen's width, by drawing
-// it from a swaying camera (so the picture still fills the window), and the magpie leaves 5 fading
-// echoes behind him on the swing
+// it from a swaying camera (so the picture still fills the window)
 const drunkLevel = () => clamp(bird.drunk / 2, 0, 1);                // eases off over his last 2 seconds of being drunk
 const drunkSway = t => drunkLevel() * 0.03 * W * Math.sin(t * 1.8);
-// Each echo is a flat, faint shadow of him with a hard edge, one step fainter each further back
+// Echoes (drunk, and spat out of the slingshot): three faint see-through copies of him, each the whole
+// bird, following along his path like traces, each fainter than the last, spaced half his length apart
+const echoPath = [];                                                 // where he's been, newest first, in world pixels
+const ECHOES = 3, ECHO_ALPHA = [0.26, 0.15, 0.07];                 // nearest first
+function recordEchoPath(pose) {
+  echoPath.unshift({ x: bird.x, y: bird.y + pose.bob * BIRD_SCALE, pose: { ...pose } });
+  if (echoPath.length > 120) echoPath.pop();
+}
 const echoBuf = makeCanvas(1, 1), ectx = echoBuf.getContext('2d');
-function drawEchoes(pose, sc, turn) {
+function drawEchoTrail(sc, turn, level) {
+  // each echo is drawn whole into its own canvas first, then laid down see-through in one go,
+  // so it's the same bird all over, just fainter (not patchy where his parts overlap)
   if (echoBuf.width !== birdBuf.width || echoBuf.height !== birdBuf.height) { echoBuf.width = birdBuf.width; echoBuf.height = birdBuf.height; }
-  for (let k = 5; k >= 1; k--) {
+  const span = 1.5 * 95 * BIRD_SCALE * (echoPath[0].pose.stretch || 1);   // 1.5 times his length, in game pixels
+  let k = 1, walked = 0;
+  for (let i = 1; i < echoPath.length && k <= ECHOES; i++) {
+    const step = Math.hypot(echoPath[i].x - echoPath[i - 1].x, echoPath[i].y - echoPath[i - 1].y);
+    if (step > 40) break;                                            // he jumped (round the loop of the level, say): no trail across it
+    walked += step;
+    if (walked < k * span / ECHOES) continue;
+    const e = echoPath[i];
     ectx.setTransform(1, 0, 0, 1, 0, 0);
-    ectx.globalCompositeOperation = 'source-over';
     ectx.clearRect(0, 0, echoBuf.width, echoBuf.height);
-    ectx.setTransform(sc * turn, 0, 0, sc, (bird.x - cam + drunkSway(time - k * 0.12) - drunkSway(time)) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);
-    if (pose.flip) ectx.rotate(pose.flip);
-    drawMagpie(ectx, pose);
-    ectx.setTransform(1, 0, 0, 1, 0, 0);
-    ectx.globalCompositeOperation = 'source-in';                      // his shape, filled flat
-    ectx.fillStyle = '#10141c'; ectx.fillRect(0, 0, echoBuf.width, echoBuf.height);
+    ectx.setTransform(sc * turn, 0, 0, sc / novaZoom(), (e.x - cam) * K / BIRD_PIX, e.y * K / BIRD_PIX);
+    if (e.pose.flip) ectx.rotate(e.pose.flip);
+    drawMagpie(ectx, e.pose);
     bbctx.setTransform(1, 0, 0, 1, 0, 0);
-    bbctx.globalAlpha = 0.04 * (6 - k) * drunkLevel();               // 0.2 nearest, down to 0.04
+    bbctx.globalAlpha = ECHO_ALPHA[k - 1] * level;
     bbctx.drawImage(echoBuf, 0, 0);
+    k++;
   }
   bbctx.globalAlpha = 1;
 }
@@ -146,8 +174,8 @@ function drawSlingRing() {
   fctx.strokeStyle = `rgba(236,238,242,${(0.25 + 0.65 * b).toFixed(2)})`;
   fctx.lineWidth = K * 9; fctx.lineCap = 'round';
   fctx.beginPath();
-  if (bird.face > 0) fctx.arc(s.x * K, s.y * K, SLING_R * K, phi, phi + len);
-  else fctx.arc(s.x * K, s.y * K, SLING_R * K, phi - len, phi);
+  if (bird.face > 0) fctx.arc(s.x * K, s.y * K, slingR() * K, phi, phi + len);
+  else fctx.arc(s.x * K, s.y * K, slingR() * K, phi - len, phi);
   fctx.stroke();
   fctx.restore();
 }
@@ -162,7 +190,7 @@ function drawBentMagpie(pose, sc) {
   bendCtx.clearRect(0, 0, bendBuf.width, bendBuf.height);
   bendCtx.setTransform(sc, 0, 0, sc, half, tall);                    // facing +x, level: the curve does the turning
   drawMagpie(bendCtx, { ...pose, pitch: 0 });
-  const s = sunCentre(), cx = s.x * K / BIRD_PIX, cy = s.y * K / BIRD_PIX, R = SLING_R * K / BIRD_PIX;
+  const s = sunCentre(), cx = s.x * K / BIRD_PIX, cy = s.y * K / BIRD_PIX, R = slingR() * K / BIRD_PIX;
   const p = slingProgress(), th = SLING.th0 + (SLING.th1 - SLING.th0) * p * p, phi = Math.PI / 2 - bird.face * th;
   for (let u = -half; u < half; u += 1) {                            // u: along his body, + towards his head
     const a = phi - bird.face * (u + 0.5) / R;                        // where this sliver sits round the circle
@@ -172,30 +200,6 @@ function drawBentMagpie(pose, sc) {
     bbctx.rotate(turn);
     if (bird.face < 0) bbctx.scale(1, -1);                            // keep his back to the sun
     bbctx.drawImage(bendBuf, half + u, 0, 1, 2 * tall, -0.5, -tall, 1.6, 2 * tall);
-  }
-}
-// The slingshot's wake: six see-through echoes of him fanned out behind and below him over 30 degrees.
-// As the boost dies the fan grows until it fills the screen, fading out as it goes; when it's gone
-// everything's back to normal
-const wakeGrow = () => 1 + 2.5 * (1 - SLING.out / SLING_OUT);        // 1 when he's spat out, growing to 3.5
-function drawWake(pose, sc, turn) {
-  const fade = SLING.out / SLING_OUT, grow = wakeGrow();
-  for (let j = 5; j >= 0; j--) {
-    const a = WAKE_ANGLE * j / 5, d = (45 + j * 38) * grow, big = 1 + (grow - 1) * (j + 1) / 6;
-    const x = bird.x - cam - bird.face * d * Math.cos(a), y = bird.y + d * Math.sin(a);
-    bbctx.setTransform(sc * turn * big, 0, 0, sc * big / novaZoom(), x * K / BIRD_PIX, y * K / BIRD_PIX);
-    bbctx.rotate(a);
-    bbctx.globalAlpha = (0.5 - j * 0.07) * fade;
-    drawMagpie(bbctx, pose);
-  }
-  bbctx.globalAlpha = 1;
-}
-function drawWakeSmoke() {
-  for (const p of wakeSmoke) {
-    const x = (p.x - cam) * K, y = p.y * K, r = p.r * K, a = Math.min(1, p.life / 0.8) * 0.4;
-    const g = fctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(70,72,82,${a.toFixed(3)})`); g.addColorStop(0.6, `rgba(110,112,122,${(a * 0.6).toFixed(3)})`); g.addColorStop(1, 'rgba(140,142,150,0)');
-    fctx.fillStyle = g; fctx.beginPath(); fctx.arc(x, y, r, 0, Math.PI * 2); fctx.fill();
   }
 }
 function draw() {
@@ -208,14 +212,15 @@ function drawScene() {
   // The sun is slowest of all: it takes SUN_LOOPS trips round the level to cross the screen.
   bctx.imageSmoothingEnabled = false;
   bctx.drawImage(skyCanvas, 0, 0, back.width, back.height);
-  const sunX = sunLeft();
+  const sun = sunCentre(), size = SUN_SIZE * sunGrow();              // it swells in the SOLAR-SLINGSHOT!!!!
   bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
   bctx.filter = blur > 0.02 ? 'blur(' + (blur * K * 1.2).toFixed(1) + 'px)' : 'none';   // the sun blurs in a swoop too
-  const glow = bctx.createRadialGradient((sunX + SUN_SIZE / 2) * K, (SUN_TOP + SUN_SIZE / 2) * K, 0, (sunX + SUN_SIZE / 2) * K, (SUN_TOP + SUN_SIZE / 2) * K, SUN_SIZE * 0.75 * K);
+  const glow = bctx.createRadialGradient(sun.x * K, sun.y * K, 0, sun.x * K, sun.y * K, size * 0.75 * K);
   glow.addColorStop(0, 'rgba(255,236,170,0.55)'); glow.addColorStop(1, 'rgba(255,236,170,0)');
-  bctx.fillStyle = glow; bctx.fillRect((sunX - SUN_SIZE / 2) * K, (SUN_TOP - SUN_SIZE / 2) * K, SUN_SIZE * 2 * K, SUN_SIZE * 2 * K);
-  if (sunHi.complete) bctx.drawImage(sunHi, (sunX + SUN_SIZE * (1 - SUN_ASPECT) / 2) * K, SUN_TOP * K, SUN_SIZE * SUN_ASPECT * K, SUN_SIZE * K);
+  bctx.fillStyle = glow; bctx.fillRect((sun.x - size) * K, (sun.y - size) * K, size * 2 * K, size * 2 * K);
+  if (sunHi.complete) bctx.drawImage(sunHi, (sun.x - size * SUN_ASPECT / 2) * K, (sun.y - size / 2) * K, size * SUN_ASPECT * K, size * K);
   bctx.filter = 'none';
+  if (drunkLevel() > 0) glitchStrips(bctx, back, K);                 // drunk: the sky glitches too
 
 
   // Pixel canvas: clouds, hills, suburb, lawn
@@ -261,6 +266,8 @@ function drawScene() {
   ctx.globalAlpha = 1;
   drawStorm(ctx);
   drawClimberBubble();
+  updateGlitch(drunkLevel());
+  if (drunkLevel() > 0) glitchStrips(ctx, canvas, 1);              // drunk: the scenery glitches, but not the key hints and score
   drawScore();
   drawEndStats();
 
@@ -305,8 +312,9 @@ function drawScene() {
   drawCast();
   drawCharacter(CYCLIST.x, CYCLIST.ground, CYCLIST_SCALE, CYCLIST.dir, drawCyclist);
   if (DROPBEAR.state !== 'hidden') drawCharacter(DROPBEAR.x, DROPBEAR.y, 0.42, 1, drawDropBear);
-  if (drunkLevel() > 0) drawEchoes(pose, sc, turn);                  // drunk: his echoes behind him on the swing
-  if (SLING.out > 0) drawWake(pose, sc, turn);                       // spat out of the slingshot: his big wake
+  recordEchoPath(pose);
+  const echo = Math.max(drunkLevel(), SLING.out / SLING_OUT);        // drunk, or spat out of the slingshot: his echoes
+  if (echo > 0 && SLING.t <= 0) drawEchoTrail(sc, turn, echo);
   if (SLING.t > 0) drawBentMagpie(pose, sc);                         // SOLAR-SLINGSHOT!!!!: bent round the sun
   else {
   bbctx.setTransform(sc * turn, 0, 0, sc / novaZoom(), (bird.x - cam) * K / BIRD_PIX, (bird.y + pose.bob * BIRD_SCALE) * K / BIRD_PIX);   // never taller, even when the game zooms in
@@ -325,7 +333,6 @@ function drawScene() {
   crispen(bbctx, (bird.x - cam) * K / BIRD_PIX, bird.y * K / BIRD_PIX, Math.ceil(80 * K / BIRD_PIX / 4) * 2);
   fctx.setTransform(1, 0, 0, 1, 0, 0);
   if (slingBlur() > 0) drawSlingRing();                              // SOLAR-SLINGSHOT!!!!: his blur round the sun, behind him
-  if (wakeSmoke.length) drawWakeSmoke();                             // ...and the smoky wake he leaves when he's spat out
   fctx.imageSmoothingEnabled = false;
   fctx.drawImage(birdBuf, 0, 0, birdBuf.width * BIRD_PIX, birdBuf.height * BIRD_PIX);
   if (bird.inside) drawShopFront(fctx);                          // inside: we see him through the glass
@@ -335,8 +342,14 @@ function drawScene() {
   if (dark > 0) { fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.fillStyle = `rgba(25,35,55,${0.3 * dark})`; fctx.globalCompositeOperation = 'source-atop'; fctx.fillRect(0, 0, front.width, front.height); fctx.globalCompositeOperation = 'source-over'; }
   drawCombo(fctx);
   drawFlockCount(fctx);
+  if (drunkLevel() > 0) glitchStrips(fctx, front, K);                // drunk: the magpie and everyone glitch with the scenery
   drawEnd(fctx);
-  if (drunkLevel() > 0) drunkGlitch(drunkLevel());                  // drunk: now and then the picture glitches
+  const white = novaWhite();
+  if (white > 0) {                                                   // SOLAR-SLINGSHOT!!!!: fading to white all the way round the sun
+    fctx.setTransform(1, 0, 0, 1, 0, 0);
+    fctx.fillStyle = `rgba(255,255,255,${white.toFixed(3)})`;
+    fctx.fillRect(0, 0, front.width, front.height);
+  }
   // SOLAR-SLINGSHOT!!!!: the whole game jumps closer and bounces back. Never zoomed out, so it always fills the window.
   const zoom = novaZoom();
   if (zoom !== shownZoom) {
