@@ -372,6 +372,31 @@ const Sound = (() => {
     tone('square', 280, 720, t, 0.07, 0.07);
     burst(t, 0.06, 'bandpass', 1200, 3, 0.12);
   }
+  // The Hills Hoist turning: a creaky, rusty gate. The mast's metal sticks and slips (a juddering
+  // buzz whose rate wanders as it grips and lets go), rung through a few tinny resonances. Each
+  // half turn bends the other way, like a gate swung back and forth; faster spins creak shorter
+  // and higher (speed 0 to 1)
+  let creakUp = false;
+  function creak(speed = 0.3) {
+    creakUp = !creakUp;
+    const t = now(), len = 0.6 - 0.32 * speed, f0 = 30 + 45 * speed;
+    const o = ac.createOscillator(), g = ac.createGain(), out = ac.createGain();
+    const curve = new Float32Array(24);
+    for (let i = 0; i < curve.length; i++) {
+      const k = i / (curve.length - 1), bend = Math.sin((creakUp ? k : 1 - k) * Math.PI * 0.8);
+      curve[i] = f0 * (0.6 + bend) * (0.8 + Math.random() * 0.4);    // grip, slip, grip
+    }
+    o.type = 'sawtooth'; o.frequency.setValueCurveAtTime(curve, t, len);
+    env(g, t, 0.05, len * 0.45, len * 0.45, 1);
+    o.connect(g);
+    for (const [f, q, level] of [[650, 9, 1], [1180, 11, 0.7], [2250, 13, 0.45], [3600, 15, 0.25]]) {   // the tinny metal
+      const bp = ac.createBiquadFilter(), lg = ac.createGain();
+      bp.type = 'bandpass'; bp.frequency.value = f * (0.92 + Math.random() * 0.16) * (1 + 0.25 * speed); bp.Q.value = q; lg.gain.value = level;
+      g.connect(bp); bp.connect(lg); lg.connect(out);
+    }
+    out.gain.value = 1.6; out.connect(master);
+    o.start(t); o.stop(t + len + 0.1);
+  }
   // Background events and hiccups, timed from the game loop
   function tick(dt) {
     if (!ac) return;
@@ -409,7 +434,7 @@ const Sound = (() => {
     b.title = muted ? 'Sound off (M)' : 'Sound on (M)';
   }
   // The effects only play once sound has started and while it's on
-  const effects = { plop, splosh, can, boing, carol, sizzle, scream, laugh, hushLaugh, cheep, fanfare, didgeridoo, bell, oi, thunder, screech, growl };
+  const effects = { plop, splosh, can, boing, carol, sizzle, scream, laugh, hushLaugh, cheep, fanfare, didgeridoo, bell, oi, thunder, screech, growl, creak };
   const safe = fn => (...a) => { if (ac && !muted) fn(...a); };
   return { start, toggle, tick, updateIcon, isMuted: () => muted, ...Object.fromEntries(Object.entries(effects).map(([name, fn]) => [name, safe(fn)])) };
 })();

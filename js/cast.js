@@ -11,7 +11,7 @@
 // frame (it turns), seen from the side: four arms on a mast, lines strung between them.
 // ---------------------------------------------------------------------------
 const HOIST = { x: 90 - 3 * 60 + LEVEL_W, r: 30,   // three of its widths left of where it was (the level loops)
-  mastTop: 113, top: 115, spin: 0, angle: 0.4 };
+  mastTop: 113, top: 115, spin: 0, angle: 0.4, creakIn: 0 };
 const HANG_Y = 9;                       // hanging upside down under it by his feet: how far below the top his middle is
 for (const w of WASHING) w.dull = mix(w.col, '#7d8a96', 0.3);   // each piece's colour on the far side, a little duller
 const hoistDx = x => wrapDx(x, HOIST.x);   // how far from the mast, allowing for the loop
@@ -27,6 +27,12 @@ function updateHoist(dt) {
   const riding = bird.onHoist || bird.hanging, target = riding ? 2.6 : 0;   // spins up with him on it (or under it), slows down without
   HOIST.spin += (target - HOIST.spin) * Math.min(1, (riding ? 1.2 : 0.5) * dt);
   HOIST.angle += HOIST.spin * dt;
+  // Rusty: it creaks like an old gate every half turn while it's going round, if it's on screen
+  if ((HOIST.creakIn -= Math.abs(HOIST.spin) * dt) <= 0) {
+    HOIST.creakIn = Math.PI;
+    const hx = loopX(HOIST.x);
+    if (Math.abs(HOIST.spin) > 0.3 && hx > -HOIST.r - 20 && hx < W + HOIST.r + 20) Sound.creak(Math.min(1, Math.abs(HOIST.spin) / HOIST_WHIRL));
+  }
 }
 
 function drawHoist(g) {
