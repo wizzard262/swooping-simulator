@@ -429,9 +429,9 @@ const Sound = (() => {
     squealVoice(t + len * 0.1, c, { pitch: [[0, f * 0.97], [0.4, f * 1.01], [1, f]], amp: [[0, 0], [0.15, 1], [0.7, 0.8], [1, 0]], table: 'loud', scrape: 25, peak: 0.07, grit: 0 });
   }
   const SQUEAL_LEN = 1.9;
-  // The hoist's squeals play at 60%, and fade out as he flies away from it: full within HOIST_NEAR game
+  // The hoist's squeals play at 45%, and fade out as he flies away from it: full within HOIST_NEAR game
   // pixels of the mast, silent by HOIST_FAR (so a WHIPPER-SNIPPER! dies away behind him)
-  const HOIST_VOLUME = 0.6, HOIST_NEAR = 80, HOIST_FAR = 380;
+  const HOIST_VOLUME = 0.45, HOIST_NEAR = 80, HOIST_FAR = 380;
   const hoistNearness = () => Math.min(1, Math.max(0, 1 - (Math.abs(hoistDx(bird.x)) - HOIST_NEAR) / (HOIST_FAR - HOIST_NEAR)));
   function creak() { squeal(now(), SQUEAL_LEN); }                     // riding round on it
   // WHIPPER-SNIPPER!: six quick squeals, each a little longer apart as it slows

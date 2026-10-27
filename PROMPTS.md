@@ -900,6 +900,10 @@
 
 - Reduce the Hills Hoist sound to 60% volume, and if you WHIPPER-SNIPPER it, it fades as you leave
 
+## 187. Quieter still
+
+- Lower it 25% more
+
 ## Sessions
 
 | # | Date | Length | What we did |
@@ -907,4 +911,4 @@
 | 1 | 2026-10-21 | about 740 min so far | Prompts 1–145: the first build, then the smooth sun and magpie, billowy clouds, hills with Aussie icons, the swoop bar, blur and afterburner, the poop bar, distant hills, a deep suburb with a clear view of the harbour, the BOTTLE-O, the screenshots page, the photo sun, key hints, legs dangling in a swoop, SWOOP-AND-POOP!, barrel rolls and loops, sound and a didgeridoo, fitting the browser width, real-sounding clinks and didgeridoo, SWOOP-AND-LOOP!, a Hills Hoist to ride, controller support, a kangaroo in a cork hat, a big gum with a koala and kookaburra, a flag, a barbie, the postie, a shark, a harbour ferry, a cyclist, a drop bear, cockatoos, a possum, storms, a score, swearing bridge climbers, a poopable postie, losing points, a whirling hoist to hang under, WHIPPER SNIPPER!, BARREL SWOOP!, BEER-BARREL!, a spinning possum, Aussie captions for everything, a performance check, a version number |
 | 2 | 2026-10-23 | about 185 min | Prompts 146–177: the barbie moved between the BOTTLE-O and the Hills Hoist, ROO-DIMENTARY!, a bigger and more common possum, a barrel roll that spins on his axis and bursts forward (two turns), COMBO X shown with the points, the sky in five sharp strips, low wisps of cloud, SOLAR-NOVA! (loop round the sun: white flash, clouds burnt away, the whole game bouncing back), a drunk slide and glitch, the postie's slow-motion somersault, longer swoops, wider poop hits, wider eaves, KANGA-POO!, TRUE-BLUE! (the flag as a cape), stretchy stunts, the sun loop becoming SOLAR-SLINGSHOT!!!! (three times round the sun, flung out at double swoop speed, the game zooming in and bouncing back), a drunk sway with echoes, twin afterburners and a coarser roar out of the slingshot, a speeding-up orbit blurring into a grey-white ring, an overexposed super boost, the bird bent round the sun, a roar building up, a smoky 30-degree wake that hits everything, numbered objectives, the first gameplay video, the flock countdown in pop art, the cape over his back |
 | 3 | 2026-10-24 | about 140 min so far | Prompts 176–185: the flock countdown in pop art, the cape over his back, v80 live, a 1-minute gameplay video, the slingshot white-out with a swelling sun and wider orbit, trailing echoes, a 10-strip drunk glitch, drunk sound echo, a calmer glitch, echoes that show, the wake as anime speed lines above and below him, a creaky rusty Hills Hoist, then a squeal copied from a real gate |
-| 4 | 2026-10-27 | about 10 min | Prompt 186: the Hills Hoist's squeals at 60%, fading out as he flies away from it |
+| 4 | 2026-10-27 | about 15 min | Prompts 186–187: the Hills Hoist's squeals at 60%, then 45%, fading out as he flies away from it |
