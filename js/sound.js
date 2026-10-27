@@ -6,7 +6,7 @@
 // key press or touch (browsers need that); M or the speaker icon mutes it, and that's remembered.
 // ---------------------------------------------------------------------------
 const Sound = (() => {
-  let ac = null, master = null, noise = null, muted = false, hicT = 1, cicadaT = 6, didgT = 8, burner = null, slinger = null, drunkEcho = null, wasSwooping = false, wasFlung = false, rain = null;
+  let ac = null, master = null, noise = null, muted = false, hicT = 1, cicadaT = 6, didgT = 8, burner = null, slinger = null, drunkEcho = null, wasSwooping = false, wasFlung = false, rain = null, hoistBus = null;
   try { muted = localStorage.getItem('swoopMuted') === '1'; } catch (e) { /* storage blocked: default on */ }
 
   function start() {
@@ -22,6 +22,7 @@ const Sound = (() => {
     breeze();
     burner = afterburnerRoar();
     slinger = slingshotRoar();
+    hoistBus = ac.createGain(); hoistBus.gain.value = HOIST_VOLUME; hoistBus.connect(master);   // the Hills Hoist's squeals, quieter, fading with distance
     rain = ac.createGain(); rain.gain.value = 0; rain.connect(master);   // rain, faded up in a storm
     const rs = ac.createBufferSource(), rf = ac.createBiquadFilter();
     rs.buffer = noise; rs.loop = true; rf.type = 'bandpass'; rf.frequency.value = 2800; rf.Q.value = 0.5;
@@ -410,7 +411,7 @@ const Sound = (() => {
     const g = ac.createGain(), r = ac.createGain();
     g.gain.value = 0; g.gain.setValueCurveAtTime(shape(amp).map(v => v * peak), t, len);
     r.gain.value = 1 - rough; wander(t, len, 90, rough * 15).connect(r.gain);
-    g.connect(r); r.connect(master);
+    g.connect(r); r.connect(hoistBus);
     const o = ac.createOscillator(); o.setPeriodicWave(squealWave(table));
     o.frequency.setValueCurveAtTime(shape(pitch), t, len);
     wander(t, len, 130, scrape * 20).connect(o.frequency);            // the scrape
@@ -428,6 +429,10 @@ const Sound = (() => {
     squealVoice(t + len * 0.1, c, { pitch: [[0, f * 0.97], [0.4, f * 1.01], [1, f]], amp: [[0, 0], [0.15, 1], [0.7, 0.8], [1, 0]], table: 'loud', scrape: 25, peak: 0.07, grit: 0 });
   }
   const SQUEAL_LEN = 1.9;
+  // The hoist's squeals play at 60%, and fade out as he flies away from it: full within HOIST_NEAR game
+  // pixels of the mast, silent by HOIST_FAR (so a WHIPPER-SNIPPER! dies away behind him)
+  const HOIST_VOLUME = 0.6, HOIST_NEAR = 80, HOIST_FAR = 380;
+  const hoistNearness = () => Math.min(1, Math.max(0, 1 - (Math.abs(hoistDx(bird.x)) - HOIST_NEAR) / (HOIST_FAR - HOIST_NEAR)));
   function creak() { squeal(now(), SQUEAL_LEN); }                     // riding round on it
   // WHIPPER-SNIPPER!: six quick squeals, each a little longer apart as it slows
   function whirl() {
@@ -448,6 +453,7 @@ const Sound = (() => {
     if (flung && !wasFlung && !muted) { ignite(); tone('sawtooth', 70, 28, now(), 0.6, 0.35); }   // a bigger, rougher whoomp
     wasFlung = flung;
     rain.gain.setTargetAtTime(muted ? 0 : stormDark() * 0.16, now(), 0.3);
+    hoistBus.gain.setTargetAtTime(HOIST_VOLUME * hoistNearness(), now(), 0.15);
     drunkEcho.gain.setTargetAtTime(muted ? 0 : 0.6 * drunkLevel(), now(), 0.2);   // drunk: echoing
     if (muted) return;
     cicadaT -= dt;
