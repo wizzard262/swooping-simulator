@@ -23,8 +23,9 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - On the ground the magpie carols every 10 to 20 seconds, head up and beak working
 - B for a barrel roll (two turns on his own axis, bursting forward at swoop speed with no afterburner), L for a loop-the-loop; in both he stretches out to half as long again and back
 - M (or the speaker icon) turns the sound on and off
+- The title screen shows how many objectives there are and each one in turn, plus your best time
 - O (or the OBJECTIVES link under the timer, top right) opens the list of all 31 objectives, each named by the caption it shows, with a tick when done; the game waits while it's open, and any key closes it. A timer runs from your first move
-- Do all 31 and the game is complete: a fanfare, a big TOO EASY, MATE!, your time and score, and only then does your score count for the high score. Press any key to play again
+- Do all 31 and the game is complete: a fanfare, a big TOO EASY, MATE!, your time and score, and only then does your score count for the high score and your time for the best time (kept on this computer, shown top right and on the title screen). Press any key to play again
 - Poops fade away after 10 seconds
 - The game keeps a 16:9 view and fits any window size, centred, with black bars top and bottom (tall windows) or at the sides (wide ones)
 - Everything you hit or ride gets a pop-art Aussie caption: ROO THE DAY!, KANGA-POO!, ROO-DIMENTARY!, KOOKA-BOOM-A!, SPECIAL DELIVERY!, CYCLO-PATH!, STREWTH!, ROUND THE TWIST!, COAT-HANGER!, BARBIE-POO!, COOKED, MATE!, SNAG-ROCKET!, YEAH, NAH!, DOWN UNDER!, BLUDGER! (the ferry), POSTIE-PILLION! (RBT TIME! if you land on the postie drunk), SPIN-CYCLE!, WHIPPER-SNIPPER!
@@ -33,7 +34,7 @@ A Flappy Bird style game where you fly an Australian magpie over an Aussie subur
 - Press P to poop: a white teardrop that sploshes on the lawn. It takes a full poop bar, which refills in 3 seconds
 - Fly through the BOTTLE-O (in through one side, out the other): bottles and cans of Foster's and Johnnie Walker tumble out (GROG RUN!), or barrel roll while you're inside for BEER-BARREL! and two beer barrels come bouncing out instead; and for 10 seconds he flies erratically with bubbles and glowing red eyes. You can also land on its roof; the BOTTLE-O sign on posts above it is just scenery
 - The magpie drifts down slowly under gravity, lands softly on the lawn and walks along it
-- Touch screens: hold where you want the magpie to go; tap quickly to start or stop a swoop; tap with a second finger to poop
+- Touch screens: a thumbpad left of the game to fly (push up to flap), and four buttons in a diamond right of it: LOOP, POOP, ROLL and SWOOP (hold). Held upright, they sit under the game. They hide while a game controller is plugged in
 
 ### Game controller
 
@@ -101,3 +102,7 @@ Do all 31 to complete the game (press O in the game for this list, with ticks). 
 - [PROMPTS.md](PROMPTS.md): every prompt used to make the game (also linked in the game, bottom right)
 - The version number under the links (bottom right) counts the updates published, one per commit
 - Performance: about 2 to 3 ms a frame (of the 16.7 ms a 60 fps frame allows), even with a storm, cockatoos and a blurred swoop; still about 56 to 60 fps with the CPU slowed 4 times
+
+## Tests
+
+Playwright tests in [tests/](tests/) cover the touch controls, the best time and the title screen. They open the game straight from the file, in a visible window. In that folder, run `npm install` once, then `npm test`.

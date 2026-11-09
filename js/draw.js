@@ -297,20 +297,21 @@ function drawScene() {
   drawEndStats();
 
   const pad = PAD.connected;                                        // with a controller, show its buttons instead
-  drawBar('SWOOP', 4, 4, bird.charge, '#ffd23f', '#fff3a0', bird.swooping, pad ? 'RIGHT TRIGGER' : isTouch ? 'QUICK TAP' : 'SPACE BAR');
-  drawBar('POOP', 4, 12, bird.poop, '#e9ece6', '#ffffff', false, pad ? 'X' : isTouch ? 'SECOND FINGER' : 'P KEY');
+  drawBar('SWOOP', 4, 4, bird.charge, '#ffd23f', '#fff3a0', bird.swooping, pad ? 'RIGHT TRIGGER' : isTouch ? 'SWOOP BUTTON' : 'SPACE BAR');
+  drawBar('POOP', 4, 12, bird.poop, '#e9ece6', '#ffffff', false, pad ? 'X' : isTouch ? 'POOP BUTTON' : 'P KEY');
   drawBar('COMBO', 4, 20, SCORE.comboT / COMBO_WINDOW, '#ffe066', '#ffe066', SCORE.combo > 1, 'X' + SCORE.combo);   // time left to keep the combo going
   const hintX = 4 + textWidth('SWOOP') + 4 + 40 + 4;               // lines up with the bars' key hints
-  drawText('BARREL ROLL', 4, 28, bird.roll > 0 ? '#ffe066' : '#ffffff'); drawText(pad ? '- B' : '- B KEY', hintX, 28, '#ffffff');
-  drawText('LOOP-DE-LOOP', 4, 36, bird.loopT > 0 ? '#ffe066' : '#ffffff'); drawText(pad ? '- Y' : '- L KEY', hintX, 36, '#ffffff');
+  drawText('BARREL ROLL', 4, 28, bird.roll > 0 ? '#ffe066' : '#ffffff'); drawText(pad ? '- B' : isTouch ? '- ROLL BUTTON' : '- B KEY', hintX, 28, '#ffffff');
+  drawText('LOOP-DE-LOOP', 4, 36, bird.loopT > 0 ? '#ffe066' : '#ffffff'); drawText(pad ? '- Y' : isTouch ? '- LOOP BUTTON' : '- L KEY', hintX, 36, '#ffffff');
   drawText(Sound.isMuted() ? 'SOUND OFF' : 'SOUND ON', 4, 44, '#ffffff'); drawText(pad ? '- BACK' : '- M KEY', hintX, 44, '#ffffff');
   drawText('OBJECTIVES', 4, 52, objectivesOpen() ? '#ffe066' : '#ffffff'); drawText(pad ? '- START' : isTouch ? '- TAP LINK' : '- O KEY', hintX, 52, '#ffffff');
   const titleAlpha = started ? clamp(1 - (time - startedAt - 2), 0, 1) : 1;
   if (titleAlpha > 0) {
     ctx.globalAlpha = titleAlpha;
     drawTextCentred('SWOOPING SIMULATOR', 66, '#ffffff', 2);
-    drawTextCentred(PAD.connected ? 'LEFT STICK OR D-PAD TO FLY' : isTouch ? 'HOLD WHERE TO FLY - TAP TO SWOOP' : 'ARROW KEYS OR WASD TO FLY', 86, '#ffe066');
-    drawTextCentred(PAD.connected ? 'A TO FLAP - HOLD RIGHT TRIGGER TO SWOOP - X TO POOP' : isTouch ? 'SECOND FINGER TO POOP' : 'UP TO FLAP - HOLD SPACE TO SWOOP - P TO POOP', 94, '#ffe066');
+    drawTextCentred(PAD.connected ? 'LEFT STICK OR D-PAD TO FLY' : isTouch ? 'THUMBPAD TO FLY - PUSH UP TO FLAP' : 'ARROW KEYS OR WASD TO FLY', 86, '#ffe066');
+    drawTextCentred(PAD.connected ? 'A TO FLAP - HOLD RIGHT TRIGGER TO SWOOP - X TO POOP' : isTouch ? 'HOLD SWOOP - TAP POOP ROLL OR LOOP' : 'UP TO FLAP - HOLD SPACE TO SWOOP - P TO POOP', 94, '#ffe066');
+    drawTitleObjectives(106);                                       // the objectives, one at a time, and the best time
     ctx.globalAlpha = 1;
   }
 

@@ -1,0 +1,11 @@
+{
+  "name": "swooping-simulator-tests",
+  "private": true,
+  "description": "Playwright tests for Swooping Simulator (run: npm test, in this folder)",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.60.0"
+  }
+}

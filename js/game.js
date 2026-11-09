@@ -1,11 +1,11 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// Input: arrow keys or WASD, hold Space to swoop, P to poop; on touch screens, hold
-// where you want to fly, tap quickly to start or stop a swoop, tap with a second finger to poop
+// Input: arrow keys or WASD, hold Space to swoop, P to poop; on touch screens, the thumbpad
+// and the SWOOP, POOP, ROLL and LOOP buttons either side of the game (touch-controls.js)
 // ---------------------------------------------------------------------------
 const keys = { up: false, down: false, left: false, right: false, swoop: false };
 const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
-let started = false, startedAt = 0, touch = null, touchAt = 0, touchSwoop = false, isTouch = false;
+let started = false, startedAt = 0, touchSwoop = false, isTouch = false;   // touchSwoop: the SWOOP button is held
 addEventListener('keydown', e => {
   if (canRestart()) { restart(); return; }
   if (objectivesOpen()) { e.preventDefault(); if (!e.repeat) toggleObjectives(false); return; }   // any key closes the list (the game waits behind it)
@@ -19,36 +19,26 @@ addEventListener('keydown', e => {
   if (k) { keys[k] = true; e.preventDefault(); begin(); }
 });
 addEventListener('keyup', e => { if (e.code === 'Space') keys.swoop = false; const k = KEYMAP[e.code]; if (k) keys[k] = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; touch = null; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; releaseTouchControls(); });
 function toInternal(e) {
   const rect = canvas.getBoundingClientRect(), s = Math.min(rect.width / W, rect.height / H);
   return { x: (e.clientX - rect.left - (rect.width - W * s) / 2) / s, y: (e.clientY - rect.top - (rect.height - H * s) / 2) / s };   // the game is centred
 }
 document.getElementById('sound').addEventListener('click', e => { e.currentTarget.blur(); Sound.toggle(); begin(); });
-// Touch controls are for fingers and pens only: a mouse click (say, to focus the window)
-// just starts the game and the sound, and never steers or swoops
-let fingers = 0;
-const isFinger = e => e.pointerType !== 'mouse';
+// A tap or click on the game itself: the OBJECTIVES link opens the list, and once the game's
+// complete any tap starts again. Flying is done with the on-screen controls (touch-controls.js);
+// a finger on the game brings them up, a mouse click doesn't (it just starts the game and the sound)
 front.addEventListener('pointerdown', e => {
   if (canRestart()) { restart(); return; }
-  if (onObjLink(toInternal(e))) { toggleObjectives(true); return; }
+  const p = toInternal(e);                                          // where, in game pixels
+  if (onObjLink(p)) { toggleObjectives(true); return; }
   begin();
-  if (!isFinger(e)) return;
-  isTouch = true;
-  if (++fingers > 1) { poop(); return; }                          // a second finger poops
-  touch = toInternal(e); touchAt = performance.now(); front.setPointerCapture(e.pointerId);
+  const isFinger = e.pointerType !== 'mouse';
+  if (isFinger) isTouch = true;                                     // a touch screen after all: show the controls
 });
 front.addEventListener('pointermove', e => {
-  if (touch && isFinger(e)) touch = toInternal(e);
   front.style.cursor = onObjLink(toInternal(e)) ? 'pointer' : '';   // the objectives link looks clickable
 });
-front.addEventListener('pointerup', e => {
-  if (!isFinger(e)) return;
-  fingers = Math.max(0, fingers - 1); if (fingers) return;
-  if (performance.now() - touchAt < 180) touchSwoop = !touchSwoop;  // a quick tap starts or stops a swoop
-  touch = null;
-});
-front.addEventListener('pointercancel', e => { if (!isFinger(e)) return; fingers = Math.max(0, fingers - 1); if (!fingers) touch = null; });
 function begin() { Sound.start(); if (!started) { started = true; startedAt = time; } }
 
 // ---------------------------------------------------------------------------
@@ -277,13 +267,8 @@ addEventListener('gamepadconnected', () => { isTouch = false; });
 
 function controls() {
   const c = { ...keys };
-  for (const k of ['up', 'down', 'left', 'right']) c[k] = c[k] || PAD[k];
+  for (const k of ['up', 'down', 'left', 'right']) c[k] = c[k] || PAD[k] || STICK[k];   // keys, controller or thumbpad
   if (bird.drunk > 0 && Math.sin(time * 1.3) > 0.55) [c.left, c.right] = [c.right, c.left];   // drunk: left and right swap now and then
-  if (touch) {
-    const dx = touch.x - (bird.x - cam), dy = touch.y - bird.y;
-    if (dx < -8) c.left = true; if (dx > 8) c.right = true;
-    if (dy < -8) c.up = true; if (dy > 8) c.down = true;
-  }
   return c;
 }
 
@@ -299,7 +284,7 @@ function update(dt) {
     bird.swooping = true; bird.grounded = false; bird.snag = false;   // swooping: he drops the snag
     if (bird.flung && !bird.whipped) { bird.whipped = true; showCombo('SNAG-ROCKET!', true); }   // swooping while tumbling: off like a snag fired off the barbie
   }
-  if (bird.swooping && bird.charge <= 0) { bird.spent = true; touchSwoop = false; }
+  if (bird.swooping && bird.charge <= 0) bird.spent = true;          // ran dry: let go of the swoop key or button first
   if (!wantSwoop || bird.spent) bird.swooping = false;
   bird.charge = clamp(bird.charge + (bird.swooping ? -SWOOP_DRAIN : SWOOP_RECHARGE) * dt, 0, 1);
   bird.poop = Math.min(1, bird.poop + POOP_RECHARGE * dt);

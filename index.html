@@ -45,6 +45,25 @@
   #objectives tr.done .name { color: #ffe066; }
   #objectives .what { color: #c9d4de; white-space: nowrap; }   /* short enough to stay on one line */
   #objectives .hint { margin: 8px 0 0; color: #7f93a8; font-size: .85em; }
+  /* Touch controls (touch-controls.js): a thumbpad left of the game, four buttons in a diamond right of it */
+  #touch { position: fixed; inset: 0; z-index: 5; pointer-events: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #touch[hidden] { display: none; }
+  #thumbpad, .tbtn { position: absolute; box-sizing: border-box; border-radius: 50%; pointer-events: auto; touch-action: none; transform: translate(-50%, -50%); }
+  #thumbpad { background: rgba(24, 34, 46, .55); border: 3px solid rgba(255, 255, 255, .7); }
+  #knob { position: absolute; left: 50%; top: 50%; width: 44%; height: 44%; margin: -22% 0 0 -22%; border-radius: 50%;
+    background: rgba(255, 255, 255, .8); box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+  .tbtn { display: flex; align-items: center; justify-content: center; background: rgba(24, 34, 46, .6);
+    border: 3px solid var(--c); color: var(--c); font: bold var(--fs, 14px)/1 Consolas, 'Courier New', monospace; letter-spacing: 1px; }
+  .tbtn.down, .tbtn.busy { background: var(--c); color: #18222e; }
+  .tbtn[data-act="swoop"] { --c: #ffd23f; }
+  .tbtn[data-act="poop"] { --c: #e9ece6; }
+  .tbtn[data-act="roll"] { --c: #ff7a6a; }
+  .tbtn[data-act="loop"] { --c: #9fdcff; }
+  /* With the touch controls, the links and the sound button move to the top right, out of the buttons' way */
+  body.touch #prompts { bottom: auto; top: 6px; }
+  body.touch #shots { bottom: auto; top: 19px; }
+  body.touch #ver { bottom: auto; top: 32px; }
+  body.touch #sound { bottom: auto; top: 44px; }
   #objClose { position: absolute; top: 6px; right: 10px; background: none; border: 0; color: #fff; font-size: 22px; cursor: pointer; }
 </style>
 </head>
@@ -55,10 +74,17 @@
 <canvas id="front"></canvas>
 <a id="prompts" href="prompts.html" target="_blank" rel="noopener">prompts</a>
 <a id="shots" href="screenshots.html" target="_blank" rel="noopener">screenshots</a>
-<div id="ver" title="Version: one for each update published">v87</div>
+<div id="ver" title="Version: one for each update published">v88</div>
 <button id="sound" title="Sound (M)" aria-label="Sound on or off (M)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke-width="2" stroke-linecap="round">
   <path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
   <path class="cross" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
+<div id="touch" hidden>
+  <div id="thumbpad" aria-label="Thumbpad: fly"><div id="knob"></div></div>
+  <div class="tbtn" data-act="loop" role="button">LOOP</div>
+  <div class="tbtn" data-act="poop" role="button">POOP</div>
+  <div class="tbtn" data-act="roll" role="button">ROLL</div>
+  <div class="tbtn" data-act="swoop" role="button">SWOOP</div>
+</div>
 <div id="objectives" hidden>
   <div class="panel" role="dialog" aria-labelledby="objTitle">
     <button id="objClose" aria-label="Close">&times;</button>
@@ -80,6 +106,7 @@
 <script src="js/cast.js"></script>
 <script src="js/game.js"></script>
 <script src="js/objectives.js"></script>
+<script src="js/touch-controls.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/main.js"></script>
 </body>

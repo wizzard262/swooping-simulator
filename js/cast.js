@@ -894,10 +894,13 @@ function drawScore() {
   drawText(hi, right(hi), 12, '#cfd8e0');
   const tm = 'TIME ' + clock(runTime());
   drawText(tm, right(tm), 20, RUN.finished ? '#ffe066' : '#ffffff');
+  let obY = 28;                                                      // where the objectives link goes
+  const bt = bestTimeText();
+  if (bt) { drawText(bt, right(bt), 28, '#cfd8e0'); obY = 36; }       // the best time, once there is one, pushes it down
   const ob = 'OBJECTIVES ' + RUN.done.size + '/' + OBJECTIVES.length;  // a link: click or tap it for the list
-  objLink = { x: right(ob) - 2, y: 26, w: textWidth(ob) + 4, h: 10 };
-  drawText(ob, right(ob), 28, '#9fdcff');
-  ctx.fillStyle = '#9fdcff'; ctx.fillRect(right(ob), 34, textWidth(ob), 1);
+  objLink = { x: right(ob) - 2, y: obY - 2, w: textWidth(ob) + 4, h: 10 };
+  drawText(ob, right(ob), obY, '#9fdcff');
+  ctx.fillStyle = '#9fdcff'; ctx.fillRect(right(ob), obY + 6, textWidth(ob), 1);
   for (const p of SCORE.pops) {
     ctx.globalAlpha = Math.min(1, p.life * 2);
     drawText(p.text, Math.round(loopX(p.x) - textWidth(p.text) / 2), Math.round(p.y), p.bad ? '#ff4a3d' : '#ffe066');
